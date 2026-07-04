@@ -1,0 +1,9 @@
+services:
+  sandstorm-qq-bot:
+    build: .
+    container_name: sandstorm-qq-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-6700}:${PORT:-6700}"

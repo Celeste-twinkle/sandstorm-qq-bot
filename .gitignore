@@ -1,0 +1,12 @@
+node_modules/
+.env
+dist/
+release/
+deploy/
+onebot/napcat/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+bot.pid
