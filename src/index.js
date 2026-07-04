@@ -9,6 +9,7 @@ const chatCooldowns = new Map();
 const ambientChatCooldowns = new Map();
 const ambientChatBuffers = new Map();
 const ambientChatContexts = new Map();
+const groupMessageCaches = new Map();
 const bilibiliCooldowns = new Map();
 const chatService = new DeepSeekChatService(config);
 
@@ -136,6 +137,11 @@ function getSenderName(message) {
   return message.sender?.card || message.sender?.nickname || "";
 }
 
+function getMessageId(message) {
+  const id = message.message_id ?? message.messageId;
+  return id === undefined || id === null || id === "" ? "" : String(id);
+}
+
 function getCleanMessageText(message) {
   const text = getMessageText(message);
   const selfId = String(message.self_id || "");
@@ -182,6 +188,22 @@ function hasImageMessage(message) {
   return /\[CQ:image\b/i.test(rawText);
 }
 
+function getReplyMessageId(message) {
+  if (Array.isArray(message.message)) {
+    const replySegment = message.message.find((segment) => segment.type === "reply");
+    const id = replySegment?.data?.id;
+    return id === undefined || id === null || id === "" ? "" : String(id);
+  }
+
+  const rawText = typeof message.raw_message === "string"
+    ? message.raw_message
+    : typeof message.message === "string"
+      ? message.message
+      : "";
+  const match = rawText.match(/\[CQ:reply,[^\]]*id=([^,\]]+)/i);
+  return match ? String(match[1]) : "";
+}
+
 function isLikelyNonChatText(text) {
   return (
     text.length < 2 ||
@@ -205,12 +227,65 @@ function clearAmbientChatBuffer(groupId) {
   ambientChatBuffers.delete(key);
 }
 
-function collectAmbientChat(message, text, client) {
-  const groupId = String(message.group_id);
-  appendAmbientChatContext(groupId, {
+function cacheGroupMessage(message, text) {
+  const groupId = String(message.group_id || "");
+  const messageId = getMessageId(message);
+  if (!groupId || !messageId || hasImageMessage(message) || !text) {
+    return;
+  }
+
+  const existing = groupMessageCaches.get(groupId) || [];
+  existing.push({
+    messageId,
     senderName: getSenderName(message) || String(message.user_id || "unknown"),
     text,
     timestamp: Date.now(),
+  });
+
+  const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
+  const maxMessagesToKeep = Math.max(20, Math.max(1, config.ambientChatIdleMaxMessages) * 10);
+  const now = Date.now();
+  groupMessageCaches.set(
+    groupId,
+    existing
+      .filter((entry) => now - entry.timestamp <= contextMs)
+      .slice(-maxMessagesToKeep),
+  );
+}
+
+function getCachedGroupMessage(groupId, messageId) {
+  if (!messageId) {
+    return null;
+  }
+
+  const messages = groupMessageCaches.get(String(groupId)) || [];
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].messageId === String(messageId)) {
+      return messages[index];
+    }
+  }
+
+  return null;
+}
+
+function collectAmbientChat(message, text, client) {
+  const groupId = String(message.group_id);
+  const now = Date.now();
+  const repliedMessage = getCachedGroupMessage(groupId, getReplyMessageId(message));
+  if (repliedMessage) {
+    appendAmbientChatContext(groupId, {
+      ...repliedMessage,
+      relation: "被回复消息",
+      timestamp: now - 1,
+    });
+  }
+
+  appendAmbientChatContext(groupId, {
+    messageId: getMessageId(message),
+    senderName: getSenderName(message) || String(message.user_id || "unknown"),
+    text,
+    relation: repliedMessage ? "当前回复" : "",
+    timestamp: now,
   });
 
   const existing = ambientChatBuffers.get(groupId) || {
@@ -257,8 +332,11 @@ async function handleAmbientChatIdle(groupId, generation, client) {
 function appendAmbientChatContext(groupId, message) {
   const key = String(groupId);
   const existing = ambientChatContexts.get(key) || [];
-  existing.push(message);
-  ambientChatContexts.set(key, trimAmbientChatContext(existing, Date.now()));
+  const deduped = message.messageId
+    ? existing.filter((entry) => entry.messageId !== message.messageId)
+    : existing;
+  deduped.push(message);
+  ambientChatContexts.set(key, trimAmbientChatContext(deduped, Date.now()));
 }
 
 function getAmbientChatContext(groupId) {
@@ -281,7 +359,10 @@ function formatAmbientChatMessages(messages) {
     return messages[0].text;
   }
 
-  const lines = messages.map((message) => `${message.senderName}：${message.text}`);
+  const lines = messages.map((message) => {
+    const relation = message.relation ? `（${message.relation}）` : "";
+    return `${message.senderName}${relation}：${message.text}`;
+  });
   return `以下是群聊里刚刚冷场前的一段上下文，按从新到旧排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
 }
 
@@ -295,6 +376,7 @@ async function onGroupMessage(message, client) {
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
   const canCollectAmbientChat = shouldCollectAmbientChat(message, text);
+  cacheGroupMessage(message, text);
 
   if (shouldHandleBilibili(text)) {
     if (!hasImageMessage(message)) {
