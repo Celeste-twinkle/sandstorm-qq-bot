@@ -111,7 +111,7 @@ const config = {
   ambientChatProbability: clampNumber(parseNumber(process.env.AMBIENT_CHAT_PROBABILITY, 0.08), 0, 1),
   ambientChatCooldownSeconds: parseInteger(process.env.AMBIENT_CHAT_COOLDOWN_SECONDS, 60),
   ambientChatIdleSeconds: parseInteger(process.env.AMBIENT_CHAT_IDLE_SECONDS, 60),
-  ambientChatInstantMaxMessages: parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, 4),
+  ambientChatInstantMaxMessages: parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, 6),
   ambientChatIdleMaxMessages: parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, 6),
   ambientChatContextSeconds: parseInteger(process.env.AMBIENT_CHAT_CONTEXT_SECONDS, 300),
   ambientChatTimeoutMs: parseInteger(process.env.AMBIENT_CHAT_TIMEOUT_MS, 12000),

@@ -343,7 +343,7 @@ function getAmbientChatContext(groupId, maxMessages = config.ambientChatIdleMaxM
   const key = String(groupId);
   const messages = trimAmbientChatContext(ambientChatContexts.get(key) || [], Date.now());
   ambientChatContexts.set(key, messages);
-  return messages.slice(-Math.max(1, maxMessages)).reverse();
+  return messages.slice(-Math.max(1, maxMessages));
 }
 
 function trimAmbientChatContext(messages, now) {
@@ -372,16 +372,16 @@ function formatAmbientChatMessages(messages, mode = "idle") {
   }
 
   const lines = messages.map((message, index) => {
-    const relation = message.relation || (mode === "instant" && index === 0 ? "当前消息" : "");
+    const relation = message.relation || (mode === "instant" && index === messages.length - 1 ? "当前消息" : "");
     const relationText = relation ? `（${relation}）` : "";
     return `${message.senderName}${relationText}：${message.text}`;
   });
 
   if (mode === "instant") {
-    return `以下是群聊刚刚的一段上下文，按从新到旧排列；“当前消息”是你要接的话。请优先回应当前消息，并参考上下文接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
+    return `以下是群聊刚刚的一段上下文，按从旧到新排列；“当前消息”是你要接的话。请优先回应当前消息，并参考上下文接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
   }
 
-  return `以下是群聊里刚刚冷场前的一段上下文，按从新到旧排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
+  return `以下是群聊里刚刚冷场前的一段上下文，按从旧到新排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
 }
 
 async function onGroupMessage(message, client) {
