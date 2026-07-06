@@ -111,13 +111,14 @@ const config = {
   ambientChatProbability: clampNumber(parseNumber(process.env.AMBIENT_CHAT_PROBABILITY, 0.08), 0, 1),
   ambientChatCooldownSeconds: parseInteger(process.env.AMBIENT_CHAT_COOLDOWN_SECONDS, 60),
   ambientChatIdleSeconds: parseInteger(process.env.AMBIENT_CHAT_IDLE_SECONDS, 60),
+  ambientChatInstantMaxMessages: parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, 4),
   ambientChatIdleMaxMessages: parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, 6),
   ambientChatContextSeconds: parseInteger(process.env.AMBIENT_CHAT_CONTEXT_SECONDS, 300),
   ambientChatTimeoutMs: parseInteger(process.env.AMBIENT_CHAT_TIMEOUT_MS, 12000),
-  ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 90),
+  ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 180),
   ambientChatSystemPrompt:
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||
-    "你是一只接入 QQ 群聊的中文猫娘机器人。现在你是在群聊里偶尔插一句闲聊，不是回答问题。请用中文快速回复 1 句，最多 35 个字；必须自然带一次“喵”；语气像二次元社区玩家路过接梗、轻吐槽或轻轻感叹，可以有一点游戏群/番剧群的弹幕感，但味不要太冲；吐槽要友善，不恶意、不阴阳怪气、不嘲讽、不攻击任何人；不要说教，不要长篇解释，不要提到自己是 AI。",
+    "你是一只接入 QQ 群聊的中文猫娘机器人。现在你是在群聊里偶尔插一句闲聊，不是回答问题。请用中文快速回复 1 句，优先 20-45 个字，必要时最多 70 个字；必须自然带一次“喵”；语气像二次元社区玩家路过接梗、轻吐槽或轻轻感叹，可以有一点游戏群/番剧群的弹幕感，但味不要太冲；吐槽要友善，不恶意、不阴阳怪气、不嘲讽、不攻击任何人；不要说教，不要长篇解释，不要提到自己是 AI。",
   chatMaxHistoryMessages: parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, 16),
   chatMaxContextChars: parseInteger(process.env.CHAT_MAX_CONTEXT_CHARS, 12000),
   chatSessionTtlMinutes: parseOptionalInteger(process.env.CHAT_SESSION_TTL_MINUTES, 120),

@@ -105,12 +105,13 @@ class DeepSeekChatService {
     return ttlMs > 0 && now - session.updatedAt > ttlMs;
   }
 
-  buildMessages(_session, userMessage) {
+  buildMessages(session, userMessage) {
     return this.trimMessages([
       {
         role: "system",
         content: this.buildSystemPrompt(this.config.deepseekSystemPrompt),
       },
+      ...session.messages,
       userMessage,
     ]);
   }

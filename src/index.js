@@ -243,7 +243,7 @@ function cacheGroupMessage(message, text) {
   });
 
   const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
-  const maxMessagesToKeep = Math.max(20, Math.max(1, config.ambientChatIdleMaxMessages) * 10);
+  const maxMessagesToKeep = Math.max(20, getAmbientChatMaxConfiguredMessages() * 10);
   const now = Date.now();
   groupMessageCaches.set(
     groupId,
@@ -339,30 +339,48 @@ function appendAmbientChatContext(groupId, message) {
   ambientChatContexts.set(key, trimAmbientChatContext(deduped, Date.now()));
 }
 
-function getAmbientChatContext(groupId) {
+function getAmbientChatContext(groupId, maxMessages = config.ambientChatIdleMaxMessages) {
   const key = String(groupId);
   const messages = trimAmbientChatContext(ambientChatContexts.get(key) || [], Date.now());
   ambientChatContexts.set(key, messages);
-  return messages.slice(-Math.max(1, config.ambientChatIdleMaxMessages)).reverse();
+  return messages.slice(-Math.max(1, maxMessages)).reverse();
 }
 
 function trimAmbientChatContext(messages, now) {
   const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
-  const maxMessagesToKeep = Math.max(1, config.ambientChatIdleMaxMessages) * 4;
+  const maxMessagesToKeep = getAmbientChatMaxConfiguredMessages() * 4;
   return messages
     .filter((message) => now - message.timestamp <= contextMs)
     .slice(-maxMessagesToKeep);
 }
 
-function formatAmbientChatMessages(messages) {
-  if (messages.length === 1) {
+function getAmbientChatMaxConfiguredMessages() {
+  return Math.max(
+    1,
+    config.ambientChatIdleMaxMessages,
+    config.ambientChatInstantMaxMessages,
+  );
+}
+
+function formatAmbientChatMessages(messages, mode = "idle") {
+  if (messages.length === 0) {
+    return "";
+  }
+
+  if (messages.length === 1 && mode !== "instant") {
     return messages[0].text;
   }
 
-  const lines = messages.map((message) => {
-    const relation = message.relation ? `（${message.relation}）` : "";
-    return `${message.senderName}${relation}：${message.text}`;
+  const lines = messages.map((message, index) => {
+    const relation = message.relation || (mode === "instant" && index === 0 ? "当前消息" : "");
+    const relationText = relation ? `（${relation}）` : "";
+    return `${message.senderName}${relationText}：${message.text}`;
   });
+
+  if (mode === "instant") {
+    return `以下是群聊刚刚的一段上下文，按从新到旧排列；“当前消息”是你要接的话。请优先回应当前消息，并参考上下文接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
+  }
+
   return `以下是群聊里刚刚冷场前的一段上下文，按从新到旧排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
 }
 
@@ -421,8 +439,12 @@ async function onGroupMessage(message, client) {
     clearAmbientChatBuffer(groupId);
     markCooldown(groupId, ambientChatCooldowns);
     try {
-      console.log(`[bot] ambient chat hit in group ${groupId}, user ${message.user_id}: ${text}`);
-      const reply = await chatService.quickReply(text, {
+      const contextualText = formatAmbientChatMessages(
+        getAmbientChatContext(groupId, config.ambientChatInstantMaxMessages),
+        "instant",
+      );
+      console.log(`[bot] ambient chat hit in group ${groupId}, user ${message.user_id}: ${contextualText}`);
+      const reply = await chatService.quickReply(contextualText, {
         senderName: getSenderName(message),
       });
       client.sendGroupMessage(groupId, reply);
