@@ -1,5 +1,16 @@
+const fs = require("fs");
+const fsPromises = require("fs/promises");
+const os = require("os");
+const path = require("path");
+const { randomUUID } = require("crypto");
+const { Readable, Transform } = require("stream");
+const { pipeline } = require("stream/promises");
+const { pathToFileURL } = require("url");
+
 const BILIBILI_HOST_PATTERN = /(^|\.)bilibili\.com$/i;
 const BILIBILI_SHORT_HOSTS = new Set(["b23.tv", "bili2233.cn", "bili22.cn", "bili33.cn"]);
+const BILIBILI_DOWNLOAD_DIRECTORY = path.join(os.tmpdir(), "sandstorm-qq-bot", "bilibili");
+const MEBIBYTE = 1024 * 1024;
 
 function extractBilibiliUrls(text) {
   const matches = String(text || "").match(/https?:\/\/[^\s<>"'，。；、]+/gi) || [];
@@ -54,6 +65,133 @@ async function resolveBilibiliVideo(config, inputUrl) {
   }
 
   throw new Error(`Bilibili 解析失败：${errors.join("; ")}`);
+}
+
+async function downloadBilibiliVideo(config, result) {
+  const videoUrl = normalizeUrl(result?.videoUrl);
+  if (!videoUrl) {
+    throw new Error("解析服务没有返回可下载的视频地址。");
+  }
+
+  const maxBytes = Math.max(1, Number(config.bilibiliMaxVideoSizeMb) || 95) * MEBIBYTE;
+  const timeoutMs = Math.max(1000, Number(config.bilibiliDownloadTimeoutMs) || 180000);
+  const videoId = sanitizeFileName(result.bvid || (result.aid ? `av${result.aid}` : "video"));
+  const filePath = path.join(BILIBILI_DOWNLOAD_DIRECTORY, `${videoId}-${randomUUID()}.mp4`);
+  const partialPath = `${filePath}.part`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  await fsPromises.mkdir(BILIBILI_DOWNLOAD_DIRECTORY, { recursive: true });
+
+  try {
+    const response = await fetch(videoUrl, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) sandstorm-qq-bot/1.0",
+        Referer: result.pageUrl || "https://www.bilibili.com/",
+        Accept: "video/mp4,video/*;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`视频下载 HTTP ${response.status}`);
+    }
+
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    if (contentType.includes("text/html") || contentType.includes("application/json")) {
+      throw new Error(`视频下载返回了非视频内容（${contentType || "unknown"}）`);
+    }
+
+    const contentLength = Number.parseInt(response.headers.get("content-length") || "", 10);
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      throw createVideoTooLargeError(contentLength, maxBytes);
+    }
+
+    if (!response.body) {
+      throw new Error("视频下载响应为空。");
+    }
+
+    let downloadedBytes = 0;
+    const sizeLimiter = new Transform({
+      transform(chunk, _encoding, callback) {
+        downloadedBytes += chunk.length;
+        if (downloadedBytes > maxBytes) {
+          callback(createVideoTooLargeError(downloadedBytes, maxBytes));
+          return;
+        }
+        callback(null, chunk);
+      },
+    });
+
+    await pipeline(
+      Readable.fromWeb(response.body),
+      sizeLimiter,
+      fs.createWriteStream(partialPath, { flags: "wx" }),
+    );
+
+    if (downloadedBytes === 0) {
+      throw new Error("下载到的视频文件为空。");
+    }
+
+    await assertMp4File(partialPath);
+    await fsPromises.rename(partialPath, filePath);
+    return {
+      filePath,
+      fileUrl: pathToFileURL(filePath).href,
+      sizeBytes: downloadedBytes,
+    };
+  } catch (error) {
+    await removeFilesQuietly(partialPath, filePath);
+    if (error.name === "AbortError") {
+      throw new Error(`视频下载超时（${Math.round(timeoutMs / 1000)} 秒）。`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function removeDownloadedBilibiliVideo(downloaded) {
+  if (!downloaded?.filePath) {
+    return;
+  }
+  await removeFilesQuietly(downloaded.filePath);
+}
+
+async function assertMp4File(filePath) {
+  const handle = await fsPromises.open(filePath, "r");
+  try {
+    const header = Buffer.alloc(12);
+    const { bytesRead } = await handle.read(header, 0, header.length, 0);
+    if (bytesRead < 8 || header.subarray(4, 8).toString("ascii") !== "ftyp") {
+      throw new Error("解析服务返回的文件不是有效的 MP4 视频。");
+    }
+  } finally {
+    await handle.close();
+  }
+}
+
+function createVideoTooLargeError(actualBytes, maxBytes) {
+  const error = new Error(
+    `视频大小 ${formatFileSize(actualBytes)} 超过发送上限 ${formatFileSize(maxBytes)}。`,
+  );
+  error.code = "BILIBILI_VIDEO_TOO_LARGE";
+  return error;
+}
+
+function formatFileSize(bytes) {
+  return `${(Number(bytes) / MEBIBYTE).toFixed(1)} MB`;
+}
+
+function sanitizeFileName(value) {
+  return String(value || "video").replace(/[^0-9A-Za-z_-]/g, "_").slice(0, 64) || "video";
+}
+
+async function removeFilesQuietly(...filePaths) {
+  await Promise.all(
+    filePaths.filter(Boolean).map((filePath) => fsPromises.rm(filePath, { force: true }).catch(() => {})),
+  );
 }
 
 async function resolveWithInjahow(config, parsed) {
@@ -293,6 +431,8 @@ function isBilibiliUrl(value) {
 }
 
 module.exports = {
+  downloadBilibiliVideo,
   extractBilibiliUrls,
+  removeDownloadedBilibiliVideo,
   resolveBilibiliVideo,
 };

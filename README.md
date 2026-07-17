@@ -61,7 +61,7 @@ REQUIRE_AT=false
 
 未 `@机器人` 的普通文字群聊可触发闲聊：即时闲聊会参考当前群最近上下文接话，默认最多取 `AMBIENT_CHAT_INSTANT_MAX_MESSAGES` 条；冷场闲聊会在 `AMBIENT_CHAT_IDLE_SECONDS` 秒无人继续发普通文字后，从群级最近上下文里按旧到新采集最多 `AMBIENT_CHAT_IDLE_MAX_MESSAGES` 条消息再回复。
 
-群里直接发送 Bilibili / b23.tv 普通视频链接时，bot 会尝试通过外部解析服务获取 MP4 直链并发送视频，不需要 `@机器人`；普通网页 URL 不会触发解析。发送 `@机器人 帮助`、`@机器人 help` 或 `@机器人 使用说明` 可以查看可用功能。
+群里直接发送 Bilibili / b23.tv 普通视频链接时，bot 会通过外部解析服务获取 MP4，并默认先下载到系统临时目录，再把本地文件交给 NapCat 发送，避免 Bilibili 防盗链导致 `rich media transfer failed`。视频发送完成后会自动清理临时文件；超过 `BILIBILI_MAX_VIDEO_SIZE_MB`（默认 95 MB）或 QQ 上传失败时，会自动退回标题和原视频链接，不再误报成解析失败。此功能不需要 `@机器人`；普通网页 URL 不会触发解析。
 
 ## 本机运行
 

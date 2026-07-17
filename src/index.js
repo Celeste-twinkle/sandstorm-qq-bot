@@ -1,5 +1,10 @@
 const { config } = require("./config");
-const { extractBilibiliUrls, resolveBilibiliVideo } = require("./bilibili");
+const {
+  downloadBilibiliVideo,
+  extractBilibiliUrls,
+  removeDownloadedBilibiliVideo,
+  resolveBilibiliVideo,
+} = require("./bilibili");
 const { DeepSeekChatService } = require("./deepseek");
 const { createOneBotServer } = require("./onebot");
 const { querySandstormStatus } = require("./sandstorm");
@@ -494,27 +499,80 @@ async function onGroupMessage(message, client) {
 
 async function handleBilibiliMessage(groupId, text, client) {
   const urls = extractBilibiliUrls(text);
+  let result;
   try {
-    const result = await resolveBilibiliVideo(config, urls[0]);
+    result = await resolveBilibiliVideo(config, urls[0]);
     console.log(`[bilibili] resolved provider=${result.provider} bvid=${result.bvid || ""} url=${urls[0]}`);
+  } catch (error) {
+    console.error("[bilibili] resolve failed:", error.message);
+    const message = error.message.startsWith("Bilibili 解析失败：")
+      ? error.message
+      : `Bilibili 解析失败：${error.message}`;
+    client.sendGroupMessage(groupId, message);
+    return;
+  }
 
-    if (config.bilibiliSendVideo) {
+  if (!config.bilibiliSendVideo) {
+    client.sendGroupMessage(groupId, formatBilibiliResolveText(result));
+    return;
+  }
+
+  let downloaded;
+  try {
+    if (config.bilibiliDownloadVideo) {
+      downloaded = await downloadBilibiliVideo(config, result);
+      console.log(
+        `[bilibili] downloaded bvid=${result.bvid || ""} size=${downloaded.sizeBytes} path=${downloaded.filePath}`,
+      );
+    }
+
+    await sendBilibiliVideoWithRetry(
+      groupId,
+      downloaded?.fileUrl || result.videoUrl,
+      client,
+      config.bilibiliSendRetries,
+    );
+    client.sendGroupMessage(groupId, formatBilibiliResolveBrief(result));
+  } catch (error) {
+    console.error("[bilibili] video send failed:", error.message);
+    client.sendGroupMessage(groupId, formatBilibiliUploadFallback(result, error));
+  } finally {
+    await removeDownloadedBilibiliVideo(downloaded);
+  }
+}
+
+async function sendBilibiliVideoWithRetry(groupId, file, client, retryCount) {
+  const retries = Math.max(0, Number.parseInt(retryCount, 10) || 0);
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
       await client.sendGroupMessageAndWait(groupId, [
         {
           type: "video",
-          data: {
-            file: result.videoUrl,
-          },
+          data: { file },
         },
       ]);
-      client.sendGroupMessage(groupId, formatBilibiliResolveBrief(result));
-    } else {
-      client.sendGroupMessage(groupId, formatBilibiliResolveText(result));
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries || !isRetryableRichMediaError(error)) {
+        throw error;
+      }
+      console.warn(`[bilibili] rich media upload failed, retrying (${attempt + 1}/${retries})`);
+      await delay(800 * (attempt + 1));
     }
-  } catch (error) {
-    console.error("[bilibili] resolve failed:", error.message);
-    client.sendGroupMessage(groupId, `Bilibili 解析失败：${error.message}`);
   }
+
+  throw lastError;
+}
+
+function isRetryableRichMediaError(error) {
+  return /rich media transfer failed|retcode["']?\s*:\s*1200/i.test(String(error?.message || ""));
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function buildHelpText() {
@@ -570,6 +628,23 @@ function formatBilibiliResolveBrief(result) {
     lines.push(`简介：${truncateText(result.description, 180)}`);
   }
   lines.push(`来源：${result.provider}`);
+  return lines.join("\n");
+}
+
+function formatBilibiliUploadFallback(result, error) {
+  const lines = ["Bilibili 解析成功，但 QQ 视频上传失败。"];
+  if (result.title) {
+    lines.push(`标题：${result.title}`);
+  }
+  if (result.authorName) {
+    lines.push(`UP：${result.authorName}`);
+  }
+  if (error?.code === "BILIBILI_VIDEO_TOO_LARGE") {
+    lines.push(`原因：${error.message}`);
+  } else {
+    lines.push("原因：QQ 富媒体传输失败，请打开原视频观看。");
+  }
+  lines.push(`原视频：${result.pageUrl}`);
   return lines.join("\n");
 }
 

@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "check": "node --check src/config.js && node --check src/onebot.js && node --check src/sandstorm.js && node --check src/webtools.js && node --check src/bilibili.js && node --check src/deepseek.js && node --check src/index.js",
+    "test": "node --test",
     "build:exe": "pkg . --targets node22-win-x64 --output dist/sandstorm-qq-bot.exe",
     "release": "powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1",
     "deploy:package": "powershell -ExecutionPolicy Bypass -File scripts/build-deploy-package.ps1",
