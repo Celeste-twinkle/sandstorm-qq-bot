@@ -402,6 +402,150 @@ test("Qwen multimodal preparation converts only the latest 10 inline images", as
     prepared[0].content.filter((part) => part.text === "[较早图片已省略]").length,
     2,
   );
+
+  const imageParts = prepared[0].content.filter((part) => part.type === "image_url");
+  assert.equal(
+    Buffer.from(imageParts[0].image_url.url.split(",", 2)[1], "base64").toString(),
+    "image-2",
+  );
+  assert.equal(
+    Buffer.from(imageParts.at(-1).image_url.url.split(",", 2)[1], "base64").toString(),
+    "image-11",
+  );
+
+  for (let index = 1; index < prepared[0].content.length; index += 1) {
+    assert.notEqual(
+      prepared[0].content[index - 1].type === "image_url" &&
+        prepared[0].content[index].type === "image_url",
+      true,
+      "consecutive images must have a text separator",
+    );
+  }
+
+  const newestImageIndex = prepared[0].content.findLastIndex(
+    (part) => part.type === "image_url",
+  );
+  assert.match(prepared[0].content[newestImageIndex - 1].text, /图片优先级：最新/);
+});
+
+test("Qwen reuses cached OCR semantics instead of retransmitting the same image", async () => {
+  const config = {
+    ...createConfig(),
+    localQwenImageCacheEnabled: true,
+  };
+  const calls = [];
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      const isImageIndexer = String(body.messages?.[0]?.content || "").includes(
+        "图片 OCR 与语义索引器",
+      );
+      return completionResponse(
+        isImageIndexer
+          ? "图片类型：高等数学试卷。OCR：第 1 题，当 x→0 时……"
+          : "main reply",
+      );
+    },
+  });
+  const source = `data:image/png;base64,${Buffer.from("same-math-image").toString("base64")}`;
+  const createMessages = () => [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "识别图片内容" },
+        { type: "image_ref", source },
+      ],
+    },
+  ];
+
+  assert.equal(await service.createCompletion(createMessages()), "main reply");
+  await service.waitForImageCacheIdle();
+  assert.equal(await service.createCompletion(createMessages()), "main reply");
+
+  assert.equal(calls.length, 3);
+  assert.equal(countRequestImages(calls[0]), 1);
+  assert.equal(countRequestImages(calls[1]), 1);
+  assert.equal(calls[1].max_tokens, 8192);
+  assert.equal(countRequestImages(calls[2]), 0);
+  assert.match(JSON.stringify(calls[2].messages), /图片语义缓存/);
+  assert.match(JSON.stringify(calls[2].messages), /高等数学试卷/);
+});
+
+test("Qwen automatically retries an unreadable-image reply with newest cached OCR", async () => {
+  const config = {
+    ...createConfig(),
+    localQwenImageCacheEnabled: true,
+  };
+  const calls = [];
+  let mainCallCount = 0;
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      const isImageIndexer = String(body.messages?.[0]?.content || "").includes(
+        "图片 OCR 与语义索引器",
+      );
+      if (isImageIndexer) {
+        return completionResponse("OCR：第 1 题，当 x→0 时，答案为 B。");
+      }
+
+      mainCallCount += 1;
+      return completionResponse(
+        mainCallCount === 1
+          ? "当前环境无法直接识别图片内容。"
+          : "识别结果：第 1 题答案为 B。",
+      );
+    },
+  });
+  const source = `data:image/png;base64,${Buffer.from("unreadable-first-pass").toString("base64")}`;
+
+  const reply = await service.createCompletion([
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "识别图片" },
+        { type: "image_ref", source },
+      ],
+    },
+  ]);
+
+  assert.equal(reply, "识别结果：第 1 题答案为 B。");
+  assert.equal(calls.length, 3);
+  assert.equal(countRequestImages(calls[0]), 1);
+  assert.equal(countRequestImages(calls[1]), 1);
+  assert.equal(countRequestImages(calls[2]), 0);
+  assert.match(JSON.stringify(calls[2].messages), /第 1 题/);
+});
+
+test("Qwen prewarms each received image once and reuses its content hash", async () => {
+  const config = {
+    ...createConfig(),
+    localQwenImageCacheEnabled: true,
+  };
+  const calls = [];
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      return completionResponse(`OCR cache ${calls.length}`);
+    },
+  });
+  service.setHealth("healthy", "test");
+  const first = `data:image/png;base64,${Buffer.from("prewarm-first").toString("base64")}`;
+  const second = `data:image/png;base64,${Buffer.from("prewarm-second").toString("base64")}`;
+
+  assert.equal(await service.prewarmImages([first, second, first]), 2);
+  await service.waitForImageCacheIdle();
+  assert.equal(await service.prewarmImages([first, second]), 0);
+  await service.waitForImageCacheIdle();
+
+  assert.equal(calls.length, 2);
+  assert.equal(countRequestImages(calls[0]), 1);
+  assert.equal(countRequestImages(calls[1]), 1);
 });
 
 test("OneBot array and CQ image formats are normalized and deduplicated", () => {
@@ -568,6 +712,12 @@ function createConfig() {
     localQwenImageFetchTimeoutMs: 1000,
     localQwenImageMaxBytes: 8 * 1024 * 1024,
     localQwenImagesMaxTotalBytes: 32 * 1024 * 1024,
+    localQwenImageCacheEnabled: false,
+    localQwenImageCacheMaxEntries: 500,
+    localQwenImageCacheTtlMinutes: 720,
+    localQwenImageCacheMaxChars: 24000,
+    localQwenImageCacheMaxOutputTokens: 8192,
+    localQwenImageCacheTimeoutMs: 120000,
     deepseekApiKey: "sk-test-deepseek",
     deepseekBaseUrl: "http://deepseek.mock",
     deepseekModel: "deepseek-v4-flash",
@@ -685,4 +835,16 @@ function completionResponse(content) {
       headers: { "content-type": "application/json" },
     },
   );
+}
+
+function countRequestImages(body) {
+  return (body.messages || []).reduce((count, message) => {
+    if (!Array.isArray(message.content)) {
+      return count;
+    }
+    return (
+      count +
+      message.content.filter((part) => part?.type === "image_url").length
+    );
+  }, 0);
 }

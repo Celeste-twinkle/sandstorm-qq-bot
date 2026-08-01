@@ -139,6 +139,35 @@ const config = {
     64 * 1024,
     128 * 1024 * 1024,
   ),
+  localQwenImageCacheEnabled: parseBoolean(
+    process.env.LOCAL_QWEN_IMAGE_CACHE_ENABLED,
+    true,
+  ),
+  localQwenImageCacheMaxEntries: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_MAX_ENTRIES, 500),
+    10,
+    5000,
+  ),
+  localQwenImageCacheTtlMinutes: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_TTL_MINUTES, 720),
+    1,
+    10080,
+  ),
+  localQwenImageCacheMaxChars: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_MAX_CHARS, 24000),
+    500,
+    50000,
+  ),
+  localQwenImageCacheMaxOutputTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_MAX_OUTPUT_TOKENS, 8192),
+    200,
+    16384,
+  ),
+  localQwenImageCacheTimeoutMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_TIMEOUT_MS, 120000),
+    1000,
+    120000,
+  ),
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEKER_API_KEY || "",
   deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, ""),
   deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",

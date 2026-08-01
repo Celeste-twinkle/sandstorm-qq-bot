@@ -230,6 +230,20 @@ function recordIncomingGroupMessage(message, text) {
   return entry;
 }
 
+async function prewarmImageInsights(images) {
+  const sources = dedupeStrings(Array.isArray(images) ? images : []);
+  if (sources.length === 0) {
+    return 0;
+  }
+
+  try {
+    return await chatService.prewarmImages(sources);
+  } catch (error) {
+    console.warn("[ai] image OCR prewarm failed:", error.message);
+    return 0;
+  }
+}
+
 async function linkRepliedMessage(message, client) {
   const replyMessageId = getReplyMessageId(message);
   if (!replyMessageId) {
@@ -419,7 +433,8 @@ async function onGroupMessage(message, client) {
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
   const canCollectAmbientChat = shouldCollectAmbientChat(message, text);
-  recordIncomingGroupMessage(message, text);
+  const incomingEntry = recordIncomingGroupMessage(message, text);
+  const incomingImagePrewarm = prewarmImageInsights(incomingEntry?.images);
 
   if (shouldHandleBilibili(text)) {
     if (!hasImageMessage(message)) {
@@ -505,7 +520,11 @@ async function onGroupMessage(message, client) {
 
   markCooldown(sessionId, chatCooldowns);
   try {
-    await linkRepliedMessage(message, client);
+    const repliedMessage = await linkRepliedMessage(message, client);
+    await Promise.all([
+      incomingImagePrewarm,
+      prewarmImageInsights(repliedMessage?.images),
+    ]);
     const webSearch = shouldUseWebSearch(text);
     const thinking = shouldUseThinking(text);
     console.log(

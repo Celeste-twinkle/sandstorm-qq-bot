@@ -26,6 +26,13 @@ class AiChatService {
     this.localQwen.stopHealthChecks();
   }
 
+  async prewarmImages(images) {
+    if (typeof this.localQwen.prewarmImages !== "function") {
+      return 0;
+    }
+    return this.localQwen.prewarmImages(images);
+  }
+
   isConfigured() {
     return this.localQwen.isConfigured() || this.deepseek.isConfigured();
   }
