@@ -1,5 +1,9 @@
 const { randomUUID } = require("crypto");
-const { AiChatService, extractImageSources } = require("./ai");
+const {
+  AiChatService,
+  extractImageSources,
+  extractSemanticMessageText,
+} = require("./ai");
 const { config } = require("./config");
 const {
   downloadBilibiliVideo,
@@ -143,13 +147,7 @@ function getSessionId(message) {
 }
 
 function getCleanMessageText(message) {
-  const text = getMessageText(message);
-  const selfId = String(message.self_id || "");
-  return text
-    .replace(new RegExp(`\\[CQ:at,qq=${escapeRegExp(selfId)}\\]`, "g"), "")
-    .replace(/\[CQ:[^\]]+\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return extractSemanticMessageText(message);
 }
 
 function isResetCommand(text) {
@@ -198,10 +196,6 @@ function isLikelyNonChatText(text) {
   );
 }
 
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function clearAmbientChatBuffer(groupId) {
   const key = String(groupId);
   const buffer = ambientChatBuffers.get(key);
@@ -227,7 +221,9 @@ function recordIncomingGroupMessage(message, text) {
     senderName: getSenderName(message) || String(message.user_id || "unknown"),
     text,
     images,
-    relation: getReplyMessageId(message) ? "回复了一条消息" : "",
+    relation: getReplyMessageId(message)
+      ? "QQ引用来源未解析（仅用于定位，不代表语义相关）"
+      : "",
     timestamp: Date.now(),
   };
   appendGroupConversationContext(groupId, entry);
@@ -262,8 +258,8 @@ async function linkRepliedMessage(message, client) {
   const repliedSender = repliedMessage.senderName || "群成员";
   const repliedText = truncateText(repliedMessage.text, 120);
   current.relation = repliedText
-    ? `回复 ${repliedSender}：“${repliedText}”`
-    : `回复 ${repliedSender} 的图片消息`;
+    ? `QQ引用来源：${repliedSender}“${repliedText}”（仅用于定位，不代表语义相关）`
+    : `QQ引用图片来源：${repliedSender}（仅用于定位，不代表语义相关）`;
   return repliedMessage;
 }
 
@@ -796,6 +792,7 @@ function buildHelpText() {
     "查服：@我 ins / 叛乱 / 沙漠风暴 / 服务器状态",
     "聊天：@我 直接提问，Qwen 会参考群内最近 100 条消息",
     "识图：@我 并附带图片，或回复上面的图片后 @我；最多参考最近 10 张",
+    "表情：内置/超级/商城表情会作为语气和图片进入 Qwen 上下文",
     "深度思考：@我 深度思考 + 问题",
     "联网搜索：@我 联网搜索 / 联网查询 / 联网搜搜 + 问题",
     "组合：@我 联网搜索 深度思考 + 问题",

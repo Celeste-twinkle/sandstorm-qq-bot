@@ -4,6 +4,7 @@ const test = require("node:test");
 const {
   AiChatService,
   extractImageSources,
+  extractSemanticMessageText,
   trimQwenMessagesToBudget,
 } = require("../src/ai");
 const { DeepSeekChatService } = require("../src/deepseek");
@@ -302,7 +303,7 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
     senderName: "Bob",
     text: "上面这张图片里是什么？",
     images: [images[0]],
-    relation: "回复 Alice：“图片 0”",
+    relation: "QQ引用来源：Alice“图片 0”（仅用于定位，不代表语义相关）",
     timestamp: 99,
   });
   assert.equal(context.length, 100);
@@ -329,6 +330,22 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
   for (const call of calls) {
     assert.equal(call.messages.length, 101);
     assert.equal(call.messages.slice(1).some((message) => message.role === "assistant"), true);
+    assert.match(
+      String(
+        Array.isArray(call.messages[1].content)
+          ? call.messages[1].content[0].text
+          : call.messages[1].content,
+      ),
+      /【较早参考｜距当前 99 条｜权重 10｜.*禁止单独回应】/,
+    );
+    assert.match(
+      String(
+        Array.isArray(call.messages.at(-2).content)
+          ? call.messages.at(-2).content[0].text
+          : call.messages.at(-2).content,
+      ),
+      /【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】/,
+    );
     const imageParts = call.messages
       .flatMap((message) => Array.isArray(message.content) ? message.content : [])
       .filter((part) => part.type === "image_ref");
@@ -348,11 +365,17 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
           ? call.messages.at(-1).content[0].text
           : call.messages.at(-1).content,
       ),
-      /回复 Alice.*上面这张图片里是什么/,
+      /【当前锚点｜唯一回应对象｜权重 100】.*QQ引用来源：Alice.*仅用于定位，不代表语义相关.*上面这张图片里是什么/,
     );
   }
   assert.match(calls[0].messages[0].content, /role=assistant 是你自己先前在群里的回复/);
+  assert.match(calls[0].messages[0].content, /其他所有消息都只能用于理解它/);
+  assert.match(calls[0].messages[0].content, /QQ 回复\/引用标记仅用于内容定位，不能作为关联判断依据/);
+  assert.match(calls[0].messages[0].content, /未通过纯语义门槛时一律忽略/);
   assert.match(calls[1].messages[0].content, /role=assistant 是机器人自己先前的回复/);
+  assert.match(calls[1].messages[0].content, /上下文新旧优先级是硬性规则/);
+  assert.match(calls[1].messages[0].content, /QQ 的回复\/引用元数据本身不构成语义关联证据/);
+  assert.match(calls[1].messages[0].content, /不得因为较早消息更有趣就复活旧话题/);
 });
 
 test("Qwen multimodal preparation converts only the latest 10 inline images", async () => {
@@ -393,6 +416,64 @@ test("OneBot array and CQ image formats are normalized and deduplicated", () => 
   };
 
   assert.deepEqual(extractImageSources(message), [url]);
+});
+
+test("QQ face, super-face and market-face segments become Qwen-readable semantics", () => {
+  const message = {
+    message: [
+      { type: "face", data: { id: "184", chainCount: 2 } },
+      { type: "text", data: { text: " 这也太好笑了 " } },
+      {
+        type: "mface",
+        data: {
+          emoji_id: "market-1",
+          summary: "[猫猫震惊]",
+          url: "https://img.example/market-1.gif",
+        },
+      },
+      {
+        type: "image",
+        data: {
+          file: "marketface",
+          summary: "[狗头疑惑]",
+          url: "https://img.example/market-2.gif",
+        },
+      },
+    ],
+  };
+
+  assert.equal(
+    extractSemanticMessageText(message),
+    "[QQ表情：笑哭]（连续 2 次） 这也太好笑了 [QQ表情包：猫猫震惊] [QQ表情包：狗头疑惑]",
+  );
+  assert.deepEqual(extractImageSources(message), [
+    "https://img.example/market-1.gif",
+    "https://img.example/market-2.gif",
+  ]);
+});
+
+test("CQ face formats preserve known names and unknown IDs without guessing", () => {
+  const message = {
+    raw_message:
+      "[CQ:at,qq=bot][CQ:face,id=14] [CQ:face,id=99999,resultId=7] [CQ:mface,emoji_id=x,summary=%5B%E5%BC%80%E5%BF%83%E7%8C%AB%5D]",
+  };
+
+  assert.equal(
+    extractSemanticMessageText(message),
+    "[QQ表情：微笑] [QQ表情 ID：99999]（结果 7） [QQ表情包：开心猫]",
+  );
+});
+
+test("dice and rock-paper-scissors segments retain their interaction meaning", () => {
+  assert.equal(
+    extractSemanticMessageText({
+      message: [
+        { type: "dice", data: { result: "6" } },
+        { type: "rps", data: { result: "2" } },
+      ],
+    }),
+    "[骰子：6 点] [猜拳：剪刀]",
+  );
 });
 
 test("Qwen context trimming removes oldest complete turns and preserves the latest user message", () => {

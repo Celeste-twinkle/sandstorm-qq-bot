@@ -1,4 +1,7 @@
-const { extractImageSources } = require("./ai");
+const {
+  extractImageSources,
+  extractSemanticMessageText,
+} = require("./ai");
 
 class GroupMessageCache {
   constructor(config, options = {}) {
@@ -144,25 +147,7 @@ function getSenderName(message) {
 }
 
 function extractPlainMessageText(message) {
-  if (Array.isArray(message?.message)) {
-    return message.message
-      .filter((segment) => segment?.type === "text")
-      .map((segment) => segment.data?.text || "")
-      .join("")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  const rawText =
-    typeof message?.raw_message === "string"
-      ? message.raw_message
-      : typeof message?.message === "string"
-        ? message.message
-        : "";
-  return rawText
-    .replace(/\[CQ:[^\]]+\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return extractSemanticMessageText(message);
 }
 
 function dedupeStrings(values) {

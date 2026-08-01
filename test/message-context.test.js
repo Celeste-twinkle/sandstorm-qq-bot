@@ -77,3 +77,40 @@ test("quoted image cache miss falls back to OneBot get_msg and caches the result
   await cache.resolveRepliedMessage(reply, client);
   assert.deepEqual(calls, ["remote-image"]);
 });
+
+test("face-only messages are retained as semantic group context", () => {
+  const cache = new GroupMessageCache(createConfig(), { now: () => 3000 });
+  const entry = cache.add({
+    group_id: "100",
+    message_id: "face-1",
+    user_id: "202",
+    sender: { nickname: "Carol" },
+    message: [{ type: "face", data: { id: "76" } }],
+  });
+
+  assert.equal(entry.text, "[QQ表情：赞]");
+  assert.deepEqual(entry.images, []);
+  assert.equal(cache.get("100", "face-1"), entry);
+});
+
+test("market-face image keeps both visual source and readable summary", () => {
+  const cache = new GroupMessageCache(createConfig(), { now: () => 4000 });
+  const entry = cache.add({
+    group_id: "100",
+    message_id: "mface-1",
+    user_id: "203",
+    message: [
+      {
+        type: "image",
+        data: {
+          file: "marketface",
+          summary: "[猫猫大哭]",
+          url: "https://img.example/cat-cry.gif",
+        },
+      },
+    ],
+  });
+
+  assert.equal(entry.text, "[QQ表情包：猫猫大哭]");
+  assert.deepEqual(entry.images, ["https://img.example/cat-cry.gif"]);
+});

@@ -271,12 +271,15 @@ class AiChatService {
     const selectedContext = contextMessages.slice(
       -Math.max(2, this.config.localQwenMaxHistoryMessages),
     );
+    const prioritizedContext = annotateGroupContextRecency(selectedContext);
     const messages = [
       {
         role: "system",
         content: systemPrompt,
       },
-      ...selectedContext.map(buildGroupContextModelMessage),
+      ...prioritizedContext.map(({ message, annotation }) => {
+        return buildGroupContextModelMessage(message, annotation);
+      }),
     ];
 
     limitImagesInMessages(messages, this.config.localQwenMaxImages);
@@ -292,12 +295,19 @@ class AiChatService {
   buildAmbientSystemPrompt(ambientMode) {
     const modeInstruction =
       ambientMode === "instant"
-        ? "最后一条群成员消息是当前要接的话，请优先回应它。"
-        : "这是群聊冷场前的完整最近上下文，请自然接一句与最近话题相关的话。";
+        ? "最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
+        : "冷场闲聊也必须以最后一条标记为【当前锚点】的群成员消息为唯一出发点，只接它所在的最新话题链；不得因为较早消息更有趣就复活旧话题。若当前锚点只有图片或表情，把它视为对紧邻前文的反应。";
     const contextInstruction =
-      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后。必须结合发送者、回复关系、文字和图片判断语境，不要把不同消息的图片张冠李戴。";
+      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。";
+    const recencyPolicy =
+      "上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。";
     return this.localQwen.buildSystemPrompt(
-      [this.config.ambientChatSystemPrompt, contextInstruction, modeInstruction]
+      [
+        this.config.ambientChatSystemPrompt,
+        contextInstruction,
+        recencyPolicy,
+        modeInstruction,
+      ]
         .filter(Boolean)
         .join("\n\n"),
     );
@@ -305,9 +315,13 @@ class AiChatService {
 
   buildDirectGroupSystemPrompt(basePrompt) {
     const contextInstruction =
-      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；“回复某人”表示当前消息正在引用那条消息。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。请先锁定最后一条群成员消息真正询问的对象，再结合相关发送者、回复关系、文字、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把图片张冠李戴。";
+      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；“QQ引用来源”只用于定位被引用的文字或图片，绝不代表两条消息语义相关，也不能自动提高被引用内容的权重。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应作为语气和情绪的一部分理解。请先锁定最后一条群成员消息真正询问或表达的对象，再结合语义上相关的发送者、文字、表情、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把内容张冠李戴。";
+    const recencyPolicy =
+      "严格遵守消息上的新旧优先级标记：【当前锚点】是唯一必须回应的消息；其他所有消息都只能用于理解它，不能自行成为回答目标。【高优先级近邻】和【近期上下文】按距当前锚点由近到远递减使用；历史消息只有在语义上存在明确指代、同一对象/事件、条件修正、因果延续、语义承接或图片内容关联时才允许使用。QQ 回复/引用标记仅用于内容定位，不能作为关联判断依据；有引用但语义无关仍必须忽略。【较早参考】未通过纯语义门槛时一律忽略。新旧消息冲突时以更新消息为准。回答前静默检查一次：是否直接回应当前锚点、是否错误借用或复活语义无关的历史内容；若是则重写，不输出检查过程。";
     return this.localQwen.buildSystemPrompt(
-      [basePrompt, contextInstruction].filter(Boolean).join("\n\n"),
+      [basePrompt, contextInstruction, recencyPolicy]
+        .filter(Boolean)
+        .join("\n\n"),
     );
   }
 
@@ -586,9 +600,9 @@ function removeOldestConversationTurn(messages, preserveConversationTurns = true
   }
 }
 
-function buildGroupContextModelMessage(message) {
+function buildGroupContextModelMessage(message, annotation = "") {
   const role = message?.role === "assistant" ? "assistant" : "user";
-  const text = formatGroupContextTextLine(message, false);
+  const text = formatGroupContextTextLine(message, false, annotation);
   const images = normalizeImageSources(message?.images);
 
   if (role === "assistant" || images.length === 0) {
@@ -613,10 +627,15 @@ function buildGroupContextModelMessage(message) {
   };
 }
 
-function formatGroupContextTextLine(message, includeImagePlaceholders) {
+function formatGroupContextTextLine(
+  message,
+  includeImagePlaceholders,
+  annotation = "",
+) {
   const role = message?.role === "assistant" ? "机器人" : "群成员";
   const senderName = String(message?.senderName || "").trim();
   const sender = senderName ? `${role} ${senderName}` : role;
+  const priority = annotation ? `${annotation} ` : "";
   const relation = message?.relation ? `（${message.relation}）` : "";
   const text = String(message?.text || "").trim() || "[图片消息]";
   const imageCount = normalizeImageSources(message?.images).length;
@@ -624,7 +643,49 @@ function formatGroupContextTextLine(message, includeImagePlaceholders) {
     includeImagePlaceholders && imageCount > 0
       ? ` ${Array.from({ length: imageCount }, () => "[图片]").join(" ")}`
       : "";
-  return `${sender}${relation}：${text}${imageText}`;
+  return `${priority}${sender}${relation}：${text}${imageText}`;
+}
+
+function annotateGroupContextRecency(contextMessages) {
+  let anchorIndex = -1;
+  for (let index = contextMessages.length - 1; index >= 0; index -= 1) {
+    if (contextMessages[index]?.role !== "assistant") {
+      anchorIndex = index;
+      break;
+    }
+  }
+
+  if (anchorIndex < 0 && contextMessages.length > 0) {
+    anchorIndex = contextMessages.length - 1;
+  }
+
+  return contextMessages.map((message, index) => {
+    const distance = anchorIndex - index;
+    return {
+      message,
+      annotation: buildRecencyAnnotation(distance),
+    };
+  });
+}
+
+function buildRecencyAnnotation(distance) {
+  if (distance === 0) {
+    return "【当前锚点｜唯一回应对象｜权重 100】";
+  }
+
+  if (distance < 0) {
+    return "【锚点后的机器人记录｜仅作状态参考｜禁止作为回应对象】";
+  }
+
+  if (distance <= 3) {
+    return `【高优先级近邻｜距当前 ${distance} 条｜权重 ${100 - distance * 10}｜只用于理解当前锚点】`;
+  }
+
+  if (distance <= 12) {
+    return `【近期上下文｜距当前 ${distance} 条｜权重 ${70 - (distance - 3) * 5}｜只用于理解当前锚点】`;
+  }
+
+  return `【较早参考｜距当前 ${distance} 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】`;
 }
 
 function shrinkLatestUserText(messages) {
@@ -705,10 +766,17 @@ function extractImageSources(message) {
 
   if (Array.isArray(message?.message)) {
     for (const segment of message.message) {
-      if (segment?.type !== "image") {
+      if (segment?.type !== "image" && segment?.type !== "mface") {
         continue;
       }
-      sources.push(segment.data?.url || segment.data?.file || "");
+      const source =
+        segment.data?.url ||
+        segment.data?.image_url ||
+        segment.data?.file ||
+        "";
+      if (segment.type === "image" || isSupportedImageSource(source)) {
+        sources.push(source);
+      }
     }
   }
 
@@ -725,8 +793,257 @@ function extractImageSources(message) {
     sources.push(attributes.url || attributes.file || "");
   }
 
+  const mfacePattern = /\[CQ:mface,([^\]]+)\]/gi;
+  for (const match of rawText.matchAll(mfacePattern)) {
+    const attributes = parseCqAttributes(match[1]);
+    const source = attributes.url || attributes.image_url || attributes.file || "";
+    if (isSupportedImageSource(source)) {
+      sources.push(source);
+    }
+  }
+
   return normalizeImageSources(sources);
 }
+
+function extractSemanticMessageText(message) {
+  if (Array.isArray(message?.message)) {
+    return normalizeSemanticText(
+      message.message
+        .map((segment) => formatSemanticSegment(segment))
+        .filter(Boolean)
+        .join(" "),
+    );
+  }
+
+  const rawText =
+    typeof message?.raw_message === "string"
+      ? message.raw_message
+      : typeof message?.message === "string"
+        ? message.message
+        : "";
+  return normalizeSemanticText(
+    rawText.replace(
+      /\[CQ:([a-z0-9_-]+)(?:,([^\]]*))?\]/gi,
+      (_match, type, rawAttributes = "") => {
+        return formatSemanticSegment({
+          type: String(type || "").toLowerCase(),
+          data: parseCqAttributes(rawAttributes),
+        });
+      },
+    ),
+  );
+}
+
+function formatSemanticSegment(segment) {
+  const type = String(segment?.type || "").toLowerCase();
+  const data = segment?.data || {};
+
+  if (type === "text") {
+    return String(data.text || "");
+  }
+
+  if (type === "face") {
+    return formatFaceSemantic(data);
+  }
+
+  if (type === "mface") {
+    return formatMarketFaceSemantic(data);
+  }
+
+  if (type === "image" && isMarketFaceImage(data)) {
+    return formatMarketFaceSemantic(data);
+  }
+
+  if (type === "dice") {
+    const result = String(data.result ?? data.resultId ?? "").trim();
+    return result ? `[骰子：${result} 点]` : "[骰子]";
+  }
+
+  if (type === "rps") {
+    const result = String(data.result ?? data.resultId ?? "").trim();
+    const resultName = {
+      "1": "石头",
+      "2": "剪刀",
+      "3": "布",
+    }[result];
+    return resultName ? `[猜拳：${resultName}]` : result ? `[猜拳：结果 ${result}]` : "[猜拳]";
+  }
+
+  return "";
+}
+
+function formatFaceSemantic(data) {
+  const id = String(data?.id ?? "").trim();
+  const raw = data?.raw && typeof data.raw === "object" ? data.raw : {};
+  const providedName = firstMeaningfulText([
+    data?.summary,
+    data?.name,
+    data?.text,
+    raw?.summary,
+    raw?.faceText,
+    raw?.name,
+  ]);
+  const name = providedName || QQ_FACE_NAMES[id] || "";
+  const label = name
+    ? `[QQ表情：${name}]`
+    : id
+      ? `[QQ表情 ID：${id}]`
+      : "[QQ表情]";
+  const chainCount = Number(data?.chainCount ?? data?.chain_count);
+  const resultId = String(data?.resultId ?? data?.result_id ?? "").trim();
+  const details = [];
+  if (resultId) {
+    details.push(`结果 ${resultId}`);
+  }
+  if (Number.isFinite(chainCount) && chainCount > 1) {
+    details.push(`连续 ${Math.floor(chainCount)} 次`);
+  }
+  return details.length > 0 ? `${label}（${details.join("，")}）` : label;
+}
+
+function formatMarketFaceSemantic(data) {
+  const summary = firstMeaningfulText([
+    data?.summary,
+    data?.name,
+    data?.text,
+  ]);
+  if (summary) {
+    return `[QQ表情包：${summary}]`;
+  }
+
+  const emojiId = String(data?.emoji_id ?? data?.emojiId ?? "").trim();
+  return emojiId ? `[QQ表情包 ID：${emojiId}]` : "[QQ表情包]";
+}
+
+function firstMeaningfulText(values) {
+  for (const value of values) {
+    const text = String(value || "")
+      .replace(/^\[+|\]+$/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text && !["图片", "动画表情", "表情"].includes(text)) {
+      return text.slice(0, 80);
+    }
+  }
+  return "";
+}
+
+function isMarketFaceImage(data) {
+  const file = String(data?.file || "").toLowerCase();
+  return Boolean(
+    data?.emoji_id ||
+    data?.emojiId ||
+    data?.emoji_package_id ||
+    data?.emojiPackageId ||
+    file === "marketface",
+  );
+}
+
+function isSupportedImageSource(value) {
+  return /^(?:https?:\/\/|data:image\/|base64:\/\/)/i.test(
+    String(value || "").trim(),
+  );
+}
+
+function normalizeSemanticText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const QQ_FACE_NAMES = Object.freeze({
+  "0": "惊讶",
+  "1": "撇嘴",
+  "2": "色",
+  "3": "发呆",
+  "4": "得意",
+  "5": "流泪",
+  "6": "害羞",
+  "7": "闭嘴",
+  "8": "睡",
+  "9": "大哭",
+  "10": "尴尬",
+  "11": "发怒",
+  "12": "调皮",
+  "13": "呲牙",
+  "14": "微笑",
+  "15": "难过",
+  "16": "酷",
+  "18": "抓狂",
+  "19": "吐",
+  "20": "偷笑",
+  "21": "可爱",
+  "22": "白眼",
+  "23": "傲慢",
+  "24": "饥饿",
+  "25": "困",
+  "26": "惊恐",
+  "27": "流汗",
+  "28": "憨笑",
+  "29": "悠闲",
+  "30": "奋斗",
+  "31": "咒骂",
+  "32": "疑问",
+  "33": "嘘",
+  "34": "晕",
+  "35": "折磨",
+  "36": "衰",
+  "37": "骷髅",
+  "38": "敲打",
+  "39": "再见",
+  "49": "拥抱",
+  "53": "蛋糕",
+  "63": "玫瑰",
+  "64": "凋谢",
+  "66": "爱心",
+  "67": "心碎",
+  "74": "太阳",
+  "75": "月亮",
+  "76": "赞",
+  "77": "踩",
+  "78": "握手",
+  "79": "胜利",
+  "85": "飞吻",
+  "89": "西瓜",
+  "96": "冷汗",
+  "97": "擦汗",
+  "98": "抠鼻",
+  "99": "鼓掌",
+  "100": "糗大了",
+  "101": "坏笑",
+  "104": "哈欠",
+  "105": "鄙视",
+  "106": "委屈",
+  "107": "快哭了",
+  "108": "阴险",
+  "109": "亲亲",
+  "110": "吓",
+  "111": "可怜",
+  "118": "抱拳",
+  "119": "勾引",
+  "120": "拳头",
+  "121": "差劲",
+  "122": "爱你",
+  "123": "NO",
+  "124": "OK",
+  "174": "眨眼睛",
+  "175": "泪奔",
+  "176": "无奈",
+  "177": "卖萌",
+  "178": "小纠结",
+  "179": "喷血",
+  "180": "斜眼笑",
+  "181": "doge",
+  "182": "惊喜",
+  "183": "骚扰",
+  "184": "笑哭",
+  "185": "我最美",
+  "192": "大笑",
+  "193": "不开心",
+  "194": "冷漠",
+  "198": "机器人",
+  "200": "拜托",
+});
 
 function parseCqAttributes(value) {
   const attributes = {};
@@ -796,6 +1113,7 @@ module.exports = {
   convertMessageForTextProvider,
   estimateMessagesTokens,
   extractImageSources,
+  extractSemanticMessageText,
   limitImagesInMessages,
   selectCompleteRecentHistory,
   trimQwenMessagesToBudget,
