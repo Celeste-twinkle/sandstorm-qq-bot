@@ -60,6 +60,8 @@ Local Qwen 使用 OpenAI 兼容的 `/chat/completions` 接口和 Bearer 认证�
 
 Qwen 的提示词分为角色、对话理解和长度控制三层，可分别通过 `LOCAL_QWEN_SYSTEM_PROMPT`、`LOCAL_QWEN_DIALOGUE_PROMPT`、`LOCAL_QWEN_CONCISE_PROMPT` 调整。默认对话规则会优先回答最后一条用户消息，区分承接上文与切换话题，解析最近相关指代，并且只在真正影响答案的关键歧义上追问。
 
+Local Qwen 的普通问答、深度思考、主动闲聊和图片 OCR/语义索引请求统一使用 `LOCAL_QWEN_MODEL_MAX_OUTPUT_TOKENS` 作为 `max_tokens`；不再为闲聊或索引设置较小的生成上限。实际回复长度仅由对应提示词约束。DeepSeek 回退仍使用自己的输出上限配置。
+
 聊天消息里包含 `深度思考` 会开启 DeepSeek thinking；包含 `联网搜索`、`联网查询` 或 `联网搜搜` 会进入本地联网搜索工具模式：bot 通过 DeepSeek 官方 `tools`/function calling 让模型请求 `web_search` / `web_fetch`，再由本地 Node 程序执行搜索和网页读取。联网搜索触发词和 `深度思考` 可以同时出现，此时会同时启用搜索工具和 thinking。
 
 联网搜索会限制工具轮次，默认最多 2 轮、每轮最多 2 个工具调用。为了兼顾时效性和 token 消耗，本地会先拿较大的候选池，再根据 QQ 用户原始问题、模型搜索词和结果日期做相关性/时效性重排，只把少量高分结果交给模型，并压缩网页正文。回答要求基于搜索/抓取结果，重要事实标注来源；如果来源不足、冲突或搜索质量差，会说明无法可靠确认。默认使用内嵌的 `open-websearch@2.1.11`，不需要单独启动服务，也不需要搜索 API Key；可通过 `OPEN_WEBSEARCH_ENGINES` 调整搜索引擎列表。

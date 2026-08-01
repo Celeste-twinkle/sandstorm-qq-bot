@@ -101,16 +101,6 @@ const config = {
     1,
     16384,
   ),
-  localQwenMaxOutputTokens: clampNumber(
-    parseInteger(process.env.LOCAL_QWEN_MAX_OUTPUT_TOKENS, 800),
-    1,
-    16384,
-  ),
-  localQwenThinkingMaxOutputTokens: clampNumber(
-    parseInteger(process.env.LOCAL_QWEN_THINKING_MAX_OUTPUT_TOKENS, 1600),
-    1,
-    16384,
-  ),
   localQwenTemperature: clampNumber(parseNumber(process.env.LOCAL_QWEN_TEMPERATURE, 0.7), 0, 2),
   localQwenReasoningEffort: process.env.LOCAL_QWEN_REASONING_EFFORT || "high",
   localQwenMaxHistoryMessages: clampNumber(
@@ -157,11 +147,6 @@ const config = {
     parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_MAX_CHARS, 24000),
     500,
     50000,
-  ),
-  localQwenImageCacheMaxOutputTokens: clampNumber(
-    parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_MAX_OUTPUT_TOKENS, 8192),
-    200,
-    16384,
   ),
   localQwenImageCacheTimeoutMs: clampNumber(
     parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_TIMEOUT_MS, 120000),

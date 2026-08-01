@@ -56,7 +56,7 @@ test("Local Qwen automatically returns to healthy after a later successful probe
   assert.equal(service.isHealthy(), true);
 });
 
-test("Local Qwen request body uses supported OpenAI-compatible parameters", async () => {
+test("Local Qwen always uses the model maximum output limit", async () => {
   const calls = [];
   const config = createConfig();
   const service = new LocalQwenChatService(config, {
@@ -78,20 +78,26 @@ test("Local Qwen request body uses supported OpenAI-compatible parameters", asyn
 
   assert.equal(await service.createCompletion(messages), "Qwen reply");
   assert.equal(await service.createCompletion(messages, { thinking: true }), "Qwen reply");
+  assert.equal(
+    await service.createCompletion(messages, { maxOutputTokens: 180 }),
+    "Qwen reply",
+  );
 
   assert.equal(calls[0].url, "http://qwen.mock/v1/chat/completions");
   assert.equal(calls[0].headers.Authorization, `Bearer ${config.localQwenApiKey}`);
   assert.equal(calls[0].body.model, "qwen3.6-local");
   assert.equal(calls[0].body.stream, false);
-  assert.equal(calls[0].body.max_tokens, 800);
+  assert.equal(calls[0].body.max_tokens, 16384);
   assert.equal(calls[0].body.temperature, 0.7);
   assert.equal("thinking" in calls[0].body, false);
   assert.equal("reasoning_effort" in calls[0].body, false);
 
-  assert.equal(calls[1].body.max_tokens, 1600);
+  assert.equal(calls[1].body.max_tokens, 16384);
   assert.equal(calls[1].body.reasoning_effort, "high");
   assert.equal("temperature" in calls[1].body, false);
   assert.equal("thinking" in calls[1].body, false);
+
+  assert.equal(calls[2].body.max_tokens, 16384);
 });
 
 test("Local Qwen preserves tools and tool_choice in reasoning mode", async () => {
@@ -155,7 +161,11 @@ test("AI router prefers healthy Qwen and falls back to DeepSeek for the complete
   assert.equal(reply, "DeepSeek fallback");
   assert.equal(qwenCalls.length, 1);
   assert.equal(deepseekCalls.length, 1);
-  assert.deepEqual(qwenCalls[0].options, { webSearch: true, thinking: true });
+  assert.deepEqual(qwenCalls[0].options, {
+    webSearch: true,
+    thinking: true,
+    maxOutputTokens: 16384,
+  });
   assert.deepEqual(deepseekCalls[0].options, { webSearch: true, thinking: true });
   assert.equal(qwen.health, false);
   assert.match(logger.lines.join("\n"), /fallback=deepseek/);
@@ -368,6 +378,8 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
       /【当前锚点｜唯一回应对象｜权重 100】.*QQ引用来源：Alice.*仅用于定位，不代表语义相关.*上面这张图片里是什么/,
     );
   }
+  assert.equal(calls[0].options.maxOutputTokens, 16384);
+  assert.equal(calls[1].options.maxOutputTokens, 16384);
   assert.match(calls[0].messages[0].content, /role=assistant 是你自己先前在群里的回复/);
   assert.match(calls[0].messages[0].content, /其他所有消息都只能用于理解它/);
   assert.match(calls[0].messages[0].content, /QQ 回复\/引用标记仅用于内容定位，不能作为关联判断依据/);
@@ -467,7 +479,7 @@ test("Qwen reuses cached OCR semantics instead of retransmitting the same image"
   assert.equal(calls.length, 3);
   assert.equal(countRequestImages(calls[0]), 1);
   assert.equal(countRequestImages(calls[1]), 1);
-  assert.equal(calls[1].max_tokens, 8192);
+  assert.equal(calls[1].max_tokens, 16384);
   assert.equal(countRequestImages(calls[2]), 0);
   assert.match(JSON.stringify(calls[2].messages), /图片语义缓存/);
   assert.match(JSON.stringify(calls[2].messages), /高等数学试卷/);
@@ -625,7 +637,7 @@ test("Qwen context trimming removes oldest complete turns and preserves the late
     ...createConfig(),
     localQwenContextTokens: 1800,
     localQwenContextSafetyTokens: 100,
-    localQwenMaxOutputTokens: 100,
+    localQwenModelMaxOutputTokens: 100,
   };
   const messages = [{ role: "system", content: "system" }];
   for (let index = 0; index < 8; index += 1) {
@@ -637,7 +649,7 @@ test("Qwen context trimming removes oldest complete turns and preserves the late
   const trimmed = trimQwenMessagesToBudget(
     messages,
     config,
-    config.localQwenMaxOutputTokens,
+    config.localQwenModelMaxOutputTokens,
   );
 
   assert.equal(trimmed[0].role, "system");
@@ -702,8 +714,6 @@ function createConfig() {
     localQwenContextTokens: 262144,
     localQwenContextSafetyTokens: 4096,
     localQwenModelMaxOutputTokens: 16384,
-    localQwenMaxOutputTokens: 800,
-    localQwenThinkingMaxOutputTokens: 1600,
     localQwenTemperature: 0.7,
     localQwenReasoningEffort: "high",
     localQwenMaxHistoryMessages: 100,
@@ -716,7 +726,6 @@ function createConfig() {
     localQwenImageCacheMaxEntries: 500,
     localQwenImageCacheTtlMinutes: 720,
     localQwenImageCacheMaxChars: 24000,
-    localQwenImageCacheMaxOutputTokens: 8192,
     localQwenImageCacheTimeoutMs: 120000,
     deepseekApiKey: "sk-test-deepseek",
     deepseekBaseUrl: "http://deepseek.mock",

@@ -89,17 +89,18 @@ class AiChatService {
     );
     const selectedContext = contextMessages.slice(-maxContextMessages);
     const result = await this.runWithFallback(async (provider, contextScale = 1) => {
-      const messages =
-        provider === this.localQwen
-          ? this.buildLocalQwenGroupMessages(
-              selectedContext,
-              this.buildAmbientSystemPrompt(ambientMode),
-              this.config.ambientChatMaxOutputTokens,
-              contextScale,
-            )
-          : this.buildDeepSeekAmbientMessages(selectedContext, ambientMode);
+      const isLocalQwen = provider === this.localQwen;
+      const messages = isLocalQwen
+        ? this.buildLocalQwenGroupMessages(
+            selectedContext,
+            this.buildAmbientSystemPrompt(ambientMode),
+            contextScale,
+          )
+        : this.buildDeepSeekAmbientMessages(selectedContext, ambientMode);
       return provider.createCompletion(messages, {
-        maxOutputTokens: this.config.ambientChatMaxOutputTokens,
+        maxOutputTokens: isLocalQwen
+          ? this.config.localQwenModelMaxOutputTokens
+          : this.config.ambientChatMaxOutputTokens,
         temperature: Math.max(0.7, this.config.deepseekTemperature),
         timeoutMs: this.config.ambientChatTimeoutMs,
       });
@@ -126,7 +127,15 @@ class AiChatService {
             meta.groupContextMessages,
           )
         : this.buildDeepSeekMessages(session, currentUserMessage);
-      return provider.createCompletion(messages, options);
+      return provider.createCompletion(
+        messages,
+        provider === this.localQwen
+          ? {
+              ...options,
+              maxOutputTokens: this.config.localQwenModelMaxOutputTokens,
+            }
+          : options,
+      );
     });
 
     session.messages.push(storedUserMessage);
@@ -237,15 +246,10 @@ class AiChatService {
     ]
       .filter((part) => String(part || "").trim())
       .join("\n\n");
-    const maxOutputTokens = options.thinking
-      ? this.config.localQwenThinkingMaxOutputTokens
-      : this.config.localQwenMaxOutputTokens;
-
     if (Array.isArray(groupContextMessages) && groupContextMessages.length > 0) {
       return this.buildLocalQwenGroupMessages(
         groupContextMessages,
         this.buildDirectGroupSystemPrompt(basePrompt),
-        maxOutputTokens,
         contextScale,
       );
     }
@@ -264,7 +268,7 @@ class AiChatService {
     return trimQwenMessagesToBudget(
       messages,
       this.config,
-      maxOutputTokens,
+      this.config.localQwenModelMaxOutputTokens,
       contextScale,
     );
   }
@@ -272,7 +276,6 @@ class AiChatService {
   buildLocalQwenGroupMessages(
     contextMessages,
     systemPrompt,
-    maxOutputTokens,
     contextScale = 1,
   ) {
     const selectedContext = contextMessages.slice(
@@ -293,7 +296,7 @@ class AiChatService {
     return trimQwenMessagesToBudget(
       messages,
       this.config,
-      maxOutputTokens,
+      this.config.localQwenModelMaxOutputTokens,
       contextScale,
       { preserveConversationTurns: false },
     );

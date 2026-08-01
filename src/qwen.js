@@ -360,15 +360,6 @@ class LocalQwenChatService extends DeepSeekChatService {
   }
 
   async analyzeImageForCache(image) {
-    const modelMaxOutputTokens =
-      Number(this.config.localQwenModelMaxOutputTokens) || 16384;
-    const maxOutputTokens = Math.max(
-      200,
-      Math.min(
-        Number(this.config.localQwenImageCacheMaxOutputTokens) || 8192,
-        modelMaxOutputTokens,
-      ),
-    );
     const prompt = [
       "请把这张图片转换成可供后续对话复用的视觉语义缓存。",
       "先判断图片类型和整体布局，再尽可能完整地进行 OCR。",
@@ -399,7 +390,7 @@ class LocalQwenChatService extends DeepSeekChatService {
       ],
       {
         thinking: false,
-        maxOutputTokens,
+        maxOutputTokens: this.config.localQwenModelMaxOutputTokens,
         temperature: 0.1,
         timeoutMs:
           Number(this.config.localQwenImageCacheTimeoutMs) ||
@@ -463,16 +454,9 @@ class LocalQwenChatService extends DeepSeekChatService {
   }
 
   buildCompletionBody(messages, useThinking, overrides = {}) {
-    const configuredLimit = Math.min(
-      this.config.localQwenModelMaxOutputTokens,
-      useThinking
-        ? this.config.localQwenThinkingMaxOutputTokens
-        : this.config.localQwenMaxOutputTokens,
-    );
-    const requestedLimit = overrides.maxOutputTokens || configuredLimit;
     const maxOutputTokens = Math.max(
       1,
-      Math.min(requestedLimit, this.config.localQwenModelMaxOutputTokens),
+      Number(this.config.localQwenModelMaxOutputTokens) || 16384,
     );
     const body = {
       model: this.config.localQwenModel,
