@@ -2,7 +2,7 @@ const fs = require("fs");
 const fsPromises = require("fs/promises");
 const os = require("os");
 const path = require("path");
-const { randomUUID } = require("crypto");
+const { createHash, randomUUID } = require("crypto");
 const { Readable, Transform } = require("stream");
 const { pipeline } = require("stream/promises");
 const { pathToFileURL } = require("url");
@@ -68,6 +68,7 @@ async function resolveBilibiliVideo(config, inputUrl) {
 }
 
 async function downloadBilibiliVideo(config, result) {
+  const startedAt = Date.now();
   const videoUrl = normalizeUrl(result?.videoUrl);
   if (!videoUrl) {
     throw new Error("解析服务没有返回可下载的视频地址。");
@@ -113,6 +114,8 @@ async function downloadBilibiliVideo(config, result) {
     }
 
     let downloadedBytes = 0;
+    const md5 = createHash("md5");
+    const sha256 = createHash("sha256");
     const sizeLimiter = new Transform({
       transform(chunk, _encoding, callback) {
         downloadedBytes += chunk.length;
@@ -120,6 +123,8 @@ async function downloadBilibiliVideo(config, result) {
           callback(createVideoTooLargeError(downloadedBytes, maxBytes));
           return;
         }
+        md5.update(chunk);
+        sha256.update(chunk);
         callback(null, chunk);
       },
     });
@@ -134,12 +139,22 @@ async function downloadBilibiliVideo(config, result) {
       throw new Error("下载到的视频文件为空。");
     }
 
-    await assertMp4File(partialPath);
+    const mp4 = await inspectMp4File(partialPath);
+    assertMp4File(mp4);
     await fsPromises.rename(partialPath, filePath);
+    const durationMs = Date.now() - startedAt;
     return {
       filePath,
       fileUrl: pathToFileURL(filePath).href,
       sizeBytes: downloadedBytes,
+      md5: md5.digest("hex"),
+      sha256: sha256.digest("hex"),
+      contentType,
+      declaredSizeBytes: Number.isFinite(contentLength) ? contentLength : null,
+      sourceHost: getUrlHost(response.url),
+      durationMs,
+      averageBytesPerSecond: durationMs > 0 ? Math.round((downloadedBytes * 1000) / durationMs) : null,
+      mp4,
     };
   } catch (error) {
     await removeFilesQuietly(partialPath, filePath);
@@ -154,21 +169,107 @@ async function downloadBilibiliVideo(config, result) {
 
 async function removeDownloadedBilibiliVideo(downloaded) {
   if (!downloaded?.filePath) {
-    return;
+    return { skipped: true, removed: false, filePath: "" };
   }
-  await removeFilesQuietly(downloaded.filePath);
+
+  try {
+    await fsPromises.rm(downloaded.filePath, { force: true });
+    return { skipped: false, removed: true, filePath: downloaded.filePath };
+  } catch (error) {
+    return {
+      skipped: false,
+      removed: false,
+      filePath: downloaded.filePath,
+      error: error.message,
+      code: error.code,
+    };
+  }
 }
 
-async function assertMp4File(filePath) {
+async function inspectDownloadedBilibiliVideo(downloaded) {
+  if (!downloaded?.filePath) {
+    return { exists: false, filePath: "", reason: "no local download" };
+  }
+
+  try {
+    const stat = await fsPromises.stat(downloaded.filePath);
+    return {
+      exists: stat.isFile(),
+      filePath: downloaded.filePath,
+      sizeBytes: stat.size,
+      modifiedAt: stat.mtime.toISOString(),
+    };
+  } catch (error) {
+    return {
+      exists: false,
+      filePath: downloaded.filePath,
+      error: error.message,
+      code: error.code,
+    };
+  }
+}
+
+async function inspectMp4File(filePath) {
   const handle = await fsPromises.open(filePath, "r");
   try {
-    const header = Buffer.alloc(12);
-    const { bytesRead } = await handle.read(header, 0, header.length, 0);
-    if (bytesRead < 8 || header.subarray(4, 8).toString("ascii") !== "ftyp") {
-      throw new Error("解析服务返回的文件不是有效的 MP4 视频。");
+    const stat = await handle.stat();
+    const boxes = [];
+    let offset = 0;
+
+    while (offset + 8 <= stat.size && boxes.length < 12) {
+      const header = Buffer.alloc(16);
+      const { bytesRead } = await handle.read(header, 0, header.length, offset);
+      if (bytesRead < 8) {
+        break;
+      }
+
+      let size = header.readUInt32BE(0);
+      const type = header.subarray(4, 8).toString("ascii");
+      let headerSize = 8;
+      if (size === 1) {
+        if (bytesRead < 16) {
+          break;
+        }
+        size = Number(header.readBigUInt64BE(8));
+        headerSize = 16;
+      } else if (size === 0) {
+        size = stat.size - offset;
+      }
+
+      if (!Number.isSafeInteger(size) || size < headerSize || offset + size > stat.size) {
+        break;
+      }
+
+      boxes.push({ type, offset, size });
+      offset += size;
     }
+
+    const ftyp = boxes.find((box) => box.type === "ftyp");
+    let majorBrand = "";
+    if (ftyp && ftyp.size >= 12) {
+      const brand = Buffer.alloc(4);
+      const { bytesRead } = await handle.read(brand, 0, brand.length, ftyp.offset + 8);
+      if (bytesRead === 4) {
+        majorBrand = brand.toString("ascii");
+      }
+    }
+
+    return {
+      majorBrand,
+      boxes,
+      moovBeforeMdat:
+        boxes.some((box) => box.type === "moov") &&
+        boxes.some((box) => box.type === "mdat") &&
+        boxes.findIndex((box) => box.type === "moov") < boxes.findIndex((box) => box.type === "mdat"),
+    };
   } finally {
     await handle.close();
+  }
+}
+
+function assertMp4File(mp4) {
+  if (!mp4?.boxes?.length || mp4.boxes[0].type !== "ftyp") {
+    throw new Error("解析服务返回的文件不是有效的 MP4 视频。");
   }
 }
 
@@ -186,6 +287,14 @@ function formatFileSize(bytes) {
 
 function sanitizeFileName(value) {
   return String(value || "video").replace(/[^0-9A-Za-z_-]/g, "_").slice(0, 64) || "video";
+}
+
+function getUrlHost(value) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "";
+  }
 }
 
 async function removeFilesQuietly(...filePaths) {
@@ -433,6 +542,7 @@ function isBilibiliUrl(value) {
 module.exports = {
   downloadBilibiliVideo,
   extractBilibiliUrls,
+  inspectDownloadedBilibiliVideo,
   removeDownloadedBilibiliVideo,
   resolveBilibiliVideo,
 };

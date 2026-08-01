@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const test = require("node:test");
@@ -10,7 +11,7 @@ const {
 } = require("../src/bilibili");
 
 const TEST_MP4 = Buffer.concat([
-  Buffer.from([0, 0, 0, 24]),
+  Buffer.from([0, 0, 0, 20]),
   Buffer.from("ftyp", "ascii"),
   Buffer.from("isom0000isom", "ascii"),
 ]);
@@ -47,10 +48,17 @@ test("downloadBilibiliVideo downloads an MP4 to a local file URL and cleans it u
 
     assert.match(downloaded.fileUrl, /^file:\/\//);
     assert.equal(downloaded.sizeBytes, TEST_MP4.length);
+    assert.equal(downloaded.declaredSizeBytes, TEST_MP4.length);
+    assert.equal(downloaded.contentType, "video/mp4");
+    assert.equal(downloaded.md5, createHash("md5").update(TEST_MP4).digest("hex"));
+    assert.equal(downloaded.sha256, createHash("sha256").update(TEST_MP4).digest("hex"));
+    assert.equal(downloaded.mp4.majorBrand, "isom");
+    assert.deepEqual(downloaded.mp4.boxes, [{ type: "ftyp", offset: 0, size: TEST_MP4.length }]);
     assert.deepEqual(await fs.readFile(downloaded.filePath), TEST_MP4);
     assert.equal(getHeaders().referer, "https://www.bilibili.com/video/BV1xx411c7mD");
 
-    await removeDownloadedBilibiliVideo(downloaded);
+    const cleanup = await removeDownloadedBilibiliVideo(downloaded);
+    assert.equal(cleanup.removed, true);
     await assert.rejects(fs.access(downloaded.filePath));
     downloaded = undefined;
   } finally {

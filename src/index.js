@@ -1,11 +1,13 @@
+const { randomUUID } = require("crypto");
+const { AiChatService, extractImageSources } = require("./ai");
 const { config } = require("./config");
 const {
   downloadBilibiliVideo,
   extractBilibiliUrls,
+  inspectDownloadedBilibiliVideo,
   removeDownloadedBilibiliVideo,
   resolveBilibiliVideo,
 } = require("./bilibili");
-const { DeepSeekChatService } = require("./deepseek");
 const { createOneBotServer } = require("./onebot");
 const { querySandstormStatus } = require("./sandstorm");
 
@@ -16,7 +18,7 @@ const ambientChatBuffers = new Map();
 const ambientChatContexts = new Map();
 const groupMessageCaches = new Map();
 const bilibiliCooldowns = new Map();
-const chatService = new DeepSeekChatService(config);
+const chatService = new AiChatService(config);
 
 function getMessageText(message) {
   if (typeof message.raw_message === "string") {
@@ -85,7 +87,7 @@ function shouldChat(message) {
     return false;
   }
 
-  return getCleanMessageText(message).length > 0;
+  return getCleanMessageText(message).length > 0 || hasImageMessage(message);
 }
 
 function shouldAmbientChat(message, text) {
@@ -307,7 +309,7 @@ function collectAmbientChat(message, text, client) {
   const generation = existing.generation;
   existing.timer = setTimeout(() => {
     handleAmbientChatIdle(groupId, generation, client).catch((error) => {
-      console.error("[deepseek] ambient idle chat failed:", error.message);
+      console.error("[ai] ambient idle chat failed:", error.message);
     });
   }, Math.max(1, config.ambientChatIdleSeconds) * 1000);
 
@@ -454,7 +456,7 @@ async function onGroupMessage(message, client) {
       });
       client.sendGroupMessage(groupId, reply);
     } catch (error) {
-      console.error("[deepseek] ambient chat failed:", error.message);
+      console.error("[ai] ambient chat failed:", error.message);
     }
     return;
   }
@@ -489,63 +491,164 @@ async function onGroupMessage(message, client) {
       senderName: getSenderName(message),
       thinking,
       webSearch,
+      images: extractImageSources(message),
     });
     client.sendGroupMessage(groupId, reply);
   } catch (error) {
-    console.error("[deepseek] chat failed:", error.message);
-    client.sendGroupMessage(groupId, "DeepSeek 暂时没有回复成功，稍后再试一下。");
+    console.error("[ai] chat failed:", error.message);
+    client.sendGroupMessage(groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
   }
 }
 
 async function handleBilibiliMessage(groupId, text, client) {
   const urls = extractBilibiliUrls(text);
+  const traceId = randomUUID();
+  const requestStartedAt = Date.now();
+  logBilibili("info", "request.start", {
+    traceId,
+    groupId: String(groupId),
+    inputHost: getUrlHost(urls[0]),
+  });
+
   let result;
+  const resolveStartedAt = Date.now();
   try {
     result = await resolveBilibiliVideo(config, urls[0]);
-    console.log(`[bilibili] resolved provider=${result.provider} bvid=${result.bvid || ""} url=${urls[0]}`);
+    logBilibili("info", "resolve.success", {
+      traceId,
+      durationMs: Date.now() - resolveStartedAt,
+      provider: result.provider,
+      bvid: result.bvid || "",
+      aid: result.aid || "",
+      page: result.page,
+      quality: result.quality,
+      durationSeconds: result.duration,
+      title: result.title || "",
+      mediaHost: getUrlHost(result.videoUrl),
+    });
   } catch (error) {
-    console.error("[bilibili] resolve failed:", error.message);
+    logBilibili("error", "resolve.failure", {
+      traceId,
+      durationMs: Date.now() - resolveStartedAt,
+      error: formatErrorForLog(error),
+    });
     const message = error.message.startsWith("Bilibili 解析失败：")
       ? error.message
       : `Bilibili 解析失败：${error.message}`;
     client.sendGroupMessage(groupId, message);
+    logBilibili("info", "request.complete", {
+      traceId,
+      outcome: "resolve_failure",
+      durationMs: Date.now() - requestStartedAt,
+    });
     return;
   }
 
   if (!config.bilibiliSendVideo) {
     client.sendGroupMessage(groupId, formatBilibiliResolveText(result));
+    logBilibili("info", "request.complete", {
+      traceId,
+      outcome: "text_only",
+      durationMs: Date.now() - requestStartedAt,
+    });
     return;
   }
 
   let downloaded;
+  let uploadSucceeded = false;
+  let phase = "download";
   try {
     if (config.bilibiliDownloadVideo) {
+      logBilibili("info", "download.start", {
+        traceId,
+        bvid: result.bvid || "",
+        mediaHost: getUrlHost(result.videoUrl),
+        timeoutMs: config.bilibiliDownloadTimeoutMs,
+        maxVideoSizeMb: config.bilibiliMaxVideoSizeMb,
+      });
       downloaded = await downloadBilibiliVideo(config, result);
-      console.log(
-        `[bilibili] downloaded bvid=${result.bvid || ""} size=${downloaded.sizeBytes} path=${downloaded.filePath}`,
-      );
+      logBilibili("info", "download.success", {
+        traceId,
+        bvid: result.bvid || "",
+        filePath: downloaded.filePath,
+        fileUrl: downloaded.fileUrl,
+        sizeBytes: downloaded.sizeBytes,
+        declaredSizeBytes: downloaded.declaredSizeBytes,
+        contentType: downloaded.contentType,
+        sourceHost: downloaded.sourceHost,
+        md5: downloaded.md5,
+        sha256: downloaded.sha256,
+        mp4: downloaded.mp4,
+        durationMs: downloaded.durationMs,
+        averageBytesPerSecond: downloaded.averageBytesPerSecond,
+      });
     }
 
-    await sendBilibiliVideoWithRetry(
+    phase = "upload";
+    const localFile = await inspectDownloadedBilibiliVideo(downloaded);
+    logBilibili(localFile.exists || !downloaded ? "info" : "error", "upload.file_check", {
+      traceId,
+      transport: downloaded ? "local_file" : "remote_url",
+      ...localFile,
+    });
+
+    const upload = await sendBilibiliVideoWithRetry(
       groupId,
       downloaded?.fileUrl || result.videoUrl,
       client,
       config.bilibiliSendRetries,
+      { traceId, bvid: result.bvid || "" },
     );
+    uploadSucceeded = true;
     client.sendGroupMessage(groupId, formatBilibiliResolveBrief(result));
+    logBilibili("info", "request.complete", {
+      traceId,
+      outcome: "video_sent",
+      upload,
+      durationMs: Date.now() - requestStartedAt,
+    });
   } catch (error) {
-    console.error("[bilibili] video send failed:", error.message);
+    logBilibili("error", "request.failure", {
+      traceId,
+      phase,
+      bvid: result.bvid || "",
+      durationMs: Date.now() - requestStartedAt,
+      error: formatErrorForLog(error),
+    });
     client.sendGroupMessage(groupId, formatBilibiliUploadFallback(result, error));
   } finally {
-    await removeDownloadedBilibiliVideo(downloaded);
+    if (downloaded && !uploadSucceeded && config.bilibiliKeepFailedVideo) {
+      logBilibili("warn", "cleanup.retained", {
+        traceId,
+        filePath: downloaded.filePath,
+        reason: "BILIBILI_KEEP_FAILED_VIDEO=true",
+      });
+    } else {
+      const cleanup = await removeDownloadedBilibiliVideo(downloaded);
+      logBilibili(cleanup.removed || cleanup.skipped ? "info" : "error", "cleanup.complete", {
+        traceId,
+        ...cleanup,
+      });
+    }
   }
 }
 
-async function sendBilibiliVideoWithRetry(groupId, file, client, retryCount) {
+async function sendBilibiliVideoWithRetry(groupId, file, client, retryCount, diagnostics = {}) {
   const retries = Math.max(0, Number.parseInt(retryCount, 10) || 0);
+  const maxAttempts = retries + 1;
+  const uploadStartedAt = Date.now();
   let lastError;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const attemptNumber = attempt + 1;
+    const attemptStartedAt = Date.now();
+    logBilibili("info", "upload.attempt", {
+      ...diagnostics,
+      groupId: String(groupId),
+      attempt: attemptNumber,
+      maxAttempts,
+      transport: String(file).startsWith("file:") ? "local_file" : "remote_url",
+    });
     try {
       await client.sendGroupMessageAndWait(groupId, [
         {
@@ -553,14 +656,41 @@ async function sendBilibiliVideoWithRetry(groupId, file, client, retryCount) {
           data: { file },
         },
       ]);
-      return;
+      const durationMs = Date.now() - attemptStartedAt;
+      logBilibili("info", "upload.success", {
+        ...diagnostics,
+        groupId: String(groupId),
+        attempt: attemptNumber,
+        maxAttempts,
+        durationMs,
+      });
+      return {
+        attempts: attemptNumber,
+        durationMs: Date.now() - uploadStartedAt,
+      };
     } catch (error) {
       lastError = error;
+      const retryable = isRetryableRichMediaError(error);
+      logBilibili("error", "upload.failure", {
+        ...diagnostics,
+        groupId: String(groupId),
+        attempt: attemptNumber,
+        maxAttempts,
+        durationMs: Date.now() - attemptStartedAt,
+        retryable,
+        error: formatErrorForLog(error),
+      });
       if (attempt >= retries || !isRetryableRichMediaError(error)) {
         throw error;
       }
-      console.warn(`[bilibili] rich media upload failed, retrying (${attempt + 1}/${retries})`);
-      await delay(800 * (attempt + 1));
+      const delayMs = 800 * attemptNumber;
+      logBilibili("warn", "upload.retry_scheduled", {
+        ...diagnostics,
+        attempt: attemptNumber,
+        maxAttempts,
+        delayMs,
+      });
+      await delay(delayMs);
     }
   }
 
@@ -568,11 +698,63 @@ async function sendBilibiliVideoWithRetry(groupId, file, client, retryCount) {
 }
 
 function isRetryableRichMediaError(error) {
-  return /rich media transfer failed|retcode["']?\s*:\s*1200/i.test(String(error?.message || ""));
+  return (
+    Number(error?.retcode) === 1200 ||
+    /rich media transfer failed|retcode["']?\s*:\s*1200/i.test(String(error?.message || ""))
+  );
 }
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function logBilibili(level, event, details = {}) {
+  const method = level === "error" ? "error" : level === "warn" ? "warn" : "log";
+  const entry = {
+    time: new Date().toISOString(),
+    level,
+    event,
+    ...details,
+  };
+  console[method](`[bilibili] ${safeJsonStringify(entry)}`);
+}
+
+function formatErrorForLog(error) {
+  if (!error) {
+    return { name: "Error", message: "unknown error" };
+  }
+
+  return {
+    name: error.name || "Error",
+    message: error.message || String(error),
+    code: error.code,
+    action: error.action,
+    retcode: error.retcode,
+    durationMs: error.durationMs,
+    response: error.response,
+    stack: error.stack,
+  };
+}
+
+function safeJsonStringify(value) {
+  try {
+    return JSON.stringify(value, (_key, item) => (typeof item === "bigint" ? item.toString() : item));
+  } catch (error) {
+    return JSON.stringify({
+      time: new Date().toISOString(),
+      level: "error",
+      event: "log.serialization_failure",
+      message: error.message,
+    });
+  }
+}
+
+function getUrlHost(value) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "";
+  }
 }
 
 function buildHelpText() {
@@ -581,6 +763,7 @@ function buildHelpText() {
     "",
     "查服：@我 ins / 叛乱 / 沙漠风暴 / 服务器状态",
     "聊天：@我 直接提问",
+    "识图：@我 并附带图片，每次最多参考最近 10 张",
     "深度思考：@我 深度思考 + 问题",
     "联网搜索：@我 联网搜索 / 联网查询 / 联网搜搜 + 问题",
     "组合：@我 联网搜索 深度思考 + 问题",
@@ -698,12 +881,20 @@ function truncateText(value, maxLength) {
 }
 
 const server = createOneBotServer(config, onGroupMessage);
-server.listen();
+chatService
+  .start()
+  .catch((error) => {
+    console.error("[ai] provider health monitor failed to start:", error.message);
+  })
+  .finally(() => {
+    server.listen();
+  });
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown() {
   console.log("[bot] shutting down");
+  chatService.stop();
   server.close(() => process.exit(0));
 }

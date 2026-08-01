@@ -2,6 +2,16 @@
 
 这个目录可以直接复制到 `angelabalzac.ddns.net` 所在的 Windows 10 服务器运行。目标机器不需要安装 Node.js。
 
+## 已有部署增量更新
+
+如果目标机器已经部署并登录过 QQ，不需要覆盖 NapCat 运行目录：
+
+1. 先运行 `03-停止Bot服务.ps1`。
+2. 用新包里的 `sandstorm-qq-bot.exe` 替换旧文件。
+3. 保留目标机器原有 `.env`，不要用 `.env.example` 直接覆盖；把 `.env.example` 新增的 `LOCAL_QWEN_*` 配置合并进去，并填写真实 URL、API Key 和模型 ID。
+4. 建议同步替换 `.env.example`、`00-打开配置.ps1` 和本说明文件，方便以后维护。
+5. 运行 `02-启动Bot服务.ps1`；机器人启动后会立即检查 Qwen，之后每 10 秒检查一次，不可用时自动回退到 DeepSeek。
+
 ## 部署顺序
 
 最快方式：配置完成后，直接运行：
@@ -18,11 +28,15 @@
    - 建议填写 `ALLOWED_GROUP_IDS=你的QQ群号`
    - 默认 `REQUIRE_AT=true`，必须 `@机器人` 并输入关键词才回复
    - `ACCESS_TOKEN` 可留空；如果填写，NapCat 里也要填同一个 token
-   - 如需聊天和联网搜索，填写 `DEEPSEEK_API_KEY`；消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用内嵌 open-websearch 的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时开启 thinking
+   - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
+   - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
+   - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用内嵌 open-websearch 的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时启用推理
+   - `@机器人` 的图文或纯图片消息可交给 Local Qwen，单次最多保留最近 10 张图片；DeepSeek 回退保持文本模式
    - 未 `@机器人` 的普通文字群聊默认会以较低概率触发参考最近群上下文的即时闲聊吐槽，默认最多取 `AMBIENT_CHAT_INSTANT_MAX_MESSAGES` 条；如果之后 `AMBIENT_CHAT_IDLE_SECONDS` 秒内没人继续发普通文字，会从群级最近上下文里按旧到新采集最多 `AMBIENT_CHAT_IDLE_MAX_MESSAGES` 条普通文字，100% 触发一次冷场闲聊；图片消息会被忽略
    - 可调整 `AMBIENT_CHAT_PROBABILITY`、`AMBIENT_CHAT_IDLE_SECONDS`、`AMBIENT_CHAT_INSTANT_MAX_MESSAGES`、`AMBIENT_CHAT_IDLE_MAX_MESSAGES`、`AMBIENT_CHAT_CONTEXT_SECONDS`，或用 `AMBIENT_CHAT_ENABLED=false` 关闭
    - `RESPONSE_NEUTRALITY_PROMPT` 会统一约束聊天和闲聊回复，避免出现政治或宗教倾向
    - 默认无需搜索 API Key，也不需要单独启动搜索服务；可通过 `OPEN_WEBSEARCH_ENGINES` 调整搜索引擎列表
+   - Bilibili 发送失败时，`logs/out.log` 和 `logs/err.log` 会按 `traceId` 输出下载文件哈希、MP4 结构、上传耗时及完整 OneBot 错误。需要保留失败视频手工测试时，可临时设置 `BILIBILI_KEEP_FAILED_VIDEO=true`；测试后请删除日志所示文件并恢复为 `false`
 
 2. 运行 `01-启动OneBot-NapCat.ps1`
    - 完成 QQ 登录

@@ -33,6 +33,9 @@ SANDSTORM_PORT=27015
 TRIGGER_KEYWORDS=叛乱,沙漠风暴,服务器状态,ins
 REQUIRE_AT=true
 ALLOWED_GROUP_IDS=你的QQ群号
+LOCAL_QWEN_BASE_URL=你的OpenAI兼容Qwen地址/v1
+LOCAL_QWEN_API_KEY=你的Local Qwen API Key
+LOCAL_QWEN_MODEL=qwen3.6-local
 DEEPSEEK_API_KEY=你的DeepSeek API Key
 ```
 
@@ -51,17 +54,25 @@ DEEPSEEK_API_KEY=你的DeepSeek API Key
 REQUIRE_AT=false
 ```
 
-开启 DeepSeek 聊天后，群里 `@机器人` 且不包含查服关键词的消息会进入默认聊天模型；包含 `叛乱`、`沙漠风暴`、`服务器状态`、`ins` 等关键词时仍优先查询服务器状态。
+开启 AI 聊天后，群里 `@机器人` 且不包含查服关键词的消息会优先进入 Local Qwen；Local Qwen 不可用时自动回退到 DeepSeek。包含 `叛乱`、`沙漠风暴`、`服务器状态`、`ins` 等关键词时仍优先查询服务器状态。
+
+Local Qwen 使用 OpenAI 兼容的 `/chat/completions` 接口和 Bearer 认证。机器人启动时会立即请求一次 `/models`，之后默认每 10 秒检查一次；网络错误、超时或服务端错误会触发当前整轮请求回退到 DeepSeek，服务恢复后自动切回。健康检查间隔、路径和超时可通过 `LOCAL_QWEN_HEALTH_INTERVAL_MS`、`LOCAL_QWEN_HEALTH_PATH`、`LOCAL_QWEN_HEALTH_TIMEOUT_MS` 调整。
+
+Qwen 的提示词分为角色、对话理解和长度控制三层，可分别通过 `LOCAL_QWEN_SYSTEM_PROMPT`、`LOCAL_QWEN_DIALOGUE_PROMPT`、`LOCAL_QWEN_CONCISE_PROMPT` 调整。默认对话规则会优先回答最后一条用户消息，区分承接上文与切换话题，解析最近相关指代，并且只在真正影响答案的关键歧义上追问。
 
 聊天消息里包含 `深度思考` 会开启 DeepSeek thinking；包含 `联网搜索`、`联网查询` 或 `联网搜搜` 会进入本地联网搜索工具模式：bot 通过 DeepSeek 官方 `tools`/function calling 让模型请求 `web_search` / `web_fetch`，再由本地 Node 程序执行搜索和网页读取。联网搜索触发词和 `深度思考` 可以同时出现，此时会同时启用搜索工具和 thinking。
 
 联网搜索会限制工具轮次，默认最多 2 轮、每轮最多 2 个工具调用。为了兼顾时效性和 token 消耗，本地会先拿较大的候选池，再根据 QQ 用户原始问题、模型搜索词和结果日期做相关性/时效性重排，只把少量高分结果交给模型，并压缩网页正文。回答要求基于搜索/抓取结果，重要事实标注来源；如果来源不足、冲突或搜索质量差，会说明无法可靠确认。默认使用内嵌的 `open-websearch@2.1.11`，不需要单独启动服务，也不需要搜索 API Key；可通过 `OPEN_WEBSEARCH_ENGINES` 调整搜索引擎列表。
 
-聊天上下文按 `群号 + 用户QQ` 隔离，默认保留最近 16 条历史消息，120 分钟无消息后过期。发送 `清空上下文`、`重置会话` 或 `reset` 可以清空当前用户在当前群的会话。
+聊天上下文按 `群号 + 用户QQ` 隔离，120 分钟无消息后过期。Local Qwen 最多保留最近 100 条历史消息并按 262144 token 上下文预算从最新完整回合向前裁剪；回退到 DeepSeek 时仍使用原有的最近 16 条和 12000 字符限制。发送 `清空上下文`、`重置会话` 或 `reset` 可以清空当前用户在当前群的会话。
+
+Local Qwen 支持 OneBot 图片段和 CQ 图片码。`@机器人` 时可以发送纯图片或图文消息，每次模型请求最多保留最近 10 张图片；图片会在本地执行类型、下载超时、单图大小和总大小检查后转成 OpenAI 兼容的 `image_url`。DeepSeek 回退链路保持文本模式，图片会转换为 `[图片]` 关联占位符。
 
 未 `@机器人` 的普通文字群聊可触发闲聊：即时闲聊会参考当前群最近上下文接话，默认最多取 `AMBIENT_CHAT_INSTANT_MAX_MESSAGES` 条；冷场闲聊会在 `AMBIENT_CHAT_IDLE_SECONDS` 秒无人继续发普通文字后，从群级最近上下文里按旧到新采集最多 `AMBIENT_CHAT_IDLE_MAX_MESSAGES` 条消息再回复。
 
 群里直接发送 Bilibili / b23.tv 普通视频链接时，bot 会通过外部解析服务获取 MP4，并默认先下载到系统临时目录，再把本地文件交给 NapCat 发送，避免 Bilibili 防盗链导致 `rich media transfer failed`。视频发送完成后会自动清理临时文件；超过 `BILIBILI_MAX_VIDEO_SIZE_MB`（默认 95 MB）或 QQ 上传失败时，会自动退回标题和原视频链接，不再误报成解析失败。此功能不需要 `@机器人`；普通网页 URL 不会触发解析。
+
+Bilibili 链路会为每次请求生成 `traceId`，并在日志中记录解析、下载、文件校验、上传尝试、OneBot 完整错误响应和临时文件清理结果。需要在部署机上保留失败视频做 QQ 客户端手工发送测试时，可临时设置 `BILIBILI_KEEP_FAILED_VIDEO=true`；测试完成后请按日志中的 `filePath` 手工删除文件并恢复为 `false`。
 
 ## 本机运行
 

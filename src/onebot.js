@@ -1,6 +1,19 @@
 const http = require("http");
 const { WebSocketServer } = require("ws");
 
+class OneBotActionError extends Error {
+  constructor(action, payload, durationMs) {
+    const retcode = payload?.retcode;
+    const detail = payload?.message || payload?.wording || "unknown OneBot failure";
+    super(`OneBot action ${action} failed (retcode=${retcode ?? "unknown"}): ${detail}`);
+    this.name = "OneBotActionError";
+    this.action = action;
+    this.retcode = retcode;
+    this.response = payload;
+    this.durationMs = durationMs;
+  }
+}
+
 function normalizePath(path) {
   return path.startsWith("/") ? path : `/${path}`;
 }
@@ -49,7 +62,7 @@ function createOneBotServer(config, onGroupMessage) {
         pendingActions.delete(payload.echo);
         clearTimeout(pending.timeout);
         if (payload.status === "failed" || (payload.retcode !== undefined && Number(payload.retcode) !== 0)) {
-          pending.reject(new Error(`OneBot action failed: ${JSON.stringify(payload).slice(0, 300)}`));
+          pending.reject(new OneBotActionError(pending.action, payload, Date.now() - pending.startedAt));
         } else {
           pending.resolve(payload);
         }
@@ -115,12 +128,17 @@ function sendAction(ws, action, params, pendingActions) {
   );
 
   return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
     const timeout = setTimeout(() => {
       pendingActions.delete(echo);
-      reject(new Error(`OneBot action ${action} timed out waiting for response.`));
+      const error = new Error(`OneBot action ${action} timed out waiting for response.`);
+      error.name = "OneBotActionTimeoutError";
+      error.action = action;
+      error.durationMs = Date.now() - startedAt;
+      reject(error);
     }, 120000);
-    pendingActions.set(echo, { resolve, reject, timeout });
+    pendingActions.set(echo, { action, resolve, reject, timeout, startedAt });
   });
 }
 
-module.exports = { createOneBotServer };
+module.exports = { createOneBotServer, OneBotActionError };

@@ -55,6 +55,90 @@ const config = {
   cooldownSeconds: parseInteger(process.env.COOLDOWN_SECONDS, 20),
   allowedGroupIds: new Set(parseList(process.env.ALLOWED_GROUP_IDS)),
   botName: process.env.BOT_NAME || "沙暴状态",
+  localQwenEnabled: parseBoolean(process.env.LOCAL_QWEN_ENABLED, true),
+  localQwenProviderId: process.env.LOCAL_QWEN_PROVIDER_ID || "local-qwen-manual",
+  localQwenDisplayName: process.env.LOCAL_QWEN_DISPLAY_NAME || "Local Qwen Manual",
+  localQwenApiKey: process.env.LOCAL_QWEN_API_KEY || "",
+  localQwenBaseUrl: (process.env.LOCAL_QWEN_BASE_URL || "").replace(/\/+$/, ""),
+  localQwenModel: process.env.LOCAL_QWEN_MODEL || "qwen3.6-local",
+  localQwenSystemPrompt:
+    process.env.LOCAL_QWEN_SYSTEM_PROMPT ||
+    "你是一只接入 QQ 群聊的中文猫娘机器人。回答要自然、简洁、有帮助，语气可爱但不过度；每次回复至少自然地带一次 喵~；不知道时直接说明，不编造。",
+  localQwenDialoguePrompt:
+    process.env.LOCAL_QWEN_DIALOGUE_PROMPT ||
+    "消息按时间从旧到新排列，最后一条 user 消息是当前必须回答的问题。先判断它是在承接上文、修改条件，还是开启新话题：承接时结合最近相关回合解析“这个”“它”“刚才”“继续”等指代；换题时立即以新问题为准，不要把无关旧内容硬套进来。回答必须覆盖用户真正要解决的点，不能只抓关键词、复述原话或答非所问。信息足够就直接给出可靠答案；只有缺少的关键条件会导致答案明显不同时，才说明歧义并只问一个最必要的澄清问题。若有图片，同时结合图片和配文；看不清的内容要明确说明，不能猜。回答前静默核对一次“这是否直接回答了最后一个问题”，不要输出思考过程。",
+  localQwenConcisePrompt:
+    process.env.LOCAL_QWEN_CONCISE_PROMPT ||
+    "回答长度服从问题复杂度：简单问题直接用一句到几句回答；需要解释时使用少量短段落或清晰列表。除非用户明确要求详细展开，否则不堆砌背景、不重复问题，但不能为了简短省略答案成立所必需的条件。",
+  localQwenHealthPath: process.env.LOCAL_QWEN_HEALTH_PATH || "/models",
+  localQwenHealthIntervalMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_HEALTH_INTERVAL_MS, 10000),
+    1000,
+    3600000,
+  ),
+  localQwenHealthTimeoutMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_HEALTH_TIMEOUT_MS, 3000),
+    500,
+    60000,
+  ),
+  localQwenTimeoutMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_TIMEOUT_MS, 60000),
+    1000,
+    600000,
+  ),
+  localQwenContextTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_CONTEXT_TOKENS, 262144),
+    8192,
+    262144,
+  ),
+  localQwenContextSafetyTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_CONTEXT_SAFETY_TOKENS, 4096),
+    1024,
+    32768,
+  ),
+  localQwenModelMaxOutputTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_MODEL_MAX_OUTPUT_TOKENS, 16384),
+    1,
+    16384,
+  ),
+  localQwenMaxOutputTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_MAX_OUTPUT_TOKENS, 800),
+    1,
+    16384,
+  ),
+  localQwenThinkingMaxOutputTokens: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_THINKING_MAX_OUTPUT_TOKENS, 1600),
+    1,
+    16384,
+  ),
+  localQwenTemperature: clampNumber(parseNumber(process.env.LOCAL_QWEN_TEMPERATURE, 0.7), 0, 2),
+  localQwenReasoningEffort: process.env.LOCAL_QWEN_REASONING_EFFORT || "high",
+  localQwenMaxHistoryMessages: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, 100),
+    2,
+    100,
+  ),
+  localQwenMaxImages: clampNumber(parseInteger(process.env.LOCAL_QWEN_MAX_IMAGES, 10), 0, 10),
+  localQwenImageTokenEstimate: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_TOKEN_ESTIMATE, 4096),
+    256,
+    32768,
+  ),
+  localQwenImageFetchTimeoutMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_FETCH_TIMEOUT_MS, 10000),
+    1000,
+    60000,
+  ),
+  localQwenImageMaxBytes: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGE_MAX_BYTES, 8 * 1024 * 1024),
+    64 * 1024,
+    32 * 1024 * 1024,
+  ),
+  localQwenImagesMaxTotalBytes: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_IMAGES_MAX_TOTAL_BYTES, 32 * 1024 * 1024),
+    64 * 1024,
+    128 * 1024 * 1024,
+  ),
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEKER_API_KEY || "",
   deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, ""),
   deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
@@ -108,6 +192,7 @@ const config = {
   bilibiliDownloadTimeoutMs: parseInteger(process.env.BILIBILI_DOWNLOAD_TIMEOUT_MS, 180000),
   bilibiliMaxVideoSizeMb: clampNumber(parseNumber(process.env.BILIBILI_MAX_VIDEO_SIZE_MB, 95), 1, 100),
   bilibiliSendRetries: clampNumber(parseInteger(process.env.BILIBILI_SEND_RETRIES, 1), 0, 3),
+  bilibiliKeepFailedVideo: parseBoolean(process.env.BILIBILI_KEEP_FAILED_VIDEO, false),
   chatEnabled: parseBoolean(process.env.CHAT_ENABLED, true),
   chatRequireAt: parseBoolean(process.env.CHAT_REQUIRE_AT, true),
   chatCooldownSeconds: parseInteger(process.env.CHAT_COOLDOWN_SECONDS, 3),

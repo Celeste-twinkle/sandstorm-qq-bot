@@ -354,7 +354,7 @@ function extractAssistantContent(payload) {
   if (!content || typeof content !== "string") {
     const finishReason = payload?.choices?.[0]?.finish_reason || "unknown";
     const usage = payload?.usage ? ` usage=${JSON.stringify(payload.usage)}` : "";
-    throw new Error(`DeepSeek API returned an empty response finish_reason=${finishReason}${usage}`);
+    throw new Error(`AI provider returned an empty response finish_reason=${finishReason}${usage}`);
   }
 
   return content.trim();
@@ -367,7 +367,7 @@ function extractLatestUserText(messages) {
       continue;
     }
 
-    const content = String(message.content || "");
+    const content = extractTextContent(message.content);
     const match = content.match(/用户消息：([\s\S]*)$/);
     return (match ? match[1] : content).trim();
   }
@@ -393,8 +393,27 @@ function logCompletionUsage(body, payload) {
 
 function countChars(messages) {
   return messages.reduce((total, message) => {
-    return total + String(message.content || "").length;
+    return total + extractTextContent(message.content).length;
   }, 0);
+}
+
+function extractTextContent(content) {
+  if (!Array.isArray(content)) {
+    return String(content || "");
+  }
+
+  return content
+    .map((part) => {
+      if (part?.type === "text") {
+        return String(part.text || "");
+      }
+      if (part?.type === "image_ref" || part?.type === "image_url") {
+        return "[图片]";
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function readResponseText(response) {

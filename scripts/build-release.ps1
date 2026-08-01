@@ -15,6 +15,10 @@ if (-not (Test-Path "node_modules")) {
 npm run check
 npm run build:exe
 
+if (Test-Path $releaseDir) {
+  Remove-Item -LiteralPath $releaseDir -Recurse -Force
+}
+
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 Copy-Item -Path $exePath -Destination $releaseExePath -Force
 Copy-Item -Path (Join-Path $root ".env.example") -Destination (Join-Path $releaseDir ".env.example") -Force
