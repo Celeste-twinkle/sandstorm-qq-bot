@@ -166,7 +166,15 @@ class DeepSeekChatService {
       return this.createCompletionWithWebTools(messages, useThinking);
     }
 
-    const payload = await this.requestCompletion(this.buildCompletionBody(messages, useThinking));
+    const payload = await this.requestCompletion(
+      this.buildCompletionBody(messages, useThinking, {
+        maxOutputTokens: normalizedOptions.maxOutputTokens,
+        temperature: normalizedOptions.temperature,
+      }),
+      {
+        timeoutMs: normalizedOptions.timeoutMs,
+      },
+    );
     return extractAssistantContent(payload);
   }
 

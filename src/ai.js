@@ -66,6 +66,40 @@ class AiChatService {
     return result.text;
   }
 
+  async ambientReply(contextMessages, meta = {}) {
+    if (!this.isConfigured()) {
+      return "AI 服务还没有配置，请在 .env 中设置 Local Qwen 或 DeepSeek API Key。";
+    }
+
+    const ambientMode = meta.ambientMode === "instant" ? "instant" : "idle";
+    const configuredMax =
+      ambientMode === "instant"
+        ? this.config.ambientChatInstantMaxMessages
+        : this.config.ambientChatIdleMaxMessages;
+    const maxContextMessages = Math.min(
+      this.config.localQwenMaxHistoryMessages,
+      Math.max(1, configuredMax),
+    );
+    const selectedContext = contextMessages.slice(-maxContextMessages);
+    const result = await this.runWithFallback(async (provider, contextScale = 1) => {
+      const messages =
+        provider === this.localQwen
+          ? this.buildLocalQwenGroupMessages(
+              selectedContext,
+              this.buildAmbientSystemPrompt(ambientMode),
+              this.config.ambientChatMaxOutputTokens,
+              contextScale,
+            )
+          : this.buildDeepSeekAmbientMessages(selectedContext, ambientMode);
+      return provider.createCompletion(messages, {
+        maxOutputTokens: this.config.ambientChatMaxOutputTokens,
+        temperature: Math.max(0.7, this.config.deepseekTemperature),
+        timeoutMs: this.config.ambientChatTimeoutMs,
+      });
+    });
+    return result.text;
+  }
+
   async chatUnlocked(sessionId, userText, meta) {
     const session = this.getSession(sessionId);
     const storedUserMessage = buildUserMessage(userText, meta, false);
@@ -77,7 +111,13 @@ class AiChatService {
 
     const result = await this.runWithFallback(async (provider, contextScale = 1) => {
       const messages = provider === this.localQwen
-        ? this.buildLocalQwenMessages(session, currentUserMessage, options, contextScale)
+        ? this.buildLocalQwenMessages(
+            session,
+            currentUserMessage,
+            options,
+            contextScale,
+            meta.groupContextMessages,
+          )
         : this.buildDeepSeekMessages(session, currentUserMessage);
       return provider.createCompletion(messages, options);
     });
@@ -174,7 +214,13 @@ class AiChatService {
     return this.deepseek.trimMessages(messages);
   }
 
-  buildLocalQwenMessages(session, currentUserMessage, options, contextScale = 1) {
+  buildLocalQwenMessages(
+    session,
+    currentUserMessage,
+    options,
+    contextScale = 1,
+    groupContextMessages = [],
+  ) {
     const maxHistory = Math.max(2, this.config.localQwenMaxHistoryMessages);
     const history = selectCompleteRecentHistory(session.messages, maxHistory);
     const basePrompt = [
@@ -184,6 +230,19 @@ class AiChatService {
     ]
       .filter((part) => String(part || "").trim())
       .join("\n\n");
+    const maxOutputTokens = options.thinking
+      ? this.config.localQwenThinkingMaxOutputTokens
+      : this.config.localQwenMaxOutputTokens;
+
+    if (Array.isArray(groupContextMessages) && groupContextMessages.length > 0) {
+      return this.buildLocalQwenGroupMessages(
+        groupContextMessages,
+        this.buildDirectGroupSystemPrompt(basePrompt),
+        maxOutputTokens,
+        contextScale,
+      );
+    }
+
     const messages = [
       {
         role: "system",
@@ -195,15 +254,82 @@ class AiChatService {
 
     limitImagesInMessages(messages, this.config.localQwenMaxImages);
 
-    const maxOutputTokens = options.thinking
-      ? this.config.localQwenThinkingMaxOutputTokens
-      : this.config.localQwenMaxOutputTokens;
     return trimQwenMessagesToBudget(
       messages,
       this.config,
       maxOutputTokens,
       contextScale,
     );
+  }
+
+  buildLocalQwenGroupMessages(
+    contextMessages,
+    systemPrompt,
+    maxOutputTokens,
+    contextScale = 1,
+  ) {
+    const selectedContext = contextMessages.slice(
+      -Math.max(2, this.config.localQwenMaxHistoryMessages),
+    );
+    const messages = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      ...selectedContext.map(buildGroupContextModelMessage),
+    ];
+
+    limitImagesInMessages(messages, this.config.localQwenMaxImages);
+    return trimQwenMessagesToBudget(
+      messages,
+      this.config,
+      maxOutputTokens,
+      contextScale,
+      { preserveConversationTurns: false },
+    );
+  }
+
+  buildAmbientSystemPrompt(ambientMode) {
+    const modeInstruction =
+      ambientMode === "instant"
+        ? "最后一条群成员消息是当前要接的话，请优先回应它。"
+        : "这是群聊冷场前的完整最近上下文，请自然接一句与最近话题相关的话。";
+    const contextInstruction =
+      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后。必须结合发送者、回复关系、文字和图片判断语境，不要把不同消息的图片张冠李戴。";
+    return this.localQwen.buildSystemPrompt(
+      [this.config.ambientChatSystemPrompt, contextInstruction, modeInstruction]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+  }
+
+  buildDirectGroupSystemPrompt(basePrompt) {
+    const contextInstruction =
+      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；“回复某人”表示当前消息正在引用那条消息。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。请先锁定最后一条群成员消息真正询问的对象，再结合相关发送者、回复关系、文字、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把图片张冠李戴。";
+    return this.localQwen.buildSystemPrompt(
+      [basePrompt, contextInstruction].filter(Boolean).join("\n\n"),
+    );
+  }
+
+  buildDeepSeekAmbientMessages(contextMessages, ambientMode) {
+    const modeInstruction =
+      ambientMode === "instant"
+        ? "请优先回应最后一条群成员消息。"
+        : "请根据冷场前的最近话题自然接一句。";
+    const contextText = contextMessages
+      .slice(-6)
+      .map((message) => formatGroupContextTextLine(message, true))
+      .join("\n");
+    return this.deepseek.trimMessages([
+      {
+        role: "system",
+        content: this.deepseek.buildSystemPrompt(this.config.ambientChatSystemPrompt),
+      },
+      {
+        role: "user",
+        content: `${modeInstruction}\n以下消息按时间从旧到新排列：\n${contextText}`,
+      },
+    ]);
   }
 
   trimSession(session) {
@@ -359,41 +485,74 @@ function limitImagesInMessages(messages, maxImages) {
 
     message.content.forEach((part, partIndex) => {
       if (part?.type === "image_ref" || part?.type === "image_url") {
-        positions.push({ messageIndex, partIndex });
+        positions.push({
+          messageIndex,
+          partIndex,
+          source:
+            part.type === "image_ref"
+              ? String(part.source || "")
+              : String(part.image_url?.url || ""),
+        });
       }
     });
   });
 
   const imageLimit = Math.max(0, maxImages);
-  const keptPositions = imageLimit === 0 ? [] : positions.slice(-imageLimit);
+  const latestPositionBySource = new Map();
+  positions.forEach((position) => {
+    if (position.source) {
+      latestPositionBySource.set(position.source, `${position.messageIndex}:${position.partIndex}`);
+    }
+  });
+  const uniquePositions = positions.filter((position) => {
+    if (!position.source) {
+      return true;
+    }
+    return (
+      latestPositionBySource.get(position.source) ===
+      `${position.messageIndex}:${position.partIndex}`
+    );
+  });
+  const keptPositions = imageLimit === 0 ? [] : uniquePositions.slice(-imageLimit);
   const keep = new Set(
     keptPositions.map(({ messageIndex, partIndex }) => `${messageIndex}:${partIndex}`),
   );
 
-  for (const { messageIndex, partIndex } of positions) {
-    if (keep.has(`${messageIndex}:${partIndex}`)) {
+  for (const position of positions) {
+    const key = `${position.messageIndex}:${position.partIndex}`;
+    if (keep.has(key)) {
       continue;
     }
 
-    messages[messageIndex].content[partIndex] = {
+    const isDuplicate =
+      position.source &&
+      latestPositionBySource.get(position.source) !== key;
+    messages[position.messageIndex].content[position.partIndex] = {
       type: "text",
-      text: "[较早图片已省略]",
+      text: isDuplicate ? "[重复图片已在后文引用]" : "[较早图片已省略]",
     };
   }
 
   return messages;
 }
 
-function trimQwenMessagesToBudget(messages, config, maxOutputTokens, contextScale = 1) {
+function trimQwenMessagesToBudget(
+  messages,
+  config,
+  maxOutputTokens,
+  contextScale = 1,
+  options = {},
+) {
   const rawPromptBudget =
     config.localQwenContextTokens -
     Math.min(maxOutputTokens, config.localQwenModelMaxOutputTokens) -
     config.localQwenContextSafetyTokens;
   const promptBudget = Math.max(1024, Math.floor(rawPromptBudget * contextScale));
   const trimmed = messages.slice();
+  const preserveConversationTurns = options.preserveConversationTurns !== false;
 
   while (trimmed.length > 2 && estimateMessagesTokens(trimmed, config) > promptBudget) {
-    removeOldestConversationTurn(trimmed);
+    removeOldestConversationTurn(trimmed, preserveConversationTurns);
   }
 
   let previousEstimate = Number.POSITIVE_INFINITY;
@@ -408,7 +567,7 @@ function trimQwenMessagesToBudget(messages, config, maxOutputTokens, contextScal
   return trimmed;
 }
 
-function removeOldestConversationTurn(messages) {
+function removeOldestConversationTurn(messages, preserveConversationTurns = true) {
   const firstConversationIndex = messages[0]?.role === "system" ? 1 : 0;
   if (firstConversationIndex >= messages.length - 1) {
     return;
@@ -418,12 +577,54 @@ function removeOldestConversationTurn(messages) {
   messages.splice(firstConversationIndex, 1);
 
   if (
+    preserveConversationTurns &&
     first?.role === "user" &&
     messages[firstConversationIndex]?.role === "assistant" &&
     firstConversationIndex < messages.length - 1
   ) {
     messages.splice(firstConversationIndex, 1);
   }
+}
+
+function buildGroupContextModelMessage(message) {
+  const role = message?.role === "assistant" ? "assistant" : "user";
+  const text = formatGroupContextTextLine(message, false);
+  const images = normalizeImageSources(message?.images);
+
+  if (role === "assistant" || images.length === 0) {
+    return {
+      role,
+      content: text,
+    };
+  }
+
+  return {
+    role,
+    content: [
+      {
+        type: "text",
+        text,
+      },
+      ...images.map((source) => ({
+        type: "image_ref",
+        source,
+      })),
+    ],
+  };
+}
+
+function formatGroupContextTextLine(message, includeImagePlaceholders) {
+  const role = message?.role === "assistant" ? "机器人" : "群成员";
+  const senderName = String(message?.senderName || "").trim();
+  const sender = senderName ? `${role} ${senderName}` : role;
+  const relation = message?.relation ? `（${message.relation}）` : "";
+  const text = String(message?.text || "").trim() || "[图片消息]";
+  const imageCount = normalizeImageSources(message?.images).length;
+  const imageText =
+    includeImagePlaceholders && imageCount > 0
+      ? ` ${Array.from({ length: imageCount }, () => "[图片]").join(" ")}`
+      : "";
+  return `${sender}${relation}：${text}${imageText}`;
 }
 
 function shrinkLatestUserText(messages) {

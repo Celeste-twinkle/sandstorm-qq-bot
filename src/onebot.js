@@ -73,22 +73,7 @@ function createOneBotServer(config, onGroupMessage) {
         return;
       }
 
-      await onGroupMessage(payload, {
-        sendGroupMessage(groupId, message) {
-          sendAction(ws, "send_group_msg", {
-            group_id: groupId,
-            message,
-          }, pendingActions).catch((error) => {
-            console.error(`[onebot] send_group_msg failed: ${error.message}`);
-          });
-        },
-        sendGroupMessageAndWait(groupId, message) {
-          return sendAction(ws, "send_group_msg", {
-            group_id: groupId,
-            message,
-          }, pendingActions);
-        },
-      });
+      await onGroupMessage(payload, createOneBotClient(ws, pendingActions));
     });
 
     ws.on("close", () => {
@@ -113,7 +98,48 @@ function createOneBotServer(config, onGroupMessage) {
   };
 }
 
-function sendAction(ws, action, params, pendingActions) {
+function createOneBotClient(ws, pendingActions) {
+  return {
+    sendGroupMessage(groupId, message) {
+      sendAction(
+        ws,
+        "send_group_msg",
+        {
+          group_id: groupId,
+          message,
+        },
+        pendingActions,
+      ).catch((error) => {
+        console.error(`[onebot] send_group_msg failed: ${error.message}`);
+      });
+    },
+    sendGroupMessageAndWait(groupId, message) {
+      return sendAction(
+        ws,
+        "send_group_msg",
+        {
+          group_id: groupId,
+          message,
+        },
+        pendingActions,
+      );
+    },
+    async getMessage(messageId) {
+      const response = await sendAction(
+        ws,
+        "get_msg",
+        {
+          message_id: messageId,
+        },
+        pendingActions,
+        { timeoutMs: 10000 },
+      );
+      return response?.data || null;
+    },
+  };
+}
+
+function sendAction(ws, action, params, pendingActions, options = {}) {
   if (ws.readyState !== ws.OPEN) {
     return Promise.reject(new Error("OneBot connection is not open."));
   }
@@ -136,9 +162,13 @@ function sendAction(ws, action, params, pendingActions) {
       error.action = action;
       error.durationMs = Date.now() - startedAt;
       reject(error);
-    }, 120000);
+    }, options.timeoutMs || 120000);
     pendingActions.set(echo, { action, resolve, reject, timeout, startedAt });
   });
 }
 
-module.exports = { createOneBotServer, OneBotActionError };
+module.exports = {
+  createOneBotClient,
+  createOneBotServer,
+  OneBotActionError,
+};

@@ -8,6 +8,12 @@ const {
   removeDownloadedBilibiliVideo,
   resolveBilibiliVideo,
 } = require("./bilibili");
+const {
+  GroupMessageCache,
+  getMessageId,
+  getReplyMessageId,
+  getSenderName,
+} = require("./message-context");
 const { createOneBotServer } = require("./onebot");
 const { querySandstormStatus } = require("./sandstorm");
 
@@ -15,10 +21,10 @@ const groupCooldowns = new Map();
 const chatCooldowns = new Map();
 const ambientChatCooldowns = new Map();
 const ambientChatBuffers = new Map();
-const ambientChatContexts = new Map();
-const groupMessageCaches = new Map();
+const groupConversationContexts = new Map();
 const bilibiliCooldowns = new Map();
 const chatService = new AiChatService(config);
+const groupMessageCache = new GroupMessageCache(config);
 
 function getMessageText(message) {
   if (typeof message.raw_message === "string") {
@@ -99,10 +105,6 @@ function shouldAmbientChat(message, text) {
     return false;
   }
 
-  if (hasImageMessage(message)) {
-    return false;
-  }
-
   if (!text || isLikelyNonChatText(text)) {
     return false;
   }
@@ -115,11 +117,11 @@ function shouldCollectAmbientChat(message, text) {
     return false;
   }
 
-  if (isMentioned(message) || hasImageMessage(message)) {
+  if (isMentioned(message)) {
     return false;
   }
 
-  return Boolean(text) && !isLikelyNonChatText(text);
+  return hasImageMessage(message) || (Boolean(text) && !isLikelyNonChatText(text));
 }
 
 function isAllowedGroup(groupId) {
@@ -138,15 +140,6 @@ function markCooldown(key, cooldowns) {
 
 function getSessionId(message) {
   return `${message.group_id}:${message.user_id || "unknown"}`;
-}
-
-function getSenderName(message) {
-  return message.sender?.card || message.sender?.nickname || "";
-}
-
-function getMessageId(message) {
-  const id = message.message_id ?? message.messageId;
-  return id === undefined || id === null || id === "" ? "" : String(id);
 }
 
 function getCleanMessageText(message) {
@@ -195,22 +188,6 @@ function hasImageMessage(message) {
   return /\[CQ:image\b/i.test(rawText);
 }
 
-function getReplyMessageId(message) {
-  if (Array.isArray(message.message)) {
-    const replySegment = message.message.find((segment) => segment.type === "reply");
-    const id = replySegment?.data?.id;
-    return id === undefined || id === null || id === "" ? "" : String(id);
-  }
-
-  const rawText = typeof message.raw_message === "string"
-    ? message.raw_message
-    : typeof message.message === "string"
-      ? message.message
-      : "";
-  const match = rawText.match(/\[CQ:reply,[^\]]*id=([^,\]]+)/i);
-  return match ? String(match[1]) : "";
-}
-
 function isLikelyNonChatText(text) {
   return (
     text.length < 2 ||
@@ -234,66 +211,65 @@ function clearAmbientChatBuffer(groupId) {
   ambientChatBuffers.delete(key);
 }
 
-function cacheGroupMessage(message, text) {
+function recordIncomingGroupMessage(message, text) {
   const groupId = String(message.group_id || "");
-  const messageId = getMessageId(message);
-  if (!groupId || !messageId || hasImageMessage(message) || !text) {
-    return;
-  }
-
-  const existing = groupMessageCaches.get(groupId) || [];
-  existing.push({
-    messageId,
-    senderName: getSenderName(message) || String(message.user_id || "unknown"),
-    text,
-    timestamp: Date.now(),
-  });
-
-  const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
-  const maxMessagesToKeep = Math.max(20, getAmbientChatMaxConfiguredMessages() * 10);
-  const now = Date.now();
-  groupMessageCaches.set(
-    groupId,
-    existing
-      .filter((entry) => now - entry.timestamp <= contextMs)
-      .slice(-maxMessagesToKeep),
-  );
-}
-
-function getCachedGroupMessage(groupId, messageId) {
-  if (!messageId) {
+  const cached = groupMessageCache.add(message, text);
+  const images = cached?.images || extractImageSources(message);
+  if (!groupId || (!text && images.length === 0)) {
     return null;
   }
 
-  const messages = groupMessageCaches.get(String(groupId)) || [];
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index].messageId === String(messageId)) {
-      return messages[index];
-    }
-  }
-
-  return null;
-}
-
-function collectAmbientChat(message, text, client) {
-  const groupId = String(message.group_id);
-  const now = Date.now();
-  const repliedMessage = getCachedGroupMessage(groupId, getReplyMessageId(message));
-  if (repliedMessage) {
-    appendAmbientChatContext(groupId, {
-      ...repliedMessage,
-      relation: "被回复消息",
-      timestamp: now - 1,
-    });
-  }
-
-  appendAmbientChatContext(groupId, {
-    messageId: getMessageId(message),
+  const entry = {
+    role: "user",
+    messageId:
+      getMessageId(message) ||
+      `incoming-${groupId}-${message.user_id || "unknown"}-${Date.now()}`,
     senderName: getSenderName(message) || String(message.user_id || "unknown"),
     text,
-    relation: repliedMessage ? "当前回复" : "",
-    timestamp: now,
-  });
+    images,
+    relation: getReplyMessageId(message) ? "回复了一条消息" : "",
+    timestamp: Date.now(),
+  };
+  appendGroupConversationContext(groupId, entry);
+  return entry;
+}
+
+async function linkRepliedMessage(message, client) {
+  const replyMessageId = getReplyMessageId(message);
+  if (!replyMessageId) {
+    return null;
+  }
+
+  const repliedMessage = await groupMessageCache.resolveRepliedMessage(message, client);
+  if (!repliedMessage) {
+    return null;
+  }
+
+  const groupId = String(message.group_id);
+  const currentMessageId = getMessageId(message);
+  const context = groupConversationContexts.get(groupId) || [];
+  const current = [...context]
+    .reverse()
+    .find((entry) => !currentMessageId || entry.messageId === currentMessageId);
+  if (!current) {
+    return repliedMessage;
+  }
+
+  current.images = dedupeStrings([
+    ...(repliedMessage.images || []),
+    ...(current.images || []),
+  ]);
+  const repliedSender = repliedMessage.senderName || "群成员";
+  const repliedText = truncateText(repliedMessage.text, 120);
+  current.relation = repliedText
+    ? `回复 ${repliedSender}：“${repliedText}”`
+    : `回复 ${repliedSender} 的图片消息`;
+  return repliedMessage;
+}
+
+async function collectAmbientChat(message, client) {
+  const groupId = String(message.group_id);
+  await linkRepliedMessage(message, client);
 
   const existing = ambientChatBuffers.get(groupId) || {
     generation: 0,
@@ -323,50 +299,81 @@ async function handleAmbientChatIdle(groupId, generation, client) {
   }
 
   ambientChatBuffers.delete(groupId);
-  const messages = getAmbientChatContext(groupId);
+  const messages = getGroupConversationContext(
+    groupId,
+    config.ambientChatIdleMaxMessages,
+  );
   if (messages.length === 0) {
     return;
   }
 
   const text = formatAmbientChatMessages(messages);
   console.log(`[bot] ambient idle chat hit in group ${groupId}, messages=${messages.length}: ${text}`);
-  const reply = await chatService.quickReply(text, {
+  const reply = await chatService.ambientReply(messages, {
     ambientMode: "idle",
   });
-  client.sendGroupMessage(groupId, reply);
+  sendBotReply(client, groupId, reply);
 }
 
-function appendAmbientChatContext(groupId, message) {
+function appendGroupConversationContext(groupId, message) {
   const key = String(groupId);
-  const existing = ambientChatContexts.get(key) || [];
+  const existing = groupConversationContexts.get(key) || [];
   const deduped = message.messageId
     ? existing.filter((entry) => entry.messageId !== message.messageId)
     : existing;
   deduped.push(message);
-  ambientChatContexts.set(key, trimAmbientChatContext(deduped, Date.now()));
+  groupConversationContexts.set(
+    key,
+    trimGroupConversationContext(deduped, Date.now()),
+  );
 }
 
-function getAmbientChatContext(groupId, maxMessages = config.ambientChatIdleMaxMessages) {
+function getGroupConversationContext(
+  groupId,
+  maxMessages = config.localQwenMaxHistoryMessages,
+) {
   const key = String(groupId);
-  const messages = trimAmbientChatContext(ambientChatContexts.get(key) || [], Date.now());
-  ambientChatContexts.set(key, messages);
+  const messages = trimGroupConversationContext(
+    groupConversationContexts.get(key) || [],
+    Date.now(),
+  );
+  groupConversationContexts.set(key, messages);
   return messages.slice(-Math.max(1, maxMessages));
 }
 
-function trimAmbientChatContext(messages, now) {
+function trimGroupConversationContext(messages, now) {
   const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
-  const maxMessagesToKeep = getAmbientChatMaxConfiguredMessages() * 4;
+  const maxMessagesToKeep = Math.max(
+    1,
+    config.localQwenMaxHistoryMessages,
+    config.ambientChatIdleMaxMessages,
+    config.ambientChatInstantMaxMessages,
+  );
   return messages
     .filter((message) => now - message.timestamp <= contextMs)
     .slice(-maxMessagesToKeep);
 }
 
-function getAmbientChatMaxConfiguredMessages() {
-  return Math.max(
-    1,
-    config.ambientChatIdleMaxMessages,
-    config.ambientChatInstantMaxMessages,
-  );
+function clearGroupConversationContext(groupId) {
+  groupConversationContexts.delete(String(groupId));
+}
+
+function sendBotReply(client, groupId, reply) {
+  const text = typeof reply === "string" ? reply.trim() : "";
+  client.sendGroupMessage(groupId, reply);
+  if (!text) {
+    return;
+  }
+
+  appendGroupConversationContext(groupId, {
+    role: "assistant",
+    messageId: `bot-${groupId}-${Date.now()}-${randomUUID()}`,
+    senderName: config.botName,
+    text,
+    images: [],
+    relation: "",
+    timestamp: Date.now(),
+  });
 }
 
 function formatAmbientChatMessages(messages, mode = "idle") {
@@ -375,13 +382,13 @@ function formatAmbientChatMessages(messages, mode = "idle") {
   }
 
   if (messages.length === 1 && mode !== "instant") {
-    return messages[0].text;
+    return formatAmbientContextLine(messages[0]);
   }
 
   const lines = messages.map((message, index) => {
     const relation = message.relation || (mode === "instant" && index === messages.length - 1 ? "当前消息" : "");
     const relationText = relation ? `（${relation}）` : "";
-    return `${message.senderName}${relationText}：${message.text}`;
+    return `${relationText}${formatAmbientContextLine(message)}`;
   });
 
   if (mode === "instant") {
@@ -389,6 +396,21 @@ function formatAmbientChatMessages(messages, mode = "idle") {
   }
 
   return `以下是群聊里刚刚冷场前的一段上下文，按从旧到新排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
+}
+
+function formatAmbientContextLine(message) {
+  const sender =
+    message.role === "assistant"
+      ? `机器人 ${message.senderName || config.botName}`
+      : message.senderName || "群成员";
+  const text = String(message.text || "").trim() || "[图片消息]";
+  const imageCount = Array.isArray(message.images) ? message.images.length : 0;
+  const imageText = imageCount > 0 ? ` [图片×${imageCount}]` : "";
+  return `${sender}：${text}${imageText}`;
+}
+
+function dedupeStrings(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
 async function onGroupMessage(message, client) {
@@ -401,7 +423,7 @@ async function onGroupMessage(message, client) {
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
   const canCollectAmbientChat = shouldCollectAmbientChat(message, text);
-  cacheGroupMessage(message, text);
+  recordIncomingGroupMessage(message, text);
 
   if (shouldHandleBilibili(text)) {
     if (!hasImageMessage(message)) {
@@ -428,13 +450,13 @@ async function onGroupMessage(message, client) {
     console.log(`[bot] keyword hit in group ${groupId}: ${getMessageText(message)}`);
 
     const reply = await querySandstormStatus(config);
-    client.sendGroupMessage(groupId, reply);
+    sendBotReply(client, groupId, reply);
     return;
   }
 
   if (canCollectAmbientChat) {
-    collectAmbientChat(message, text, client);
-  } else if (!hasImageMessage(message)) {
+    await collectAmbientChat(message, client);
+  } else {
     clearAmbientChatBuffer(groupId);
   }
 
@@ -447,14 +469,18 @@ async function onGroupMessage(message, client) {
     markCooldown(groupId, ambientChatCooldowns);
     try {
       const contextualText = formatAmbientChatMessages(
-        getAmbientChatContext(groupId, config.ambientChatInstantMaxMessages),
+        getGroupConversationContext(groupId, config.ambientChatInstantMaxMessages),
         "instant",
       );
       console.log(`[bot] ambient chat hit in group ${groupId}, user ${message.user_id}: ${contextualText}`);
-      const reply = await chatService.quickReply(contextualText, {
-        senderName: getSenderName(message),
-      });
-      client.sendGroupMessage(groupId, reply);
+      const reply = await chatService.ambientReply(
+        getGroupConversationContext(groupId, config.ambientChatInstantMaxMessages),
+        {
+          ambientMode: "instant",
+          senderName: getSenderName(message),
+        },
+      );
+      sendBotReply(client, groupId, reply);
     } catch (error) {
       console.error("[ai] ambient chat failed:", error.message);
     }
@@ -467,12 +493,13 @@ async function onGroupMessage(message, client) {
 
   if (isResetCommand(text)) {
     chatService.resetSession(sessionId);
-    client.sendGroupMessage(groupId, "已清空当前会话上下文。");
+    clearGroupConversationContext(groupId);
+    sendBotReply(client, groupId, "已清空当前群聊会话上下文。");
     return;
   }
 
   if (isHelpCommand(text)) {
-    client.sendGroupMessage(groupId, buildHelpText());
+    sendBotReply(client, groupId, buildHelpText());
     return;
   }
 
@@ -482,6 +509,7 @@ async function onGroupMessage(message, client) {
 
   markCooldown(sessionId, chatCooldowns);
   try {
+    await linkRepliedMessage(message, client);
     const webSearch = shouldUseWebSearch(text);
     const thinking = shouldUseThinking(text);
     console.log(
@@ -492,11 +520,15 @@ async function onGroupMessage(message, client) {
       thinking,
       webSearch,
       images: extractImageSources(message),
+      groupContextMessages: getGroupConversationContext(
+        groupId,
+        config.localQwenMaxHistoryMessages,
+      ),
     });
-    client.sendGroupMessage(groupId, reply);
+    sendBotReply(client, groupId, reply);
   } catch (error) {
     console.error("[ai] chat failed:", error.message);
-    client.sendGroupMessage(groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
+    sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
   }
 }
 
@@ -535,7 +567,7 @@ async function handleBilibiliMessage(groupId, text, client) {
     const message = error.message.startsWith("Bilibili 解析失败：")
       ? error.message
       : `Bilibili 解析失败：${error.message}`;
-    client.sendGroupMessage(groupId, message);
+    sendBotReply(client, groupId, message);
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "resolve_failure",
@@ -545,7 +577,7 @@ async function handleBilibiliMessage(groupId, text, client) {
   }
 
   if (!config.bilibiliSendVideo) {
-    client.sendGroupMessage(groupId, formatBilibiliResolveText(result));
+    sendBotReply(client, groupId, formatBilibiliResolveText(result));
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "text_only",
@@ -600,7 +632,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       { traceId, bvid: result.bvid || "" },
     );
     uploadSucceeded = true;
-    client.sendGroupMessage(groupId, formatBilibiliResolveBrief(result));
+    sendBotReply(client, groupId, formatBilibiliResolveBrief(result));
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "video_sent",
@@ -615,7 +647,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       durationMs: Date.now() - requestStartedAt,
       error: formatErrorForLog(error),
     });
-    client.sendGroupMessage(groupId, formatBilibiliUploadFallback(result, error));
+    sendBotReply(client, groupId, formatBilibiliUploadFallback(result, error));
   } finally {
     if (downloaded && !uploadSucceeded && config.bilibiliKeepFailedVideo) {
       logBilibili("warn", "cleanup.retained", {
@@ -762,12 +794,12 @@ function buildHelpText() {
     "Sandstorm QQ Bot 使用说明",
     "",
     "查服：@我 ins / 叛乱 / 沙漠风暴 / 服务器状态",
-    "聊天：@我 直接提问",
-    "识图：@我 并附带图片，每次最多参考最近 10 张",
+    "聊天：@我 直接提问，Qwen 会参考群内最近 100 条消息",
+    "识图：@我 并附带图片，或回复上面的图片后 @我；最多参考最近 10 张",
     "深度思考：@我 深度思考 + 问题",
     "联网搜索：@我 联网搜索 / 联网查询 / 联网搜搜 + 问题",
     "组合：@我 联网搜索 深度思考 + 问题",
-    "清空上下文：@我 清空上下文 / 重置会话 / reset",
+    "清空群上下文：@我 清空上下文 / 重置会话 / reset",
     "Bilibili：群里直接发 B 站或 b23.tv 视频链接，无需 @我",
     "帮助：@我 帮助 / help / 使用说明",
   ].join("\n");

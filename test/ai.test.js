@@ -261,6 +261,100 @@ test("Qwen keeps only the newest 10 images while DeepSeek receives text placehol
   assert.equal((deepseekMessages.at(-1).content.match(/\[图片\]/g) || []).length, 12);
 });
 
+test("Qwen direct and ambient paths use 100 group records, including bot replies and quoted images", async () => {
+  const config = createConfig();
+  const images = Array.from(
+    { length: 11 },
+    (_, index) => `https://img.example/context-${index}.png`,
+  );
+  const context = Array.from({ length: 87 }, (_, index) => ({
+    role: "user",
+    messageId: `text-${index}`,
+    senderName: `Member-${index % 3}`,
+    text: `message-${index}`,
+    images: [],
+    relation: "",
+    timestamp: index,
+  }));
+  context.push({
+    role: "assistant",
+    messageId: "bot-prior",
+    senderName: "Bot",
+    text: "这是机器人先前的回复",
+    images: [],
+    relation: "",
+    timestamp: 87,
+  });
+  images.forEach((image, index) => {
+    context.push({
+      role: "user",
+      messageId: `image-${index}`,
+      senderName: "Alice",
+      text: `图片 ${index}`,
+      images: [image],
+      relation: "",
+      timestamp: 88 + index,
+    });
+  });
+  context.push({
+    role: "user",
+    messageId: "current-question",
+    senderName: "Bob",
+    text: "上面这张图片里是什么？",
+    images: [images[0]],
+    relation: "回复 Alice：“图片 0”",
+    timestamp: 99,
+  });
+  assert.equal(context.length, 100);
+
+  const calls = [];
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: createQwenStub({
+      async createCompletion(messages, options) {
+        calls.push({ messages, options });
+        return "group context reply";
+      },
+    }),
+    deepseekService: createDeepSeekStub({ configured: false }),
+  });
+
+  await service.chat("group:bob", "上面这张图片里是什么？", {
+    senderName: "Bob",
+    groupContextMessages: context,
+  });
+  await service.ambientReply(context, { ambientMode: "idle" });
+
+  assert.equal(calls.length, 2);
+  for (const call of calls) {
+    assert.equal(call.messages.length, 101);
+    assert.equal(call.messages.slice(1).some((message) => message.role === "assistant"), true);
+    const imageParts = call.messages
+      .flatMap((message) => Array.isArray(message.content) ? message.content : [])
+      .filter((part) => part.type === "image_ref");
+    assert.equal(imageParts.length, 10);
+    assert.equal(imageParts.at(-1).source, images[0]);
+    assert.equal(
+      call.messages.some(
+        (message) =>
+          Array.isArray(message.content) &&
+          message.content.some((part) => part.text === "[重复图片已在后文引用]"),
+      ),
+      true,
+    );
+    assert.match(
+      String(
+        Array.isArray(call.messages.at(-1).content)
+          ? call.messages.at(-1).content[0].text
+          : call.messages.at(-1).content,
+      ),
+      /回复 Alice.*上面这张图片里是什么/,
+    );
+  }
+  assert.match(calls[0].messages[0].content, /role=assistant 是你自己先前在群里的回复/);
+  assert.match(calls[1].messages[0].content, /role=assistant 是机器人自己先前的回复/);
+});
+
 test("Qwen multimodal preparation converts only the latest 10 inline images", async () => {
   const config = createConfig();
   const content = [{ type: "text", text: "look" }];
@@ -407,6 +501,9 @@ function createConfig() {
     webSearchMaxToolRounds: 2,
     webSearchMaxToolCallsPerRound: 2,
     ambientChatSystemPrompt: "Ambient",
+    ambientChatInstantMaxMessages: 100,
+    ambientChatIdleMaxMessages: 100,
+    ambientChatContextSeconds: 7200,
     ambientChatMaxOutputTokens: 180,
     ambientChatTimeoutMs: 12000,
     chatMaxHistoryMessages: 16,

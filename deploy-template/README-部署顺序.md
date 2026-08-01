@@ -31,8 +31,9 @@
    - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
    - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
    - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用内嵌 open-websearch 的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时启用推理
-   - `@机器人` 的图文或纯图片消息可交给 Local Qwen，单次最多保留最近 10 张图片；DeepSeek 回退保持文本模式
-   - 未 `@机器人` 的普通文字群聊默认会以较低概率触发参考最近群上下文的即时闲聊吐槽，默认最多取 `AMBIENT_CHAT_INSTANT_MAX_MESSAGES` 条；如果之后 `AMBIENT_CHAT_IDLE_SECONDS` 秒内没人继续发普通文字，会从群级最近上下文里按旧到新采集最多 `AMBIENT_CHAT_IDLE_MAX_MESSAGES` 条普通文字，100% 触发一次冷场闲聊；图片消息会被忽略
+   - Local Qwen 的艾特问答和主动闲聊共用群级最近 100 条上下文，群成员消息、图片和机器人自己的回复都计入；单次最多保留最近 10 张不同图片
+   - `@机器人` 时可发送图文或纯图片，也可先发图片，再回复该图片并艾特机器人提问；缓存未命中时会通过 OneBot `get_msg` 取回原图；DeepSeek 回退保持原有文本与短上下文模式
+   - 未 `@机器人` 的普通群聊默认会以较低概率触发即时闲聊；如果之后 `AMBIENT_CHAT_IDLE_SECONDS` 秒内没人继续发消息，会基于同一份最多 100 条/10 图上下文触发一次冷场闲聊
    - 可调整 `AMBIENT_CHAT_PROBABILITY`、`AMBIENT_CHAT_IDLE_SECONDS`、`AMBIENT_CHAT_INSTANT_MAX_MESSAGES`、`AMBIENT_CHAT_IDLE_MAX_MESSAGES`、`AMBIENT_CHAT_CONTEXT_SECONDS`，或用 `AMBIENT_CHAT_ENABLED=false` 关闭
    - `RESPONSE_NEUTRALITY_PROMPT` 会统一约束聊天和闲聊回复，避免出现政治或宗教倾向
    - 默认无需搜索 API Key，也不需要单独启动搜索服务；可通过 `OPEN_WEBSEARCH_ENGINES` 调整搜索引擎列表
