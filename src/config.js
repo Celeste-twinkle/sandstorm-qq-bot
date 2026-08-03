@@ -43,6 +43,10 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
+function parseStrongReasoningEffort(value) {
+  return String(value || "").trim().toLowerCase() === "max" ? "max" : "high";
+}
+
 const config = {
   port: parseInteger(process.env.PORT, 6700),
   wsPath: process.env.WS_PATH || "/onebot/v11/ws",
@@ -102,7 +106,73 @@ const config = {
     16384,
   ),
   localQwenTemperature: clampNumber(parseNumber(process.env.LOCAL_QWEN_TEMPERATURE, 0.7), 0, 2),
-  localQwenReasoningEffort: process.env.LOCAL_QWEN_REASONING_EFFORT || "high",
+  localQwenReasoningEffort: parseStrongReasoningEffort(
+    process.env.LOCAL_QWEN_REASONING_EFFORT,
+  ),
+  localQwenWebResearchEnabled: parseBoolean(
+    process.env.LOCAL_QWEN_WEB_RESEARCH_ENABLED,
+    true,
+  ),
+  localQwenWebResearchTimeoutMs: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_WEB_RESEARCH_TIMEOUT_MS, 120000),
+    1000,
+    600000,
+  ),
+  localQwenWebSearchMaxToolRounds: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_WEB_SEARCH_MAX_TOOL_ROUNDS, 4),
+    1,
+    8,
+  ),
+  localQwenWebSearchMaxToolCallsPerRound: clampNumber(
+    parseInteger(
+      process.env.LOCAL_QWEN_WEB_SEARCH_MAX_TOOL_CALLS_PER_ROUND,
+      4,
+    ),
+    1,
+    8,
+  ),
+  localQwenWebSearchMaxTotalToolCalls: clampNumber(
+    parseInteger(
+      process.env.LOCAL_QWEN_WEB_SEARCH_MAX_TOTAL_TOOL_CALLS,
+      12,
+    ),
+    1,
+    32,
+  ),
+  localQwenWebSearchMaxResults: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_WEB_SEARCH_MAX_RESULTS, 5),
+    1,
+    5,
+  ),
+  localQwenWebSearchCandidateResults: clampNumber(
+    parseInteger(
+      process.env.LOCAL_QWEN_WEB_SEARCH_CANDIDATE_RESULTS,
+      12,
+    ),
+    1,
+    12,
+  ),
+  localQwenWebSearchSnippetMaxChars: clampNumber(
+    parseInteger(
+      process.env.LOCAL_QWEN_WEB_SEARCH_SNIPPET_MAX_CHARS,
+      500,
+    ),
+    80,
+    1000,
+  ),
+  localQwenWebFetchMaxChars: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_WEB_FETCH_MAX_CHARS, 6000),
+    500,
+    12000,
+  ),
+  localQwenWebEvidenceReserveTokens: clampNumber(
+    parseInteger(
+      process.env.LOCAL_QWEN_WEB_EVIDENCE_RESERVE_TOKENS,
+      48000,
+    ),
+    4096,
+    131072,
+  ),
   localQwenMaxHistoryMessages: clampNumber(
     parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, 100),
     2,
@@ -229,7 +299,7 @@ const config = {
     60,
     86400,
   ),
-  ambientChatTimeoutMs: parseInteger(process.env.AMBIENT_CHAT_TIMEOUT_MS, 12000),
+  ambientChatTimeoutMs: parseInteger(process.env.AMBIENT_CHAT_TIMEOUT_MS, 30000),
   ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 180),
   ambientChatSystemPrompt:
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||

@@ -56,7 +56,7 @@ test("Local Qwen automatically returns to healthy after a later successful probe
   assert.equal(service.isHealthy(), true);
 });
 
-test("Local Qwen always uses the model maximum output limit", async () => {
+test("Local Qwen uses the model maximum output and strong reasoning for ordinary chat", async () => {
   const calls = [];
   const config = createConfig();
   const service = new LocalQwenChatService(config, {
@@ -88,9 +88,10 @@ test("Local Qwen always uses the model maximum output limit", async () => {
   assert.equal(calls[0].body.model, "qwen3.6-local");
   assert.equal(calls[0].body.stream, false);
   assert.equal(calls[0].body.max_tokens, 16384);
-  assert.equal(calls[0].body.temperature, 0.7);
+  assert.equal(calls[0].body.reasoning_effort, "high");
+  assert.equal("temperature" in calls[0].body, false);
   assert.equal("thinking" in calls[0].body, false);
-  assert.equal("reasoning_effort" in calls[0].body, false);
+  assert.equal("tools" in calls[0].body, false);
 
   assert.equal(calls[1].body.max_tokens, 16384);
   assert.equal(calls[1].body.reasoning_effort, "high");
@@ -98,9 +99,42 @@ test("Local Qwen always uses the model maximum output limit", async () => {
   assert.equal("thinking" in calls[1].body, false);
 
   assert.equal(calls[2].body.max_tokens, 16384);
+  assert.equal(calls[2].body.reasoning_effort, "high");
 });
 
-test("Local Qwen preserves tools and tool_choice in reasoning mode", async () => {
+test("Local Qwen accepts max reasoning while background image indexing stays non-reasoning", async () => {
+  const bodies = [];
+  const config = {
+    ...createConfig(),
+    localQwenReasoningEffort: "max",
+  };
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return completionResponse("indexed");
+    },
+  });
+
+  assert.equal(
+    await service.createCompletion([{ role: "user", content: "hello" }]),
+    "indexed",
+  );
+  assert.equal(
+    await service.analyzeImageForCache({
+      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+    }),
+    "indexed",
+  );
+
+  assert.equal(bodies[0].reasoning_effort, "max");
+  assert.equal("temperature" in bodies[0], false);
+  assert.equal(bodies[1].reasoning_effort, "none");
+  assert.equal(bodies[1].temperature, 0.1);
+  assert.equal(bodies[1].max_tokens, 16384);
+});
+
+test("Local Qwen starts web research with required parallel tools and reasoning", async () => {
   let body;
   const service = new LocalQwenChatService(createConfig(), {
     logger: createLogger(),
@@ -124,9 +158,130 @@ test("Local Qwen preserves tools and tool_choice in reasoning mode", async () =>
   assert.equal(reply, "searched reply");
   assert.equal(Array.isArray(body.tools), true);
   assert.equal(body.tools.length > 0, true);
-  assert.equal(body.tool_choice, "auto");
+  assert.equal(body.tool_choice, "required");
+  assert.equal(body.parallel_tool_calls, true);
   assert.equal(body.reasoning_effort, "high");
   assert.equal("thinking" in body, false);
+});
+
+test("Local Qwen preserves Ollama reasoning across parallel web tool turns", async () => {
+  const bodies = [];
+  const executedCalls = [];
+  const runnerConfigs = [];
+  const toolCalls = [
+    {
+      id: "search-1",
+      type: "function",
+      function: {
+        name: "web_search",
+        arguments: JSON.stringify({ query: "official current fact" }),
+      },
+    },
+    {
+      id: "search-2",
+      type: "function",
+      function: {
+        name: "web_search",
+        arguments: JSON.stringify({ query: "independent verification" }),
+      },
+    },
+  ];
+  const service = new LocalQwenChatService(createConfig(), {
+    logger: createLogger(),
+    webToolRunnerFactory(runnerConfig) {
+      runnerConfigs.push(runnerConfig);
+      return {
+        setUserQuery(query) {
+          assert.equal(query, "测试事实");
+        },
+        getToolDefinitions() {
+          return [
+            {
+              type: "function",
+              function: {
+                name: "web_search",
+                parameters: { type: "object" },
+              },
+            },
+          ];
+        },
+        async runToolCall(toolCall) {
+          executedCalls.push(toolCall.id);
+          return {
+            query: JSON.parse(toolCall.function.arguments).query,
+            results: [
+              {
+                title: `Result ${toolCall.id}`,
+                url: `https://example.com/${toolCall.id}`,
+              },
+            ],
+          };
+        },
+      };
+    },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      if (bodies.length === 1) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "",
+                  reasoning: "先搜索官方来源并交叉验证。",
+                  tool_calls: toolCalls,
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+      return completionResponse(
+        "基于两路来源的最终答案 https://example.com/search-1",
+      );
+    },
+  });
+
+  const reply = await service.createCompletion(
+    [
+      { role: "system", content: "system" },
+      { role: "user", content: "用户消息：联网搜索 测试事实" },
+    ],
+    { webSearch: true },
+  );
+
+  assert.equal(
+    reply,
+    "基于两路来源的最终答案 https://example.com/search-1",
+  );
+  assert.deepEqual(executedCalls.sort(), ["search-1", "search-2"]);
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[0].tool_choice, "required");
+  assert.equal(bodies[1].tool_choice, "auto");
+  assert.equal(bodies[1].parallel_tool_calls, true);
+  assert.equal(bodies[1].reasoning_effort, "high");
+  const assistantToolMessage = bodies[1].messages.find(
+    (message) => Array.isArray(message.tool_calls),
+  );
+  assert.equal(
+    assistantToolMessage.reasoning,
+    "先搜索官方来源并交叉验证。",
+  );
+  assert.equal(
+    bodies[1].messages.filter((message) => message.role === "tool").length,
+    2,
+  );
+  assert.equal(runnerConfigs[0].webSearchMaxResults, 5);
+  assert.equal(runnerConfigs[0].webSearchCandidateResults, 12);
+  assert.equal(runnerConfigs[0].webSearchSnippetMaxChars, 500);
+  assert.equal(runnerConfigs[0].webFetchMaxChars, 6000);
 });
 
 test("AI router prefers healthy Qwen and falls back to DeepSeek for the complete turn", async () => {
@@ -716,6 +871,16 @@ function createConfig() {
     localQwenModelMaxOutputTokens: 16384,
     localQwenTemperature: 0.7,
     localQwenReasoningEffort: "high",
+    localQwenWebResearchEnabled: true,
+    localQwenWebResearchTimeoutMs: 120000,
+    localQwenWebSearchMaxToolRounds: 4,
+    localQwenWebSearchMaxToolCallsPerRound: 4,
+    localQwenWebSearchMaxTotalToolCalls: 12,
+    localQwenWebSearchMaxResults: 5,
+    localQwenWebSearchCandidateResults: 12,
+    localQwenWebSearchSnippetMaxChars: 500,
+    localQwenWebFetchMaxChars: 6000,
+    localQwenWebEvidenceReserveTokens: 48000,
     localQwenMaxHistoryMessages: 100,
     localQwenMaxImages: 10,
     localQwenImageTokenEstimate: 4096,
@@ -738,6 +903,7 @@ function createConfig() {
     deepseekThinkingMaxOutputTokens: 3200,
     deepseekTemperature: 0.7,
     deepseekReasoningEffort: "high",
+    webSearchTriggerKeywords: ["联网搜索", "联网查询", "联网搜搜"],
     webSearchMaxToolRounds: 2,
     webSearchMaxToolCallsPerRound: 2,
     ambientChatSystemPrompt: "Ambient",
@@ -745,7 +911,7 @@ function createConfig() {
     ambientChatIdleMaxMessages: 100,
     ambientChatContextSeconds: 7200,
     ambientChatMaxOutputTokens: 180,
-    ambientChatTimeoutMs: 12000,
+    ambientChatTimeoutMs: 30000,
     chatMaxHistoryMessages: 16,
     chatMaxContextChars: 12000,
     chatSessionTtlMinutes: 120,

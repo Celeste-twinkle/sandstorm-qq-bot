@@ -90,12 +90,13 @@ class WebToolRunner {
     }
 
     this.lastSearchQuery = query;
-    this.lastRelevanceQuery = combineQueries(this.userQuery, query);
+    const relevanceQuery = combineQueries(this.userQuery, query);
+    this.lastRelevanceQuery = relevanceQuery;
     const configuredMaxResults = clampInteger(this.config.webSearchMaxResults, 3, 1, 5);
     const maxResults = clampInteger(args.max_results, configuredMaxResults, 1, configuredMaxResults);
     const candidateResults = clampInteger(this.config.webSearchCandidateResults, 8, maxResults, 12);
     const provider = pickProvider(this.config);
-    const searchQueries = buildSearchQueries(query, this.lastRelevanceQuery);
+    const searchQueries = buildSearchQueries(query, relevanceQuery);
     const payloads = [];
 
     for (const searchQuery of searchQueries) {
@@ -112,7 +113,7 @@ class WebToolRunner {
     const payload = mergeSearchPayloads(query, payloads);
 
     const rankedResults = rankSearchResults(
-      this.lastRelevanceQuery,
+      relevanceQuery,
       payload.results || [],
       maxResults,
       this.config.webSearchMinRelevanceScore,

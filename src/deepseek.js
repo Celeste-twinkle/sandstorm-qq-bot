@@ -170,6 +170,7 @@ class DeepSeekChatService {
       this.buildCompletionBody(messages, useThinking, {
         maxOutputTokens: normalizedOptions.maxOutputTokens,
         temperature: normalizedOptions.temperature,
+        reasoningEffort: normalizedOptions.reasoningEffort,
       }),
       {
         timeoutMs: normalizedOptions.timeoutMs,
@@ -352,6 +353,9 @@ function buildAssistantToolMessage(message) {
 
   if (typeof message.reasoning_content === "string") {
     result.reasoning_content = message.reasoning_content;
+  }
+  if (typeof message.reasoning === "string") {
+    result.reasoning = message.reasoning;
   }
 
   return result;
