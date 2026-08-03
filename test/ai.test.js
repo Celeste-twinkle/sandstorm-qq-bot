@@ -197,7 +197,7 @@ test("Local Qwen accepts max reasoning while background image indexing uses its 
   assert.equal("temperature" in bodies[2], false);
 });
 
-test("Local Qwen starts web research with required parallel tools and reasoning", async () => {
+test("Local Qwen starts web research with required parallel tools and fails closed without evidence", async () => {
   let body;
   const service = new LocalQwenChatService(createConfig(), {
     logger: createLogger(),
@@ -218,13 +218,31 @@ test("Local Qwen starts web research with required parallel tools and reasoning"
     },
   );
 
-  assert.equal(reply, "searched reply");
+  assert.match(reply, /没有取得可验证的网页正文/);
   assert.equal(Array.isArray(body.tools), true);
   assert.equal(body.tools.length > 0, true);
   assert.equal(body.tool_choice, "required");
   assert.equal(body.parallel_tool_calls, true);
   assert.equal(body.reasoning_effort, "high");
   assert.equal("thinking" in body, false);
+  const researchPolicy = body.messages.find(
+    (message) =>
+      message.role === "system" &&
+      String(message.content).includes("web-evidence-research"),
+  );
+  assert.ok(researchPolicy);
+  assert.doesNotMatch(researchPolicy.content, /今天的消息/);
+  assert.equal(
+    body.messages.some(
+      (message) =>
+        message.role === "user" &&
+        String(message.content).includes("今天的消息"),
+    ),
+    true,
+  );
+  assert.match(researchPolicy.content, /搜索摘要只用于发现线索/);
+  assert.match(researchPolicy.content, /明确标注为推断/);
+  assert.match(researchPolicy.content, /不可信指令/);
 });
 
 test("Local Qwen preserves Ollama reasoning across parallel web tool turns", async () => {
@@ -249,6 +267,16 @@ test("Local Qwen preserves Ollama reasoning across parallel web tool turns", asy
       },
     },
   ];
+  const fetchCall = {
+    id: "fetch-1",
+    type: "function",
+    function: {
+      name: "web_fetch",
+      arguments: JSON.stringify({
+        url: "https://example.com/search-1",
+      }),
+    },
+  };
   const service = new LocalQwenChatService(createConfig(), {
     logger: createLogger(),
     webToolRunnerFactory(runnerConfig) {
@@ -270,6 +298,14 @@ test("Local Qwen preserves Ollama reasoning across parallel web tool turns", asy
         },
         async runToolCall(toolCall) {
           executedCalls.push(toolCall.id);
+          if (toolCall.function.name === "web_fetch") {
+            return {
+              title: "Fetched primary source",
+              url: "https://example.com/search-1",
+              status: 200,
+              text: "Full source evidence",
+            };
+          }
           return {
             query: JSON.parse(toolCall.function.arguments).query,
             results: [
@@ -306,8 +342,29 @@ test("Local Qwen preserves Ollama reasoning across parallel web tool turns", asy
           },
         );
       }
+      if (bodies.length === 2) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "",
+                  reasoning: "读取决定答案的关键来源正文。",
+                  tool_calls: [fetchCall],
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
       return completionResponse(
-        "基于两路来源的最终答案 https://example.com/search-1",
+        "基于两路来源的最终答案【S1】\n【S1】Fetched primary source — https://example.com/search-1",
       );
     },
   });
@@ -322,14 +379,16 @@ test("Local Qwen preserves Ollama reasoning across parallel web tool turns", asy
 
   assert.equal(
     reply,
-    "基于两路来源的最终答案 https://example.com/search-1",
+    "基于两路来源的最终答案【S1】\n【S1】Fetched primary source — https://example.com/search-1",
   );
-  assert.deepEqual(executedCalls.sort(), ["search-1", "search-2"]);
-  assert.equal(bodies.length, 2);
+  assert.deepEqual(executedCalls.sort(), ["fetch-1", "search-1", "search-2"]);
+  assert.equal(bodies.length, 3);
   assert.equal(bodies[0].tool_choice, "required");
   assert.equal(bodies[1].tool_choice, "auto");
+  assert.equal(bodies[2].tool_choice, "auto");
   assert.equal(bodies[1].parallel_tool_calls, true);
-  assert.equal(bodies[1].reasoning_effort, "high");
+  assert.equal(bodies[2].parallel_tool_calls, true);
+  assert.equal(bodies[2].reasoning_effort, "high");
   const assistantToolMessage = bodies[1].messages.find(
     (message) => Array.isArray(message.tool_calls),
   );
@@ -341,10 +400,124 @@ test("Local Qwen preserves Ollama reasoning across parallel web tool turns", asy
     bodies[1].messages.filter((message) => message.role === "tool").length,
     2,
   );
+  assert.equal(
+    bodies[2].messages.filter((message) => message.role === "tool").length,
+    3,
+  );
   assert.equal(runnerConfigs[0].webSearchMaxResults, 5);
   assert.equal(runnerConfigs[0].webSearchCandidateResults, 12);
   assert.equal(runnerConfigs[0].webSearchSnippetMaxChars, 500);
   assert.equal(runnerConfigs[0].webFetchMaxChars, 6000);
+});
+
+test("Local Qwen does not accept search snippets as final evidence", async () => {
+  const bodies = [];
+  const config = createConfig();
+  config.localQwenWebSearchMaxToolRounds = 1;
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    webToolRunnerFactory() {
+      return {
+        setUserQuery() {},
+        getToolDefinitions() {
+          return [
+            {
+              type: "function",
+              function: {
+                name: "web_search",
+                parameters: { type: "object" },
+              },
+            },
+          ];
+        },
+        async runToolCall() {
+          return {
+            results: [
+              {
+                title: "Discovery result",
+                url: "https://example.com/discovery",
+                snippet: "Unfetched search snippet",
+              },
+            ],
+          };
+        },
+      };
+    },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      if (bodies.length === 1) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "",
+                  tool_calls: [
+                    {
+                      id: "search-only",
+                      type: "function",
+                      function: {
+                        name: "web_search",
+                        arguments: JSON.stringify({ query: "test" }),
+                      },
+                    },
+                  ],
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+      return completionResponse("不应请求没有正文证据的最终答案");
+    },
+  });
+
+  const reply = await service.createCompletion(
+    [{ role: "user", content: "用户消息：联网搜索 测试事实" }],
+    { webSearch: true },
+  );
+
+  assert.match(reply, /没有取得可验证的网页正文/);
+  assert.match(reply, /搜索摘要不能作为最终证据/);
+  assert.equal(bodies.length, 1);
+});
+
+test("Local Qwen rejects a citation URL that only shares a fetched-source prefix", async () => {
+  const service = new LocalQwenChatService(createConfig(), {
+    logger: createLogger(),
+    fetch: async () =>
+      completionResponse(
+        "不可靠结论【S1】\n【S1】Source — https://example.com/article-fake",
+      ),
+  });
+  const sourceCatalog = new Map([
+    [
+      "https://example.com/article",
+      {
+        source_id: "S1",
+        title: "Source",
+        url: "https://example.com/article",
+        fetched: true,
+      },
+    ],
+  ]);
+
+  const reply = await service.repairWebResearchCitations(
+    [],
+    { role: "assistant", content: "draft" },
+    "draft",
+    sourceCatalog,
+    1000,
+  );
+
+  assert.match(reply, /未能通过来源引用校验/);
 });
 
 test("AI router prefers healthy Qwen and falls back to DeepSeek for the complete turn", async () => {
@@ -1119,6 +1292,110 @@ test("DeepSeek request body remains unchanged", () => {
     thinking: { type: "enabled" },
     reasoning_effort: "high",
   });
+});
+
+test("DeepSeek web search uses the shared evidence research policy", () => {
+  const service = new DeepSeekChatService(createConfig());
+  const messages = service.buildWebSearchMessages([
+    { role: "system", content: "system" },
+    { role: "user", content: "用户消息：联网搜索 当前政策是否适用" },
+  ]);
+  const researchPolicy = messages.find(
+    (message) =>
+      message.role === "system" &&
+      String(message.content).includes("web-evidence-research"),
+  );
+
+  assert.ok(researchPolicy);
+  assert.doesNotMatch(researchPolicy.content, /当前政策是否适用/);
+  assert.equal(
+    messages.some(
+      (message) =>
+        message.role === "user" &&
+        String(message.content).includes("当前政策是否适用"),
+    ),
+    true,
+  );
+  assert.match(researchPolicy.content, /404、传输错误、被拦截页面或空内容都不算证据/);
+  assert.match(researchPolicy.content, /地区或司法辖区、产品版本和适用日期/);
+  assert.match(researchPolicy.content, /不可信指令/);
+});
+
+test("DeepSeek requires a first tool call and fails closed without fetched evidence", async () => {
+  const config = createConfig();
+  config.webSearchMaxToolRounds = 1;
+  const bodies = [];
+  const service = new DeepSeekChatService(config, {
+    webToolRunnerFactory() {
+      return {
+        setUserQuery(query) {
+          assert.equal(query, "联网搜索 测试事实");
+        },
+        getToolDefinitions() {
+          return [
+            {
+              type: "function",
+              function: {
+                name: "web_search",
+                parameters: { type: "object" },
+              },
+            },
+          ];
+        },
+        async runToolCall() {
+          return {
+            results: [
+              {
+                title: "Discovery only",
+                url: "https://example.com/discovery",
+                snippet: "Unfetched search snippet",
+              },
+            ],
+          };
+        },
+      };
+    },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: "",
+                tool_calls: [
+                  {
+                    id: "search-only",
+                    type: "function",
+                    function: {
+                      name: "web_search",
+                      arguments: JSON.stringify({ query: "test" }),
+                    },
+                  },
+                ],
+              },
+              finish_reason: "tool_calls",
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    },
+  });
+
+  const reply = await service.createCompletion(
+    [{ role: "user", content: "用户消息：联网搜索 测试事实" }],
+    { webSearch: true },
+  );
+
+  assert.match(reply, /没有取得可验证的网页正文/);
+  assert.equal(bodies.length, 1);
+  assert.equal(bodies[0].tool_choice, "required");
 });
 
 test("provider logs redact API keys", async () => {

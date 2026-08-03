@@ -1,8 +1,16 @@
 const { WebToolRunner } = require("./webtools");
+const {
+  buildNoWebEvidenceReply,
+  buildWebEvidenceResearchPolicy,
+} = require("./web-research-policy");
 
 class DeepSeekChatService {
-  constructor(config) {
+  constructor(config, options = {}) {
     this.config = config;
+    this.fetch = options.fetch || globalThis.fetch;
+    this.webToolRunnerFactory =
+      options.webToolRunnerFactory ||
+      ((runnerConfig) => new WebToolRunner(runnerConfig));
     this.sessions = new Map();
     this.sessionLocks = new Map();
   }
@@ -180,24 +188,27 @@ class DeepSeekChatService {
   }
 
   async createCompletionWithWebTools(messages, useThinking) {
-    const runner = new WebToolRunner(this.config);
+    const runner = this.webToolRunnerFactory(this.config);
     runner.setUserQuery(extractLatestUserText(messages));
     const workingMessages = this.buildWebSearchMessages(messages);
     const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds);
     const maxCallsPerRound = Math.max(1, this.config.webSearchMaxToolCallsPerRound);
+    let fetchedEvidenceCount = 0;
 
     for (let round = 1; round <= maxRounds; round += 1) {
       const payload = await this.requestCompletion({
         ...this.buildCompletionBody(workingMessages, useThinking),
         tools: runner.getToolDefinitions(),
-        tool_choice: "auto",
+        tool_choice: round === 1 ? "required" : "auto",
       });
 
       const message = payload?.choices?.[0]?.message || {};
       const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
 
       if (toolCalls.length === 0) {
-        return extractAssistantContent(payload);
+        return fetchedEvidenceCount > 0
+          ? extractAssistantContent(payload)
+          : buildNoWebEvidenceReply();
       }
 
       workingMessages.push(buildAssistantToolMessage(message));
@@ -224,12 +235,20 @@ class DeepSeekChatService {
           }
         }
 
+        if (isUsableFetchedWebEvidence(toolCall, result)) {
+          fetchedEvidenceCount += 1;
+        }
+
         workingMessages.push({
           role: "tool",
           tool_call_id: toolCall.id,
           content: JSON.stringify(result),
         });
       }
+    }
+
+    if (fetchedEvidenceCount === 0) {
+      return buildNoWebEvidenceReply();
     }
 
     workingMessages.push({
@@ -269,10 +288,21 @@ class DeepSeekChatService {
   buildWebSearchMessages(messages) {
     const now = new Date();
     const currentTime = formatCurrentTime(now);
+    const maxCallsPerRound = Math.max(
+      1,
+      this.config.webSearchMaxToolCallsPerRound,
+    );
+    const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds);
     const webSearchSystemMessage = {
       role: "system",
-      content:
-        `联网搜索开启。当前真实时间：${currentTime}。必须先用 web_search；仅在摘要不足以确认关键事实时 web_fetch，最多抓取 ${this.config.webSearchMaxToolCallsPerRound} 个页面。最终只基于工具结果回答，数字/日期/政策/新闻等标注来源；证据弱或冲突就说明不确定。`,
+      content: [
+        "联网搜索开启。必须先调用 web_search，再按证据需要调用 web_fetch；最终只能依据本轮工具取得的内容回答。",
+        buildWebEvidenceResearchPolicy({
+          currentTime,
+          maxParallelCalls: maxCallsPerRound,
+          maxFetchPages: maxRounds * maxCallsPerRound,
+        }),
+      ].join("\n"),
     };
 
     if (messages[0]?.role === "system") {
@@ -290,7 +320,7 @@ class DeepSeekChatService {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(`${this.config.deepseekBaseUrl}/chat/completions`, {
+      const response = await this.fetch(`${this.config.deepseekBaseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -385,6 +415,23 @@ function extractLatestUserText(messages) {
   }
 
   return "";
+}
+
+function isUsableFetchedWebEvidence(toolCall, result) {
+  if (
+    toolCall?.function?.name !== "web_fetch" ||
+    !result ||
+    typeof result !== "object" ||
+    result.error
+  ) {
+    return false;
+  }
+
+  return Boolean(
+    result.evidence_status === "fetched_page" ||
+      String(result.text || "").trim() ||
+      (Array.isArray(result.facts) && result.facts.length > 0),
+  );
 }
 
 function logCompletionUsage(body, payload) {

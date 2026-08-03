@@ -46,7 +46,8 @@ class WebToolRunner {
         type: "function",
         function: {
           name: "web_fetch",
-          description: "Fetch compact readable text from a URL returned by web_search.",
+          description:
+            "Fetch compact readable evidence from an article or primary-source URL returned by web_search. Search-engine result pages are not allowed.",
           parameters: {
             type: "object",
             properties: {
@@ -128,7 +129,9 @@ class WebToolRunner {
       results: rankedResults.results,
       filtered_count: rankedResults.filteredCount,
       searched_at: new Date().toISOString(),
-      guidance: "Prefer recent primary/official sources; say uncertain if evidence is weak.",
+      evidence_status: "discovery_only",
+      guidance:
+        "Search snippets are discovery only, not final evidence. Fetch the key primary/article pages; say uncertain if reliable pages are unavailable.",
     };
   }
 
@@ -142,6 +145,14 @@ class WebToolRunner {
       return {
         url,
         error: "Blocked: web_fetch can only open URLs returned by web_search in this conversation.",
+      };
+    }
+
+    if (isSearchEngineResultsUrl(url)) {
+      return {
+        url,
+        error:
+          "Blocked: search-engine result pages are not evidence. Use web_search for discovery, then fetch an article or primary source.",
       };
     }
 
@@ -165,12 +176,26 @@ class WebToolRunner {
     });
 
     const html = await response.text();
+    if (!response.ok) {
+      return failedFetchEvidence(
+        url,
+        response.status,
+        `HTTP ${response.status} ${response.statusText}`.trim(),
+      );
+    }
+    if (!String(html).trim()) {
+      return failedFetchEvidence(url, response.status, "empty response");
+    }
     const filtered = filterFetchedText(htmlToText(html), maxChars, this.lastRelevanceQuery || this.lastSearchQuery);
+    if (!hasReadableEvidence(filtered)) {
+      return failedFetchEvidence(url, response.status, "empty readable content");
+    }
     return {
       url,
       domain: getDomain(url),
       fetched_at: new Date().toISOString(),
       status: response.status,
+      evidence_status: "fetched_page",
       facts: filtered.facts,
       text: filtered.text,
     };
@@ -211,13 +236,37 @@ class WebToolRunner {
       includeLinks: false,
     });
 
-    const filtered = filterFetchedText(result.content || result.text || "", maxChars, this.lastRelevanceQuery || this.lastSearchQuery);
+    const status = Number(result.status);
+    if (Number.isFinite(status) && status >= 400) {
+      return failedFetchEvidence(
+        result.finalUrl || result.url || url,
+        status,
+        `HTTP ${status}`,
+      );
+    }
+    const content = result.content || result.text || "";
+    if (!String(content).trim()) {
+      return failedFetchEvidence(
+        result.finalUrl || result.url || url,
+        result.status,
+        "empty response",
+      );
+    }
+    const filtered = filterFetchedText(content, maxChars, this.lastRelevanceQuery || this.lastSearchQuery);
+    if (!hasReadableEvidence(filtered)) {
+      return failedFetchEvidence(
+        result.finalUrl || result.url || url,
+        result.status,
+        "empty readable content",
+      );
+    }
     return {
       url: result.url || url,
       final_url: result.finalUrl || result.url || url,
       domain: getDomain(result.finalUrl || result.url || url),
       fetched_at: new Date().toISOString(),
       status: result.status,
+      evidence_status: "fetched_page",
       title: result.title || "",
       facts: filtered.facts,
       text: filtered.text,
@@ -1036,6 +1085,49 @@ function normalizeUrl(value) {
   } catch {
     return "";
   }
+}
+
+function isSearchEngineResultsUrl(value) {
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    const pathname = parsed.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+    const hasQuery = parsed.searchParams.has("q") || parsed.searchParams.has("query");
+
+    return (
+      (/(^|\.)google\.[a-z.]+$/i.test(host) && pathname === "/search") ||
+      (/(^|\.)bing\.com$/i.test(host) && pathname === "/search") ||
+      (host === "duckduckgo.com" &&
+        (hasQuery || pathname === "/html" || pathname === "/lite")) ||
+      (/(^|\.)startpage\.com$/i.test(host) &&
+        (pathname === "/sp/search" || pathname === "/do/search")) ||
+      (host === "sogou.com" && pathname === "/web") ||
+      (host === "baidu.com" && pathname === "/s") ||
+      (host === "search.yahoo.com" && pathname === "/search") ||
+      (host === "search.brave.com" && pathname === "/search") ||
+      (/(^|\.)yandex\.[a-z.]+$/i.test(host) && pathname === "/search") ||
+      (host === "search.naver.com" && pathname === "/search.naver")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function failedFetchEvidence(url, status, reason) {
+  return {
+    url,
+    status,
+    error: `web_fetch returned no usable evidence: ${reason}.`,
+    reliability_guidance:
+      "Do not cite this page. Change source or query; retry once only for a transient failure.",
+  };
+}
+
+function hasReadableEvidence(filtered) {
+  return Boolean(
+    String(filtered?.text || "").trim() ||
+      (Array.isArray(filtered?.facts) && filtered.facts.length > 0),
+  );
 }
 
 function getDomain(url) {
