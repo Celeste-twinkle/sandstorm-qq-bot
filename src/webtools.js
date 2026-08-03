@@ -15,8 +15,11 @@ class WebToolRunner {
   constructor(config, options = {}) {
     this.config = config;
     this.fetch = options.fetch || globalThis.fetch;
+    this.logger = options.logger || console;
     this.allowedUrls = new Set();
     this.allowedUrlProviders = new Map();
+    this.autoFetchAttemptedUrls = new Set();
+    this.autoFetchReservedPages = 0;
     this.openWebSearchRuntimePromise = null;
     this.parallelSessionId = `sandstorm-qq-bot-${crypto.randomUUID()}`;
     this.userQuery = "";
@@ -34,7 +37,8 @@ class WebToolRunner {
         type: "function",
         function: {
           name: "web_search",
-          description: "Search the public web. Returns compact titles, URLs, domains, and snippets.",
+          description:
+            "Search the public web. Returns compact discovery results and may automatically attach readable evidence from top pages.",
           parameters: {
             type: "object",
             properties: {
@@ -126,14 +130,37 @@ class WebToolRunner {
       this.allowedUrlProviders.set(url, result.discovery_provider || payload.provider);
     }
 
+    const autoFetchedPages = await this.autoFetchSearchEvidence(
+      rankedResults.results,
+    );
+    const fetchedCount = autoFetchedPages.filter(
+      (page) => page?.evidence_status === "fetched_page" && !page.error,
+    ).length;
+    const failedFetchCount = autoFetchedPages.length - fetchedCount;
+    if (this.config.webSearchDiagnosticsEnabled !== false) {
+      const providerFailureCodes = formatProviderFailureCodes(
+        payload.partial_failures,
+      );
+      const autoFetchFailureCodes = formatProviderFailureCodes(
+        autoFetchedPages.flatMap((page) => page?.fallback_failures || []),
+      );
+      this.logger.log(
+        `[webtools] search provider=${payload.provider || "unknown"} results=${rankedResults.results.length} provider_failures=${(payload.partial_failures || []).length} provider_failure_codes=${providerFailureCodes} auto_fetch_ok=${fetchedCount} auto_fetch_failed=${failedFetchCount} auto_fetch_failure_codes=${autoFetchFailureCodes}`,
+      );
+    }
+
     return {
       ...payload,
       results: rankedResults.results,
+      auto_fetched_pages: autoFetchedPages,
       filtered_count: rankedResults.filteredCount,
       searched_at: new Date().toISOString(),
-      evidence_status: "discovery_only",
+      evidence_status:
+        fetchedCount > 0 ? "discovery_with_fetched_pages" : "discovery_only",
       guidance:
-        "Search snippets are discovery only, not final evidence. Fetch the key primary/article pages; say uncertain if reliable pages are unavailable.",
+        fetchedCount > 0
+          ? "Search snippets are discovery only. auto_fetched_pages contains readable page evidence that may be cited by source_id after the caller registers it."
+          : "Search snippets are discovery only, not final evidence. Fetch the key primary/article pages; say uncertain if reliable pages are unavailable.",
     };
   }
 
@@ -164,6 +191,90 @@ class WebToolRunner {
     const requestedMaxChars = clampInteger(args.max_chars, configuredMaxChars, 500, configuredMaxChars);
     const maxChars = Math.min(requestedMaxChars, configuredMaxChars);
     return this.fetchWithFallback(url, maxChars);
+  }
+
+  async autoFetchSearchEvidence(results) {
+    const maxPages = clampInteger(
+      this.config.webSearchAutoFetchMaxPages,
+      0,
+      0,
+      8,
+    );
+    const perSearch = clampInteger(
+      this.config.webSearchAutoFetchPerSearch,
+      1,
+      0,
+      4,
+    );
+    const remaining = Math.max(0, maxPages - this.autoFetchReservedPages);
+    if (remaining === 0 || perSearch === 0) {
+      return [];
+    }
+
+    const candidates = [];
+    const seenDomains = new Set();
+    const usableResults = (Array.isArray(results) ? results : [])
+      .map((result, index) => ({
+        index,
+        url: normalizeUrl(result?.url),
+        domain: getDomain(result?.url),
+      }))
+      .filter(
+        (result) =>
+          result.url &&
+          !isSearchEngineResultsUrl(result.url) &&
+          !this.autoFetchAttemptedUrls.has(result.url),
+      );
+
+    for (const result of usableResults) {
+      if (candidates.length >= Math.min(remaining, perSearch)) {
+        break;
+      }
+      if (result.domain && seenDomains.has(result.domain)) {
+        continue;
+      }
+      seenDomains.add(result.domain);
+      candidates.push(result);
+    }
+    for (const result of usableResults) {
+      if (candidates.length >= Math.min(remaining, perSearch)) {
+        break;
+      }
+      if (!candidates.some((candidate) => candidate.url === result.url)) {
+        candidates.push(result);
+      }
+    }
+
+    for (const candidate of candidates) {
+      this.autoFetchAttemptedUrls.add(candidate.url);
+    }
+    this.autoFetchReservedPages += candidates.length;
+
+    return Promise.all(
+      candidates.map(async (candidate) => {
+        try {
+          const result = await this.fetchPage({
+            url: candidate.url,
+            max_chars: this.config.webFetchMaxChars,
+          });
+          return {
+            ...result,
+            discovery_rank: candidate.index + 1,
+            auto_fetched: true,
+          };
+        } catch (error) {
+          return {
+            ...failedFetchEvidence(
+              candidate.url,
+              undefined,
+              sanitizeProviderError(error, this.config),
+            ),
+            discovery_rank: candidate.index + 1,
+            auto_fetched: true,
+          };
+        }
+      }),
+    );
   }
 
   async searchWithFallback(query, maxResults) {
@@ -225,7 +336,15 @@ class WebToolRunner {
       tool: "web_search_exa",
       args: {
         query,
+        type: "auto",
         numResults: maxResults,
+        livecrawl: "fallback",
+        contextMaxCharacters: clampInteger(
+          this.config.webSearchExaContextMaxChars,
+          10000,
+          1000,
+          50000,
+        ),
       },
       timeoutMs: getMcpTimeoutMs(this.config),
       headers: buildExaHeaders(this.config),
@@ -308,12 +427,15 @@ class WebToolRunner {
       }
     }
 
-    return failedFetchEvidence(
-      url,
-      undefined,
-      failures.map((failure) => `${failure.provider}: ${failure.message}`).join("; ") ||
-        "all fetch providers failed",
-    );
+    return {
+      ...failedFetchEvidence(
+        url,
+        undefined,
+        failures.map((failure) => `${failure.provider}: ${failure.message}`).join("; ") ||
+          "all fetch providers failed",
+      ),
+      fallback_failures: failures,
+    };
   }
 
   async fetchExaMcp(url, maxChars) {
@@ -375,33 +497,73 @@ class WebToolRunner {
   }
 
   async fetchDirect(url, maxChars) {
-    const response = await fetchWithTimeout(url, {
-      timeoutMs: this.config.webSearchTimeoutMs,
-      headers: {
-        "User-Agent": USER_AGENT,
-        "Accept-Language": this.config.webSearchLanguage || "zh-CN,zh;q=0.9,en;q=0.8",
-      },
-    }, this.fetch);
-
-    const html = await readResponseTextLimited(
-      response,
-      MAX_HTTP_RESPONSE_BYTES,
+    const timeoutMs = clampInteger(
       this.config.webSearchTimeoutMs,
+      10000,
+      1000,
+      60000,
     );
-    if (!response.ok) {
-      return failedFetchEvidence(
-        url,
-        response.status,
-        `HTTP ${response.status} ${response.statusText}`.trim(),
+    const deadline = Date.now() + timeoutMs;
+    let currentUrl = url;
+
+    for (let hop = 0; hop <= 5; hop += 1) {
+      await assertPublicHttpUrl(currentUrl);
+      const remainingMs = Math.max(1, deadline - Date.now());
+      const response = await fetchWithTimeout(currentUrl, {
+        timeoutMs: remainingMs,
+        redirect: "manual",
+        headers: {
+          "User-Agent": USER_AGENT,
+          "Accept-Language": this.config.webSearchLanguage || "zh-CN,zh;q=0.9,en;q=0.8",
+        },
+      }, this.fetch);
+
+      if (isHttpRedirectStatus(response.status)) {
+        const location = response.headers?.get?.("location");
+        await response.body?.cancel?.();
+        if (!location) {
+          return failedFetchEvidence(
+            currentUrl,
+            response.status,
+            `HTTP ${response.status} redirect without Location`,
+          );
+        }
+        currentUrl = new URL(location, currentUrl).toString();
+        continue;
+      }
+
+      const html = await readResponseTextLimited(
+        response,
+        MAX_HTTP_RESPONSE_BYTES,
+        remainingMs,
       );
+      if (!response.ok) {
+        return failedFetchEvidence(
+          currentUrl,
+          response.status,
+          `HTTP ${response.status} ${response.statusText}`.trim(),
+        );
+      }
+      const evidence = buildFetchedEvidence({
+        url: currentUrl,
+        text: htmlToText(html),
+        maxChars,
+        relevanceQuery: this.lastRelevanceQuery || this.lastSearchQuery,
+        status: response.status,
+      });
+      return currentUrl === url
+        ? evidence
+        : {
+            ...evidence,
+            final_url: currentUrl,
+          };
     }
-    return buildFetchedEvidence({
-      url,
-      text: htmlToText(html),
-      maxChars,
-      relevanceQuery: this.lastRelevanceQuery || this.lastSearchQuery,
-      status: response.status,
-    });
+
+    return failedFetchEvidence(
+      currentUrl,
+      undefined,
+      "too many redirects",
+    );
   }
 
   async searchOpenWebSearch(query, maxResults) {
@@ -735,6 +897,17 @@ function normalizeParallelWarnings(warnings) {
     code: String(warning?.type || "warning"),
     message: compactText(warning?.message || "provider warning", 240),
   }));
+}
+
+function formatProviderFailureCodes(failures) {
+  const codes = (Array.isArray(failures) ? failures : [])
+    .map((failure) => {
+      const provider = compactText(failure?.provider || "unknown", 40);
+      const code = compactText(failure?.code || "provider_error", 60);
+      return `${provider}:${code}`;
+    })
+    .filter(Boolean);
+  return uniqueCompactList(codes).slice(0, 8).join(",") || "none";
 }
 
 function buildExaHeaders(config) {
@@ -1663,6 +1836,10 @@ function isSearchEngineResultsUrl(value) {
   } catch {
     return false;
   }
+}
+
+function isHttpRedirectStatus(status) {
+  return [301, 302, 303, 307, 308].includes(Number(status));
 }
 
 function failedFetchEvidence(url, status, reason) {

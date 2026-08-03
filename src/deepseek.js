@@ -419,6 +419,28 @@ function extractLatestUserText(messages) {
 
 function isUsableFetchedWebEvidence(toolCall, result) {
   if (
+    toolCall?.function?.name === "web_search" &&
+    result &&
+    typeof result === "object" &&
+    !result.error
+  ) {
+    return (Array.isArray(result.auto_fetched_pages)
+      ? result.auto_fetched_pages
+      : []
+    ).some(
+      (page) =>
+        page &&
+        typeof page === "object" &&
+        !page.error &&
+        (
+          page.evidence_status === "fetched_page" ||
+          String(page.text || "").trim() ||
+          (Array.isArray(page.facts) && page.facts.length > 0)
+        ),
+    );
+  }
+
+  if (
     toolCall?.function?.name !== "web_fetch" ||
     !result ||
     typeof result !== "object" ||

@@ -39,6 +39,30 @@ test("web fetch rejects search-engine result pages even if search returned them"
   assert.match(result.error, /search-engine result pages are not evidence/);
 });
 
+test("direct page fetch rejects redirects to private network targets", async () => {
+  const calls = [];
+  const runner = new WebToolRunner(createWebConfig(), {
+    fetch: async (url, options) => {
+      calls.push({ url, redirect: options.redirect });
+      return new Response("", {
+        status: 302,
+        headers: { location: "http://127.0.0.1/private" },
+      });
+    },
+  });
+
+  await assert.rejects(
+    () => runner.fetchDirect("https://example.com/report", 3000),
+    /private or local (?:hosts|network address)/,
+  );
+  assert.deepEqual(calls, [
+    {
+      url: "https://example.com/report",
+      redirect: "manual",
+    },
+  ]);
+});
+
 test("automatic search falls back from rate-limited Exa to Parallel before Bing", async () => {
   const calls = [];
   const runner = new WebToolRunner(createWebConfig(), {
@@ -123,6 +147,63 @@ test("automatic search uses Bing only after Exa and Parallel fail", async () => 
   assert.equal(result.partial_failures.length, 2);
 });
 
+test("Exa search matches OpenCode context options and auto-fetches top evidence", async () => {
+  const calls = [];
+  const runner = new WebToolRunner({
+    ...createWebConfig(),
+    webSearchProvider: "exa",
+    webSearchAutoFetchMaxPages: 2,
+    webSearchAutoFetchPerSearch: 1,
+    webSearchExaContextMaxChars: 10000,
+  }, {
+    logger: { log() {} },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push(body);
+      if (body.params.name === "web_search_exa") {
+        assert.equal(body.params.arguments.type, "auto");
+        assert.equal(body.params.arguments.livecrawl, "fallback");
+        assert.equal(body.params.arguments.contextMaxCharacters, 10000);
+        return mcpTextResponse([
+          "Title: Official current report",
+          "URL: https://example.com/report",
+          "Published: 2026-08-04",
+          "Highlights:",
+          "Current discovery context.",
+          "",
+          "Title: Independent report",
+          "URL: https://example.net/report",
+          "Published: 2026-08-04",
+          "Highlights:",
+          "Independent discovery context.",
+        ].join("\n"));
+      }
+      if (body.params.name === "web_fetch_exa") {
+        assert.deepEqual(
+          body.params.arguments.urls,
+          ["https://example.com/report"],
+        );
+        return mcpTextResponse(
+          "# Official current report\nThe fetched page contains readable, dated evidence for the requested fact.",
+        );
+      }
+      throw new Error(`Unexpected tool: ${body.params.name}`);
+    },
+  });
+
+  const result = await runner.search({
+    query: "official report facts",
+    max_results: 2,
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(result.evidence_status, "discovery_with_fetched_pages");
+  assert.equal(result.auto_fetched_pages.length, 1);
+  assert.equal(result.auto_fetched_pages[0].evidence_status, "fetched_page");
+  assert.equal(result.auto_fetched_pages[0].auto_fetched, true);
+  assert.match(result.auto_fetched_pages[0].text, /readable, dated evidence/);
+});
+
 test("Exa MCP full-page output becomes fetched evidence, not a search snippet", async () => {
   const runner = new WebToolRunner(createWebConfig(), {
     fetch: async (_url, options) => {
@@ -185,8 +266,15 @@ test("provider diagnostics redact optional API keys", async () => {
   const config = {
     ...createWebConfig(),
     exaApiKey: "exa-secret-test",
+    webSearchDiagnosticsEnabled: true,
   };
+  const logLines = [];
   const runner = new WebToolRunner(config, {
+    logger: {
+      log(value) {
+        logLines.push(String(value));
+      },
+    },
     fetch: async (url) => {
       if (url === "https://mcp.exa.ai/mcp") {
         return new Response("exa-secret-test rejected", { status: 401 });
@@ -208,6 +296,8 @@ test("provider diagnostics redact optional API keys", async () => {
 
   assert.equal(diagnostics.includes("exa-secret-test"), false);
   assert.match(diagnostics, /<redacted>/);
+  assert.match(logLines.join("\n"), /provider_failure_codes=exa:authentication/);
+  assert.equal(logLines.join("\n").includes("exa-secret-test"), false);
 });
 
 function createWebConfig() {
@@ -234,6 +324,7 @@ function createWebConfig() {
     openWebSearchEngines: ["bing"],
     openWebSearchMode: "request",
     openWebSearchFakeIpCidrs: [],
+    webSearchDiagnosticsEnabled: false,
   };
 }
 

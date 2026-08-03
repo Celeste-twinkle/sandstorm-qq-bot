@@ -844,6 +844,13 @@ function buildQwenWebRunnerConfig(config) {
       500,
       12000,
     ),
+    webSearchAutoFetchMaxPages: clampInteger(
+      config.localQwenWebAutoFetchMaxPages,
+      4,
+      0,
+      8,
+    ),
+    webSearchAutoFetchPerSearch: 1,
   };
 }
 
@@ -946,6 +953,27 @@ function annotateQwenWebToolResult(
   }
   const toolName = toolCall?.function?.name;
   if (toolName === "web_search" && Array.isArray(result.results)) {
+    const autoFetchedPages = (Array.isArray(result.auto_fetched_pages)
+      ? result.auto_fetched_pages
+      : []
+    ).map((page) => {
+      if (!page || typeof page !== "object" || page.error) {
+        return page;
+      }
+      const source = registerQwenWebSource(
+        sourceCatalog,
+        sourceSequence,
+        page,
+        true,
+      );
+      return source
+        ? {
+            ...page,
+            source_id: source.source_id,
+            evidence_status: "fetched_page",
+          }
+        : page;
+    });
     return {
       ...result,
       results: result.results.map((item) => {
@@ -963,6 +991,7 @@ function annotateQwenWebToolResult(
             }
           : item;
       }),
+      auto_fetched_pages: autoFetchedPages,
     };
   }
   if (toolName === "web_fetch") {

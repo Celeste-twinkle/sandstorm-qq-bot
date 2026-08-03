@@ -489,6 +489,103 @@ test("Local Qwen does not accept search snippets as final evidence", async () =>
   assert.equal(bodies.length, 1);
 });
 
+test("Local Qwen accepts controller-fetched evidence when the model stops after search", async () => {
+  const bodies = [];
+  const citedAnswer =
+    "Verified answer \u3010S1\u3011\n\u3010S1\u3011 Fetched report — https://example.com/report";
+  const service = new LocalQwenChatService(createConfig(), {
+    logger: createLogger(),
+    webToolRunnerFactory() {
+      return {
+        setUserQuery() {},
+        getToolDefinitions() {
+          return [
+            {
+              type: "function",
+              function: {
+                name: "web_search",
+                parameters: { type: "object" },
+              },
+            },
+          ];
+        },
+        async runToolCall() {
+          return {
+            evidence_status: "discovery_with_fetched_pages",
+            results: [
+              {
+                title: "Discovery result",
+                url: "https://example.com/report",
+                snippet: "Discovery-only summary.",
+              },
+            ],
+            auto_fetched_pages: [
+              {
+                title: "Fetched report",
+                url: "https://example.com/report",
+                status: 200,
+                evidence_status: "fetched_page",
+                text: "Readable page evidence.",
+              },
+            ],
+          };
+        },
+      };
+    },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      if (bodies.length === 1) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "",
+                  tool_calls: [
+                    {
+                      id: "search-with-auto-fetch",
+                      type: "function",
+                      function: {
+                        name: "web_search",
+                        arguments: JSON.stringify({ query: "test" }),
+                      },
+                    },
+                  ],
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+      return completionResponse(citedAnswer);
+    },
+  });
+
+  const reply = await service.createCompletion(
+    [{ role: "user", content: "鐢ㄦ埛娑堟伅锛氳仈缃戞悳绱?娴嬭瘯浜嬪疄" }],
+    { webSearch: true },
+  );
+
+  assert.equal(reply, citedAnswer);
+  assert.equal(bodies.length, 2);
+  const toolResult = bodies[1].messages.find(
+    (message) => message.role === "tool",
+  );
+  const parsedResult = JSON.parse(toolResult.content);
+  assert.equal(parsedResult.auto_fetched_pages[0].source_id, "S1");
+  assert.equal(
+    parsedResult.auto_fetched_pages[0].evidence_status,
+    "fetched_page",
+  );
+});
+
 test("Local Qwen rejects a citation URL that only shares a fetched-source prefix", async () => {
   const service = new LocalQwenChatService(createConfig(), {
     logger: createLogger(),
@@ -1396,6 +1493,90 @@ test("DeepSeek requires a first tool call and fails closed without fetched evide
   assert.match(reply, /没有取得可验证的网页正文/);
   assert.equal(bodies.length, 1);
   assert.equal(bodies[0].tool_choice, "required");
+});
+
+test("DeepSeek accepts controller-fetched evidence from a search result", async () => {
+  const config = createConfig();
+  config.webSearchMaxToolRounds = 1;
+  const bodies = [];
+  const service = new DeepSeekChatService(config, {
+    webToolRunnerFactory() {
+      return {
+        setUserQuery() {},
+        getToolDefinitions() {
+          return [
+            {
+              type: "function",
+              function: {
+                name: "web_search",
+                parameters: { type: "object" },
+              },
+            },
+          ];
+        },
+        async runToolCall() {
+          return {
+            results: [
+              {
+                title: "Discovery result",
+                url: "https://example.com/report",
+              },
+            ],
+            auto_fetched_pages: [
+              {
+                title: "Fetched report",
+                url: "https://example.com/report",
+                evidence_status: "fetched_page",
+                text: "Readable page evidence.",
+              },
+            ],
+          };
+        },
+      };
+    },
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      if (bodies.length === 1) {
+        return new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: "",
+                  tool_calls: [
+                    {
+                      id: "search-with-auto-fetch",
+                      type: "function",
+                      function: {
+                        name: "web_search",
+                        arguments: JSON.stringify({ query: "test" }),
+                      },
+                    },
+                  ],
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+      return completionResponse("DeepSeek evidence-backed answer");
+    },
+  });
+
+  const reply = await service.createCompletion(
+    [{ role: "user", content: "鐢ㄦ埛娑堟伅锛氳仈缃戞悳绱?娴嬭瘯浜嬪疄" }],
+    { webSearch: true },
+  );
+
+  assert.equal(reply, "DeepSeek evidence-backed answer");
+  assert.equal(bodies.length, 2);
 });
 
 test("provider logs redact API keys", async () => {

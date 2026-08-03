@@ -153,6 +153,11 @@ const config = {
     1,
     32,
   ),
+  localQwenWebAutoFetchMaxPages: clampNumber(
+    parseInteger(process.env.LOCAL_QWEN_WEB_AUTO_FETCH_MAX_PAGES, 4),
+    0,
+    8,
+  ),
   localQwenWebSearchMaxResults: clampNumber(
     parseInteger(process.env.LOCAL_QWEN_WEB_SEARCH_MAX_RESULTS, 5),
     1,
@@ -277,6 +282,18 @@ const config = {
   webSearchMaxToolCallsPerRound: parseInteger(process.env.WEB_SEARCH_MAX_TOOL_CALLS_PER_ROUND, 2),
   webSearchTimeoutMs: parseInteger(process.env.WEB_SEARCH_TIMEOUT_MS, 10000),
   webSearchMcpTimeoutMs: parseInteger(process.env.WEB_SEARCH_MCP_TIMEOUT_MS, 25000),
+  webSearchAutoFetchMaxPages: parseInteger(
+    process.env.WEB_SEARCH_AUTO_FETCH_MAX_PAGES,
+    2,
+  ),
+  webSearchAutoFetchPerSearch: parseInteger(
+    process.env.WEB_SEARCH_AUTO_FETCH_PER_SEARCH,
+    1,
+  ),
+  webSearchExaContextMaxChars: parseInteger(
+    process.env.WEB_SEARCH_EXA_CONTEXT_MAX_CHARS,
+    10000,
+  ),
   webFetchMaxChars: parseInteger(process.env.WEB_FETCH_MAX_CHARS, 1000),
   webSearchSnippetMaxChars: parseInteger(process.env.WEB_SEARCH_SNIPPET_MAX_CHARS, 220),
   webSearchMinRelevanceScore: parseInteger(process.env.WEB_SEARCH_MIN_RELEVANCE_SCORE, 3),

@@ -64,11 +64,11 @@ Local Qwen 的普通问答、主动闲聊和图片问答统一启用强推理，
 
 Qwen 模式无需附加 `深度思考`，普通对话本身就使用强推理。只有聊天消息明确包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时才进入本地联网搜索工具模式，由模型调用 `web_search` / `web_fetch`，本地 Node 程序执行搜索和网页读取；未命中联网触发词时请求体不提供联网工具，因此不会自行搜索。DeepSeek 回退仍保留原有的 `深度思考` 触发行为。
 
-Qwen 使用专属的多轮研究代理：联网时默认强制 `reasoning_effort=high`，首轮必须搜索，支持并行工具调用，并把 Ollama 返回的 `message.reasoning` 原样带入后续工具回合。默认最多 4 轮、每轮 4 个、整轮 12 个工具调用；每条搜索保留 5 个结果、12 个候选，摘要最多 500 字，网页正文最多 6000 字，并预留 48000 token 给研究证据。复杂问题会先做互补搜索，再读取多个官方/一手或独立来源，继续查漏后综合；配置入口为 `LOCAL_QWEN_WEB_*`。这条链路利用 Qwen 的 262144 token 上下文，DeepSeek 回退仍保留原来的 2 轮 × 2 调用和较小证据窗口。
+Qwen 使用专属的多轮研究代理：联网时默认强制 `reasoning_effort=high`，首轮必须搜索，支持并行工具调用，并把 Ollama 返回的 `message.reasoning` 原样带入后续工具回合。默认最多 4 轮、每轮 4 个、整轮 12 个模型工具调用；每条搜索保留 5 个结果、12 个候选，摘要最多 500 字，网页正文最多 6000 字，并预留 48000 token 给研究证据。为避免模型搜索后直接使用摘要作答，控制器会在每条搜索后自动读取一个排名靠前的正文，整轮默认最多 4 页；即使模型没有主动调用 `web_fetch`，成功读取的正文也会进入来源目录和引用校验。复杂问题仍可继续读取其他官方/一手或独立来源并查漏；配置入口为 `LOCAL_QWEN_WEB_*`。这条链路利用 Qwen 的 262144 token 上下文，DeepSeek 回退仍保留原来的 2 轮 × 2 调用和较小证据窗口。
 
 所有联网路径都会根据 QQ 用户原始问题、模型搜索词和结果日期做相关性/时效性重排，并统一使用本地 Ollama 代理一键导入包中的 `web-evidence-research` 证据研究规则。搜索摘要只负责发现线索，关键结论必须读取正文；失败页面和搜索结果页不算证据，高风险信息还会限定地区、版本和日期。回答要求重要事实紧邻标注来源、明确区分事实与推断；如果来源不足、冲突或搜索质量差，会说明无法可靠确认并给出下一步验证方式。
 
-默认 `WEB_SEARCH_PROVIDER=auto` 使用可降级链路：Exa 托管 MCP → Parallel Search MCP → Bing HTML。Exa 和 Parallel 都可匿名使用，不依赖本地代理；匿名服务限流、超时或返回空结果时会自动尝试下一家。`web_fetch` 同样优先使用 Exa/Parallel 的正文提取，失败后才调用内嵌 `open-websearch@2.1.11` 和直接抓取。可选的 `EXA_API_KEY`、`PARALLEL_API_KEY` 用于提高额度，`WEB_SEARCH_FALLBACK_PROVIDERS` 可调整顺序；Tavily/Brave 只有在配置对应 Key 并显式加入该列表后才参与降级。显式设置 `WEB_SEARCH_PROVIDER=open-websearch` 时仍可通过 `OPEN_WEBSEARCH_ENGINES` 使用原有内嵌搜索。
+默认 `WEB_SEARCH_PROVIDER=auto` 使用可降级链路：Exa 托管 MCP → Parallel Search MCP → Bing HTML。Exa 请求与 OpenCode 一样启用 `type=auto`、`livecrawl=fallback` 和富上下文；Bot 仍把搜索上下文视为发现线索，并通过控制器自动读取正文后才允许引用。Exa 和 Parallel 都可匿名使用，不依赖本地代理；匿名服务限流、超时或返回空结果时会自动尝试下一家。`web_fetch` 同样优先使用 Exa/Parallel 的正文提取，失败后才调用内嵌 `open-websearch@2.1.11` 和直接抓取。可选的 `EXA_API_KEY`、`PARALLEL_API_KEY` 用于提高额度，`WEB_SEARCH_FALLBACK_PROVIDERS` 可调整顺序；Tavily/Brave 只有在配置对应 Key 并显式加入该列表后才参与降级。显式设置 `WEB_SEARCH_PROVIDER=open-websearch` 时仍可通过 `OPEN_WEBSEARCH_ENGINES` 使用原有内嵌搜索。
 
 Local Qwen 使用群级统一上下文：艾特问答和主动闲聊都会读取当前群最近最多 100 条消息，普通成员消息、图片消息以及机器人自己的回复都计入这 100 条，并按 262144 token 上限裁剪。回退到 DeepSeek 时仍使用原有的当前用户最近 16 条和 12000 字符限制；主动闲聊回退仍只取最近 6 条文本摘要。发送 `清空上下文`、`重置会话` 或 `reset` 会清空当前群的 Qwen 上下文。
 

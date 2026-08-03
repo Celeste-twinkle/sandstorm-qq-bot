@@ -30,7 +30,7 @@
    - `ACCESS_TOKEN` 可留空；如果填写，NapCat 里也要填同一个 token
    - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
    - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
-   - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用 Exa → Parallel → Bing 自动降级的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时启用推理
+   - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用 Exa → Parallel → Bing 自动降级的 `web_search` / `web_fetch` 工具；搜索后控制器会自动读取排名靠前的正文，避免模型停在搜索摘要；同一条消息再包含 `深度思考` 时会同时启用推理
    - Local Qwen 的艾特问答和主动闲聊共用群级最近 100 条上下文，群成员消息、图片和机器人自己的回复都计入；单次最多保留最近 10 张不同图片
    - `@机器人` 时可发送图文或纯图片，也可先发图片，再回复该图片并艾特机器人提问；缓存未命中时会通过 OneBot `get_msg` 取回原图；DeepSeek 回退保持原有文本与短上下文模式
    - 合并转发聊天记录会通过 OneBot `get_forward_msg` 读取；嵌套记录按原始顺序递归展平，文字、表情和图片只进入 Local Qwen 上下文，DeepSeek 及其回退路径继续忽略
