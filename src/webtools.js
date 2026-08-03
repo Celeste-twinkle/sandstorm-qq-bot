@@ -1,15 +1,24 @@
 const dns = require("dns").promises;
+const crypto = require("crypto");
 const net = require("net");
 const path = require("path");
 
 const USER_AGENT = "sandstorm-qq-bot/1.0 web-search";
 const OPEN_WEBSEARCH_RUNTIME_BUNDLE = path.join(__dirname, "vendor", "open-websearch-runtime.cjs");
+const DEFAULT_EXA_MCP_URL = "https://mcp.exa.ai/mcp";
+const DEFAULT_PARALLEL_MCP_URL = "https://search.parallel.ai/mcp";
+const DEFAULT_PROVIDER_CHAIN = ["exa", "parallel", "bing"];
+const MAX_MCP_RESPONSE_BYTES = 1024 * 1024;
+const MAX_HTTP_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 class WebToolRunner {
-  constructor(config) {
+  constructor(config, options = {}) {
     this.config = config;
+    this.fetch = options.fetch || globalThis.fetch;
     this.allowedUrls = new Set();
+    this.allowedUrlProviders = new Map();
     this.openWebSearchRuntimePromise = null;
+    this.parallelSessionId = `sandstorm-qq-bot-${crypto.randomUUID()}`;
     this.userQuery = "";
     this.lastSearchQuery = "";
     this.lastRelevanceQuery = "";
@@ -96,20 +105,11 @@ class WebToolRunner {
     const configuredMaxResults = clampInteger(this.config.webSearchMaxResults, 3, 1, 5);
     const maxResults = clampInteger(args.max_results, configuredMaxResults, 1, configuredMaxResults);
     const candidateResults = clampInteger(this.config.webSearchCandidateResults, 8, maxResults, 12);
-    const provider = pickProvider(this.config);
     const searchQueries = buildSearchQueries(query, relevanceQuery);
     const payloads = [];
 
     for (const searchQuery of searchQueries) {
-      if (provider === "tavily") {
-        payloads.push(await searchTavily(this.config, searchQuery, candidateResults));
-      } else if (provider === "brave") {
-        payloads.push(await searchBrave(this.config, searchQuery, candidateResults));
-      } else if (provider === "open-websearch") {
-        payloads.push(await this.searchOpenWebSearch(searchQuery, candidateResults));
-      } else {
-        payloads.push(await searchBingHtml(this.config, searchQuery, candidateResults));
-      }
+      payloads.push(await this.searchWithFallback(searchQuery, candidateResults));
     }
     const payload = mergeSearchPayloads(query, payloads);
 
@@ -121,7 +121,9 @@ class WebToolRunner {
     );
 
     for (const result of rankedResults.results) {
-      this.allowedUrls.add(normalizeUrl(result.url));
+      const url = normalizeUrl(result.url);
+      this.allowedUrls.add(url);
+      this.allowedUrlProviders.set(url, result.discovery_provider || payload.provider);
     }
 
     return {
@@ -161,21 +163,231 @@ class WebToolRunner {
     const configuredMaxChars = clampInteger(this.config.webFetchMaxChars, 3000, 500, 12000);
     const requestedMaxChars = clampInteger(args.max_chars, configuredMaxChars, 500, configuredMaxChars);
     const maxChars = Math.min(requestedMaxChars, configuredMaxChars);
-    const provider = pickProvider(this.config);
+    return this.fetchWithFallback(url, maxChars);
+  }
 
-    if (provider === "open-websearch") {
-      return this.fetchOpenWebSearch(url, maxChars);
+  async searchWithFallback(query, maxResults) {
+    const failures = [];
+    const providers = buildSearchProviderChain(this.config);
+
+    for (const provider of providers) {
+      try {
+        let payload;
+        if (provider === "exa") {
+          payload = await this.searchExaMcp(query, maxResults);
+        } else if (provider === "parallel") {
+          payload = await this.searchParallelMcp(query, maxResults);
+        } else if (provider === "tavily") {
+          payload = await searchTavily(this.config, query, maxResults, this.fetch);
+        } else if (provider === "brave") {
+          payload = await searchBrave(this.config, query, maxResults, this.fetch);
+        } else if (provider === "open-websearch") {
+          payload = await this.searchOpenWebSearch(query, maxResults);
+        } else if (provider === "bing") {
+          payload = await searchBingHtml(this.config, query, maxResults, this.fetch);
+        } else {
+          throw new Error(`Unsupported search provider: ${provider}`);
+        }
+
+        const results = (payload.results || []).filter((result) => normalizeUrl(result.url));
+        if (results.length === 0) {
+          throw new Error("returned no usable result URLs");
+        }
+
+        return {
+          ...payload,
+          results: results.map((result) => ({
+            ...result,
+            discovery_provider: provider,
+          })),
+          partial_failures: [
+            ...failures,
+            ...(payload.partial_failures || []),
+          ],
+        };
+      } catch (error) {
+        failures.push(providerFailure(provider, error, this.config));
+      }
     }
 
+    return {
+      provider: "unavailable",
+      query,
+      partial_failures: failures,
+      results: [],
+    };
+  }
+
+  async searchExaMcp(query, maxResults) {
+    const text = await callMcpTool({
+      fetchImpl: this.fetch,
+      url: this.config.exaMcpUrl || DEFAULT_EXA_MCP_URL,
+      tool: "web_search_exa",
+      args: {
+        query,
+        numResults: maxResults,
+      },
+      timeoutMs: getMcpTimeoutMs(this.config),
+      headers: buildExaHeaders(this.config),
+      label: "Exa MCP search",
+    });
+    const results = parseExaSearchText(text, this.config.webSearchSnippetMaxChars);
+    return {
+      provider: "exa-mcp",
+      query,
+      results,
+    };
+  }
+
+  async searchParallelMcp(query, maxResults) {
+    const text = await callMcpTool({
+      fetchImpl: this.fetch,
+      url: this.config.parallelMcpUrl || DEFAULT_PARALLEL_MCP_URL,
+      tool: "web_search",
+      args: {
+        objective: query,
+        search_queries: [query],
+        session_id: this.parallelSessionId,
+      },
+      timeoutMs: getMcpTimeoutMs(this.config),
+      headers: buildParallelHeaders(this.config),
+      label: "Parallel MCP search",
+    });
+    const payload = parseMcpJsonText(text, "Parallel MCP search");
+    if (payload.session_id) {
+      this.parallelSessionId = String(payload.session_id).slice(0, 100);
+    }
+    const results = (payload.results || [])
+      .slice(0, maxResults)
+      .map((item) => normalizeSearchResult({
+        title: item.title,
+        url: item.url,
+        snippet: (item.excerpts || []).join(" "),
+        published_date: item.publish_date,
+        source_type: classifySource(item.url),
+      }, this.config.webSearchSnippetMaxChars));
+    return {
+      provider: "parallel-mcp",
+      query,
+      results,
+      partial_failures: normalizeParallelWarnings(payload.warnings),
+    };
+  }
+
+  async fetchWithFallback(url, maxChars) {
+    const preferredProvider = this.allowedUrlProviders.get(url);
+    const providers = buildFetchProviderChain(this.config, preferredProvider);
+    const failures = [];
+
+    for (const provider of providers) {
+      try {
+        let result;
+        if (provider === "exa") {
+          result = await this.fetchExaMcp(url, maxChars);
+        } else if (provider === "parallel") {
+          result = await this.fetchParallelMcp(url, maxChars);
+        } else if (provider === "open-websearch") {
+          result = await this.fetchOpenWebSearch(url, maxChars);
+        } else if (provider === "direct") {
+          result = await this.fetchDirect(url, maxChars);
+        } else {
+          continue;
+        }
+
+        if (result && !result.error && hasReadableEvidence(result)) {
+          return {
+            ...result,
+            fetch_provider: provider,
+            fallback_failures: failures,
+          };
+        }
+
+        throw new Error(result?.error || "returned no usable evidence");
+      } catch (error) {
+        failures.push(providerFailure(provider, error, this.config));
+      }
+    }
+
+    return failedFetchEvidence(
+      url,
+      undefined,
+      failures.map((failure) => `${failure.provider}: ${failure.message}`).join("; ") ||
+        "all fetch providers failed",
+    );
+  }
+
+  async fetchExaMcp(url, maxChars) {
+    const text = await callMcpTool({
+      fetchImpl: this.fetch,
+      url: this.config.exaMcpUrl || DEFAULT_EXA_MCP_URL,
+      tool: "web_fetch_exa",
+      args: {
+        urls: [url],
+        maxCharacters: maxChars,
+      },
+      timeoutMs: getMcpTimeoutMs(this.config),
+      headers: buildExaHeaders(this.config),
+      label: "Exa MCP fetch",
+    });
+    return buildFetchedEvidence({
+      url,
+      text,
+      maxChars,
+      relevanceQuery: this.lastRelevanceQuery || this.lastSearchQuery,
+      title: extractMarkdownTitle(text),
+    });
+  }
+
+  async fetchParallelMcp(url, maxChars) {
+    const text = await callMcpTool({
+      fetchImpl: this.fetch,
+      url: this.config.parallelMcpUrl || DEFAULT_PARALLEL_MCP_URL,
+      tool: "web_fetch",
+      args: {
+        urls: [url],
+        objective: String(this.lastRelevanceQuery || this.lastSearchQuery || "")
+          .trim()
+          .slice(0, 200) || null,
+        search_queries: this.lastSearchQuery ? [this.lastSearchQuery] : null,
+        full_content: false,
+        session_id: this.parallelSessionId,
+      },
+      timeoutMs: getMcpTimeoutMs(this.config),
+      headers: buildParallelHeaders(this.config),
+      label: "Parallel MCP fetch",
+    });
+    const payload = parseMcpJsonText(text, "Parallel MCP fetch");
+    if (payload.session_id) {
+      this.parallelSessionId = String(payload.session_id).slice(0, 100);
+    }
+    const item = (payload.results || []).find(
+      (candidate) => normalizeUrl(candidate.url) === url,
+    ) || payload.results?.[0];
+    const content = (item?.excerpts || []).join("\n");
+    return buildFetchedEvidence({
+      url: normalizeUrl(item?.url) || url,
+      text: content,
+      maxChars,
+      relevanceQuery: this.lastRelevanceQuery || this.lastSearchQuery,
+      title: item?.title || "",
+      publishedDate: item?.publish_date,
+    });
+  }
+
+  async fetchDirect(url, maxChars) {
     const response = await fetchWithTimeout(url, {
       timeoutMs: this.config.webSearchTimeoutMs,
       headers: {
         "User-Agent": USER_AGENT,
         "Accept-Language": this.config.webSearchLanguage || "zh-CN,zh;q=0.9,en;q=0.8",
       },
-    });
+    }, this.fetch);
 
-    const html = await response.text();
+    const html = await readResponseTextLimited(
+      response,
+      MAX_HTTP_RESPONSE_BYTES,
+      this.config.webSearchTimeoutMs,
+    );
     if (!response.ok) {
       return failedFetchEvidence(
         url,
@@ -183,27 +395,21 @@ class WebToolRunner {
         `HTTP ${response.status} ${response.statusText}`.trim(),
       );
     }
-    if (!String(html).trim()) {
-      return failedFetchEvidence(url, response.status, "empty response");
-    }
-    const filtered = filterFetchedText(htmlToText(html), maxChars, this.lastRelevanceQuery || this.lastSearchQuery);
-    if (!hasReadableEvidence(filtered)) {
-      return failedFetchEvidence(url, response.status, "empty readable content");
-    }
-    return {
+    return buildFetchedEvidence({
       url,
-      domain: getDomain(url),
-      fetched_at: new Date().toISOString(),
+      text: htmlToText(html),
+      maxChars,
+      relevanceQuery: this.lastRelevanceQuery || this.lastSearchQuery,
       status: response.status,
-      evidence_status: "fetched_page",
-      facts: filtered.facts,
-      text: filtered.text,
-    };
+    });
   }
 
   async searchOpenWebSearch(query, maxResults) {
     const runtime = await this.getOpenWebSearchRuntime();
-    const engines = this.config.openWebSearchEngines.length > 0
+    const configuredEngines = Array.isArray(this.config.openWebSearchEngines)
+      ? this.config.openWebSearchEngines
+      : [];
+    const engines = configuredEngines.length > 0
       ? this.config.openWebSearchEngines
       : ["duckduckgo", "startpage", "sogou"];
     const result = await runtime.services.search.execute({
@@ -282,24 +488,59 @@ class WebToolRunner {
   }
 }
 
-function pickProvider(config) {
-  const provider = String(config.webSearchProvider || "auto").toLowerCase();
-  if (provider === "auto") {
-    if (config.tavilyApiKey) {
-      return "tavily";
-    }
+function buildSearchProviderChain(config) {
+  const configured = normalizeProviderName(config.webSearchProvider || "auto");
+  const providers = configured === "auto"
+    ? (
+      Array.isArray(config.webSearchFallbackProviders) &&
+      config.webSearchFallbackProviders.length > 0
+        ? config.webSearchFallbackProviders
+        : DEFAULT_PROVIDER_CHAIN
+    )
+    : [configured];
 
-    if (config.braveSearchApiKey) {
-      return "brave";
-    }
+  return uniqueCompactList(providers.map(normalizeProviderName))
+    .filter((provider) => {
+      if (provider === "tavily") {
+        return Boolean(config.tavilyApiKey);
+      }
+      if (provider === "brave") {
+        return Boolean(config.braveSearchApiKey);
+      }
+      return ["exa", "parallel", "bing", "open-websearch"].includes(provider);
+    });
+}
 
-    return "open-websearch";
+function buildFetchProviderChain(config, preferredProvider) {
+  const preferred = normalizeProviderName(preferredProvider);
+  const searchProviders = buildSearchProviderChain(config);
+  return uniqueCompactList([
+    preferred,
+    ...searchProviders.filter((provider) =>
+      ["exa", "parallel", "open-websearch"].includes(provider)),
+    "open-websearch",
+    "direct",
+  ]).filter((provider) =>
+    ["exa", "parallel", "open-websearch", "direct"].includes(provider));
+}
+
+function normalizeProviderName(value) {
+  const provider = String(value || "").trim().toLowerCase();
+  if (["auto", "resilient", "fallback"].includes(provider)) {
+    return "auto";
   }
-
+  if (["exa", "exa-mcp", "exa_mcp"].includes(provider)) {
+    return "exa";
+  }
+  if (["parallel", "parallel-mcp", "parallel_mcp"].includes(provider)) {
+    return "parallel";
+  }
   if (["open-websearch", "open_websearch", "openwebsearch", "embedded"].includes(provider)) {
     return "open-websearch";
   }
-
+  if (["bing", "bing-html", "bing_html"].includes(provider)) {
+    return "bing";
+  }
   return provider;
 }
 
@@ -312,7 +553,9 @@ async function importOpenWebSearchRuntime(config) {
 
   process.env.OPEN_WEBSEARCH_QUIET_STARTUP = "true";
   process.env.DEFAULT_SEARCH_ENGINE = process.env.DEFAULT_SEARCH_ENGINE || "duckduckgo";
-  process.env.ALLOWED_SEARCH_ENGINES = process.env.ALLOWED_SEARCH_ENGINES || "duckduckgo,startpage,sogou";
+  process.env.ALLOWED_SEARCH_ENGINES = process.env.ALLOWED_SEARCH_ENGINES ||
+    (config.openWebSearchEngines || []).join(",") ||
+    "duckduckgo,startpage,sogou";
   process.env.SEARCH_MODE = process.env.SEARCH_MODE || "auto";
   process.env.FAKE_IP_CIDRS = process.env.FAKE_IP_CIDRS ||
     (config.openWebSearchFakeIpCidrs || []).join(",") ||
@@ -338,7 +581,309 @@ function restoreEnv(name, previousValue) {
   }
 }
 
-async function searchTavily(config, query, maxResults) {
+async function callMcpTool({
+  fetchImpl,
+  url,
+  tool,
+  args,
+  timeoutMs,
+  headers,
+  label,
+}) {
+  const endpoint = normalizeMcpEndpoint(url, label);
+  const response = await fetchWithTimeout(endpoint, {
+    timeoutMs,
+    method: "POST",
+    headers: {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+      "MCP-Protocol-Version": "2025-06-18",
+      ...headers,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name: tool,
+        arguments: args,
+      },
+    }),
+  }, fetchImpl);
+  const body = await readResponseTextLimited(
+    response,
+    MAX_MCP_RESPONSE_BYTES,
+    timeoutMs,
+  );
+  if (!response.ok) {
+    throw new Error(
+      `${label} HTTP ${response.status}: ${compactText(body, 240) || response.statusText}`,
+    );
+  }
+
+  const envelopes = parseMcpResponseEnvelopes(body);
+  for (const envelope of envelopes) {
+    if (envelope?.error) {
+      throw new Error(
+        `${label} JSON-RPC error: ${compactText(
+          envelope.error.message || JSON.stringify(envelope.error),
+          240,
+        )}`,
+      );
+    }
+
+    const result = envelope?.result;
+    if (!result || !Array.isArray(result.content)) {
+      continue;
+    }
+    const text = result.content
+      .filter((item) => item?.type === "text" && typeof item.text === "string")
+      .map((item) => item.text)
+      .join("\n")
+      .trim();
+    if (result.isError) {
+      throw new Error(`${label} tool error: ${compactText(text, 240) || "unknown error"}`);
+    }
+    if (text) {
+      return text;
+    }
+  }
+
+  throw new Error(`${label} returned no text content`);
+}
+
+function normalizeMcpEndpoint(value, label) {
+  let parsed;
+  try {
+    parsed = new URL(String(value || ""));
+  } catch {
+    throw new Error(`${label} has an invalid endpoint URL`);
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error(`${label} endpoint must use http(s)`);
+  }
+  return parsed.toString();
+}
+
+function parseMcpResponseEnvelopes(body) {
+  const values = [];
+  const trimmed = String(body || "").trim();
+  if (trimmed.startsWith("{")) {
+    values.push(trimmed);
+  }
+  for (const line of String(body || "").split(/\r?\n/)) {
+    if (line.startsWith("data: ")) {
+      values.push(line.slice(6));
+    }
+  }
+
+  const envelopes = [];
+  for (const value of values) {
+    try {
+      envelopes.push(JSON.parse(value));
+    } catch {
+      // Ignore non-JSON SSE keepalive/events and continue to the next payload.
+    }
+  }
+  return envelopes;
+}
+
+function parseExaSearchText(text, snippetMaxChars) {
+  return String(text || "")
+    .split(/(?=^Title:\s*)/gm)
+    .map((block) => {
+      const title = block.match(/^Title:\s*(.+)$/m)?.[1]?.trim() || "";
+      const url = block.match(/^URL:\s*(https?:\/\/\S+)$/m)?.[1]?.trim() || "";
+      const publishedDate = block.match(/^Published:\s*(.+)$/m)?.[1]?.trim() || "";
+      const highlights = block.match(/^Highlights:\s*([\s\S]*)$/m)?.[1] || "";
+      if (!normalizeUrl(url)) {
+        return null;
+      }
+      return normalizeSearchResult({
+        title,
+        url,
+        snippet: highlights,
+        published_date: publishedDate === "N/A" ? "" : publishedDate,
+        source_type: classifySource(url),
+      }, snippetMaxChars);
+    })
+    .filter(Boolean);
+}
+
+function parseMcpJsonText(text, label) {
+  const normalized = String(text || "")
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  try {
+    const payload = JSON.parse(normalized);
+    if (!payload || typeof payload !== "object") {
+      throw new Error("not an object");
+    }
+    return payload;
+  } catch (error) {
+    throw new Error(`${label} returned invalid JSON content: ${error.message}`);
+  }
+}
+
+function normalizeParallelWarnings(warnings) {
+  if (!Array.isArray(warnings)) {
+    return [];
+  }
+  return warnings.map((warning) => ({
+    provider: "parallel",
+    code: String(warning?.type || "warning"),
+    message: compactText(warning?.message || "provider warning", 240),
+  }));
+}
+
+function buildExaHeaders(config) {
+  return config.exaApiKey
+    ? { "x-api-key": config.exaApiKey }
+    : {};
+}
+
+function buildParallelHeaders(config) {
+  return config.parallelApiKey
+    ? { Authorization: `Bearer ${config.parallelApiKey}` }
+    : {};
+}
+
+function getMcpTimeoutMs(config) {
+  return clampInteger(
+    config.webSearchMcpTimeoutMs,
+    clampInteger(config.webSearchTimeoutMs, 10000, 1000, 60000),
+    1000,
+    60000,
+  );
+}
+
+function providerFailure(provider, error, config) {
+  return {
+    provider,
+    code: inferProviderFailureCode(error),
+    message: sanitizeProviderError(error, config),
+  };
+}
+
+function inferProviderFailureCode(error) {
+  const message = String(error?.message || error || "");
+  const status = message.match(/\bHTTP\s+(\d{3})\b/i)?.[1];
+  if (status === "429") {
+    return "rate_limited";
+  }
+  if (/rate.?limit|too many requests/i.test(message)) {
+    return "rate_limited";
+  }
+  if (status === "401" || status === "403") {
+    return "authentication";
+  }
+  if (/timed out|timeout|ETIMEDOUT/i.test(message)) {
+    return "timeout";
+  }
+  if (/no usable|no text|no result|empty/i.test(message)) {
+    return "empty_results";
+  }
+  return status ? `http_${status}` : "provider_error";
+}
+
+function sanitizeProviderError(error, config) {
+  let message = String(error?.message || error || "unknown provider error");
+  for (const secret of [
+    config.exaApiKey,
+    config.parallelApiKey,
+    config.tavilyApiKey,
+    config.braveSearchApiKey,
+  ]) {
+    if (secret) {
+      message = message.split(secret).join("<redacted>");
+    }
+  }
+  return compactText(message, 300);
+}
+
+function buildFetchedEvidence({
+  url,
+  text,
+  maxChars,
+  relevanceQuery,
+  title = "",
+  publishedDate = "",
+  status = 200,
+}) {
+  const filtered = filterFetchedText(text, maxChars, relevanceQuery);
+  if (!hasReadableEvidence(filtered)) {
+    return failedFetchEvidence(url, status, "empty readable content");
+  }
+  return {
+    url,
+    domain: getDomain(url),
+    fetched_at: new Date().toISOString(),
+    status,
+    evidence_status: "fetched_page",
+    title,
+    published_date: publishedDate || undefined,
+    facts: filtered.facts,
+    text: filtered.text,
+  };
+}
+
+function extractMarkdownTitle(text) {
+  return String(text || "").match(/^\s*#\s+(.+)$/m)?.[1]?.trim() || "";
+}
+
+async function readResponseTextLimited(response, maxBytes, timeoutMs = 10000) {
+  let reader;
+  let timeout;
+  const readPromise = (async () => {
+    const contentLength = Number.parseInt(
+      response.headers?.get?.("content-length") || "",
+      10,
+    );
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      await response.body?.cancel?.();
+      throw new Error(`Web response exceeds ${maxBytes} bytes`);
+    }
+    if (!response.body?.getReader) {
+      const text = await response.text();
+      if (Buffer.byteLength(text) > maxBytes) {
+        throw new Error(`Web response exceeds ${maxBytes} bytes`);
+      }
+      return text;
+    }
+
+    reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error(`Web response exceeds ${maxBytes} bytes`);
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks).toString("utf8");
+  })();
+  const timeoutPromise = new Promise((_, reject) => {
+    timeout = setTimeout(() => {
+      reader?.cancel().catch(() => undefined);
+      reject(new Error(`Web response body timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([readPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function searchTavily(config, query, maxResults, fetchImpl = globalThis.fetch) {
   const response = await fetchWithTimeout("https://api.tavily.com/search", {
     timeoutMs: config.webSearchTimeoutMs,
     method: "POST",
@@ -354,7 +899,7 @@ async function searchTavily(config, query, maxResults) {
       include_raw_content: false,
       include_favicon: false,
     }),
-  });
+  }, fetchImpl);
 
   const payload = await readJsonResponse(response, "Tavily search");
   return {
@@ -370,7 +915,7 @@ async function searchTavily(config, query, maxResults) {
   };
 }
 
-async function searchBrave(config, query, maxResults) {
+async function searchBrave(config, query, maxResults, fetchImpl = globalThis.fetch) {
   const url = new URL("https://api.search.brave.com/res/v1/web/search");
   url.searchParams.set("q", query);
   url.searchParams.set("count", String(maxResults));
@@ -387,7 +932,7 @@ async function searchBrave(config, query, maxResults) {
       "Accept-Encoding": "gzip",
       "X-Subscription-Token": config.braveSearchApiKey,
     },
-  });
+  }, fetchImpl);
 
   const payload = await readJsonResponse(response, "Brave search");
   return {
@@ -402,7 +947,7 @@ async function searchBrave(config, query, maxResults) {
   };
 }
 
-async function searchBingHtml(config, query, maxResults) {
+async function searchBingHtml(config, query, maxResults, fetchImpl = globalThis.fetch) {
   const url = new URL("https://www.bing.com/search");
   url.searchParams.set("q", query);
   url.searchParams.set("setlang", config.webSearchLanguageCode);
@@ -415,13 +960,17 @@ async function searchBingHtml(config, query, maxResults) {
       "User-Agent": USER_AGENT,
       "Accept-Language": config.webSearchLanguage || "zh-CN,zh;q=0.9,en;q=0.8",
     },
-  });
+  }, fetchImpl);
 
   if (!response.ok) {
     throw new Error(`Bing search ${response.status}: ${response.statusText}`);
   }
 
-  const html = await response.text();
+  const html = await readResponseTextLimited(
+    response,
+    MAX_HTTP_RESPONSE_BYTES,
+    config.webSearchTimeoutMs,
+  );
   const results = [];
   const blocks = html.split(/<li class="b_algo"/).slice(1);
 
@@ -453,18 +1002,20 @@ async function searchBingHtml(config, query, maxResults) {
   };
 }
 
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url, options = {}, fetchImpl = globalThis.fetch) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.timeoutMs || 10000);
+  const timeoutMs = options.timeoutMs || 10000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const { timeoutMs: _ignoredTimeoutMs, ...requestOptions } = options;
 
   try {
-    return await fetch(url, {
-      ...options,
+    return await fetchImpl(url, {
+      ...requestOptions,
       signal: controller.signal,
     });
   } catch (error) {
-    if (error.name === "AbortError") {
-      throw new Error(`Web request timed out after ${options.timeoutMs || 10000}ms`);
+    if (error.name === "AbortError" || error.name === "TimeoutError") {
+      throw new Error(`Web request timed out after ${timeoutMs}ms`);
     }
 
     throw error;
@@ -474,7 +1025,7 @@ async function fetchWithTimeout(url, options = {}) {
 }
 
 async function readJsonResponse(response, label) {
-  const text = await response.text();
+  const text = await readResponseTextLimited(response, MAX_MCP_RESPONSE_BYTES);
   let payload;
 
   try {
@@ -514,6 +1065,7 @@ function normalizeSearchResult(item, snippetMaxChars = 350) {
     url,
     domain: getDomain(url),
     snippet: compactText(item.snippet || "", clampInteger(snippetMaxChars, 350, 80, 1000)),
+    published_date: String(item.published_date || "").trim() || undefined,
     score: item.score,
     source_type: item.source_type || classifySource(url),
   };
@@ -906,7 +1458,7 @@ function scoreFreshness(query, result) {
     return 0;
   }
 
-  const text = `${result.title || ""} ${result.snippet || ""} ${result.url || ""}`;
+  const text = `${result.title || ""} ${result.snippet || ""} ${result.published_date || ""} ${result.url || ""}`;
   const dates = extractDates(text);
   if (dates.length === 0) {
     return 1;

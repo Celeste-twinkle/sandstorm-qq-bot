@@ -30,7 +30,7 @@
    - `ACCESS_TOKEN` 可留空；如果填写，NapCat 里也要填同一个 token
    - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
    - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
-   - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用内嵌 open-websearch 的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时启用推理
+   - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用 Exa → Parallel → Bing 自动降级的 `web_search` / `web_fetch` 工具；同一条消息再包含 `深度思考` 时会同时启用推理
    - Local Qwen 的艾特问答和主动闲聊共用群级最近 100 条上下文，群成员消息、图片和机器人自己的回复都计入；单次最多保留最近 10 张不同图片
    - `@机器人` 时可发送图文或纯图片，也可先发图片，再回复该图片并艾特机器人提问；缓存未命中时会通过 OneBot `get_msg` 取回原图；DeepSeek 回退保持原有文本与短上下文模式
    - 合并转发聊天记录会通过 OneBot `get_forward_msg` 读取；嵌套记录按原始顺序递归展平，文字、表情和图片只进入 Local Qwen 上下文，DeepSeek 及其回退路径继续忽略
@@ -39,7 +39,7 @@
    - 群上下文严格以最新成员消息为唯一回应锚点，历史消息按距离递减权重且只能用于解释最新消息；关联只按指代、同一对象/事件、条件修正、因果延续或图片内容等语义判断，QQ 回复/引用标记只定位内容、不作为关联证据；语义无关的旧内容会被要求忽略
    - 可调整 `AMBIENT_CHAT_PROBABILITY`、`AMBIENT_CHAT_IDLE_SECONDS`、`AMBIENT_CHAT_INSTANT_MAX_MESSAGES`、`AMBIENT_CHAT_IDLE_MAX_MESSAGES`、`AMBIENT_CHAT_CONTEXT_SECONDS`，或用 `AMBIENT_CHAT_ENABLED=false` 关闭
    - `RESPONSE_NEUTRALITY_PROMPT` 会统一约束聊天和闲聊回复，避免出现政治或宗教倾向
-   - 默认无需搜索 API Key，也不需要单独启动搜索服务；可通过 `OPEN_WEBSEARCH_ENGINES` 调整搜索引擎列表
+   - 默认无需搜索 API Key，也不需要单独启动搜索服务；匿名 MCP 限流或失败时会自动切换，`EXA_API_KEY` / `PARALLEL_API_KEY` 可选
    - Bilibili 发送失败时，`logs/out.log` 和 `logs/err.log` 会按 `traceId` 输出下载文件哈希、MP4 结构、上传耗时及完整 OneBot 错误。需要保留失败视频手工测试时，可临时设置 `BILIBILI_KEEP_FAILED_VIDEO=true`；测试后请删除日志所示文件并恢复为 `false`
 
 2. 运行 `01-启动OneBot-NapCat.ps1`
