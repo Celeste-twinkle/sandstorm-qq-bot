@@ -102,7 +102,7 @@ test("Local Qwen uses the model maximum output and strong reasoning for ordinary
   assert.equal(calls[2].body.reasoning_effort, "high");
 });
 
-test("Local Qwen accepts max reasoning while background image indexing stays non-reasoning", async () => {
+test("Local Qwen accepts max reasoning while background image indexing uses its own effort", async () => {
   const bodies = [];
   const config = {
     ...createConfig(),
@@ -111,8 +111,29 @@ test("Local Qwen accepts max reasoning while background image indexing stays non
   const service = new LocalQwenChatService(config, {
     logger: createLogger(),
     fetch: async (_url, options) => {
-      bodies.push(JSON.parse(options.body));
-      return completionResponse("indexed");
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      const isImageIndexer = String(body.messages?.[0]?.content || "").includes(
+        "无损图片 OCR 与视觉语义索引器",
+      );
+      return completionResponse(
+        isImageIndexer
+          ? JSON.stringify({
+              transcription: "Madame Curie",
+              uncertain_text: [],
+              image_type_style: "黑白历史人物肖像，低对比。",
+              subjects: ["一名成年女性，深色服装，正面半身像"],
+              scene_layout: "人物居中，背景简洁，左下角有手写题字。",
+              actions_relationships: [],
+              salient_details: ["深色高领服装", "柔和侧光"],
+              document_ui_structure: "",
+              possible_entities: [
+                "玛丽·居里；依据为脸部轮廓、发型及时代服饰；中置信度",
+              ],
+              visual_uncertainties: ["左下角题字较模糊"],
+            })
+          : "indexed",
+      );
     },
   });
 
@@ -120,18 +141,60 @@ test("Local Qwen accepts max reasoning while background image indexing stays non
     await service.createCompletion([{ role: "user", content: "hello" }]),
     "indexed",
   );
-  assert.equal(
-    await service.analyzeImageForCache({
-      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
-    }),
-    "indexed",
-  );
+  const indexed = await service.analyzeImageForCache({
+    dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+  });
+  assert.match(indexed, /【逐字转录】\nMadame Curie/);
+  assert.match(indexed, /【文字不确定项】/);
+  assert.match(indexed, /精确字符必须回看原图核验/);
+  assert.match(indexed, /【视觉元数据】/);
+  assert.match(indexed, /图片类型与风格：黑白历史人物肖像/);
+  assert.match(indexed, /主体：一名成年女性/);
+  assert.match(indexed, /可能实体（候选，需结合原图复核）：玛丽·居里/);
 
   assert.equal(bodies[0].reasoning_effort, "max");
   assert.equal("temperature" in bodies[0], false);
   assert.equal(bodies[1].reasoning_effort, "none");
-  assert.equal(bodies[1].temperature, 0.1);
+  assert.equal(bodies[1].temperature, 0);
   assert.equal(bodies[1].max_tokens, 16384);
+  assert.equal(bodies[1].response_format.type, "json_schema");
+  assert.equal(bodies[1].response_format.json_schema.strict, true);
+  assert.deepEqual(
+    bodies[1].response_format.json_schema.schema.required,
+    [
+      "transcription",
+      "uncertain_text",
+      "image_type_style",
+      "subjects",
+      "scene_layout",
+      "actions_relationships",
+      "salient_details",
+      "document_ui_structure",
+      "possible_entities",
+      "visual_uncertainties",
+    ],
+  );
+  assert.equal(
+    bodies[1].messages[1].content[1].image_url.detail,
+    "high",
+  );
+  assert.match(bodies[1].messages[0].content, /无损图片 OCR/);
+  assert.match(bodies[1].messages[1].content[0].text, /transcription/);
+  assert.match(bodies[1].messages[1].content[0].text, /image_type_style/);
+  assert.match(bodies[1].messages[1].content[0].text, /possible_entities/);
+  assert.match(bodies[1].messages[1].content[0].text, /uncertain_text/);
+  assert.match(bodies[1].messages[1].content[0].text, /O\/0、I\/1\/l、B\/8/);
+  assert.match(bodies[1].messages[1].content[0].text, /公众人物、知名角色、地标、产品或作品/);
+
+  config.localQwenImageCacheReasoningEffort = "low";
+  assert.match(
+    await service.analyzeImageForCache({
+      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+    }),
+    /Madame Curie/,
+  );
+  assert.equal(bodies[2].reasoning_effort, "low");
+  assert.equal("temperature" in bodies[2], false);
 });
 
 test("Local Qwen starts web research with required parallel tools and reasoning", async () => {
@@ -406,6 +469,12 @@ test("Qwen keeps only the newest 10 images while DeepSeek receives text placehol
   const qwenContent = qwenMessages.at(-1).content;
   assert.equal(qwenContent.filter((part) => part.type === "image_ref").length, 10);
   assert.equal(
+    qwenContent
+      .filter((part) => part.type === "image_ref")
+      .every((part) => part.preferOriginal === true),
+    true,
+  );
+  assert.equal(
     qwenContent.filter((part) => part.type === "text" && part.text === "[较早图片已省略]").length,
     2,
   );
@@ -492,7 +561,7 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
   await service.ambientReply(context, { ambientMode: "idle" });
 
   assert.equal(calls.length, 2);
-  for (const call of calls) {
+  for (const [callIndex, call] of calls.entries()) {
     assert.equal(call.messages.length, 101);
     assert.equal(call.messages.slice(1).some((message) => message.role === "assistant"), true);
     assert.match(
@@ -516,6 +585,10 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
       .filter((part) => part.type === "image_ref");
     assert.equal(imageParts.length, 10);
     assert.equal(imageParts.at(-1).source, images[0]);
+    assert.equal(
+      imageParts.at(-1).preferOriginal,
+      callIndex === 0 ? true : undefined,
+    );
     assert.equal(
       call.messages.some(
         (message) =>
@@ -595,7 +668,7 @@ test("Qwen multimodal preparation converts only the latest 10 inline images", as
   assert.match(prepared[0].content[newestImageIndex - 1].text, /图片优先级：最新/);
 });
 
-test("Qwen reuses cached OCR semantics instead of retransmitting the same image", async () => {
+test("Qwen reuses cached visual metadata for history but isolates a requested original image", async () => {
   const config = {
     ...createConfig(),
     localQwenImageCacheEnabled: true,
@@ -607,11 +680,15 @@ test("Qwen reuses cached OCR semantics instead of retransmitting the same image"
       const body = JSON.parse(options.body);
       calls.push(body);
       const isImageIndexer = String(body.messages?.[0]?.content || "").includes(
-        "图片 OCR 与语义索引器",
+        "无损图片 OCR 与视觉语义索引器",
       );
       return completionResponse(
         isImageIndexer
-          ? "图片类型：高等数学试卷。OCR：第 1 题，当 x→0 时……"
+          ? JSON.stringify({
+              transcription: "第 1 题，当 x→0 时……",
+              visual_metadata: "图片类型：高等数学试卷。",
+              uncertain_text: [],
+            })
           : "main reply",
       );
     },
@@ -630,14 +707,24 @@ test("Qwen reuses cached OCR semantics instead of retransmitting the same image"
   assert.equal(await service.createCompletion(createMessages()), "main reply");
   await service.waitForImageCacheIdle();
   assert.equal(await service.createCompletion(createMessages()), "main reply");
+  const requestedOriginalMessages = createMessages();
+  requestedOriginalMessages[0].content[1].preferOriginal = true;
+  assert.equal(
+    await service.createCompletion(requestedOriginalMessages),
+    "main reply",
+  );
 
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   assert.equal(countRequestImages(calls[0]), 1);
   assert.equal(countRequestImages(calls[1]), 1);
   assert.equal(calls[1].max_tokens, 16384);
   assert.equal(countRequestImages(calls[2]), 0);
   assert.match(JSON.stringify(calls[2].messages), /图片语义缓存/);
   assert.match(JSON.stringify(calls[2].messages), /高等数学试卷/);
+  assert.equal(countRequestImages(calls[3]), 1);
+  assert.equal(calls[3].reasoning_effort, "high");
+  assert.doesNotMatch(JSON.stringify(calls[3].messages), /图片预索引元数据/);
+  assert.doesNotMatch(JSON.stringify(calls[3].messages), /高等数学试卷/);
 });
 
 test("Qwen automatically retries an unreadable-image reply with newest cached OCR", async () => {
@@ -653,10 +740,16 @@ test("Qwen automatically retries an unreadable-image reply with newest cached OC
       const body = JSON.parse(options.body);
       calls.push(body);
       const isImageIndexer = String(body.messages?.[0]?.content || "").includes(
-        "图片 OCR 与语义索引器",
+        "无损图片 OCR 与视觉语义索引器",
       );
       if (isImageIndexer) {
-        return completionResponse("OCR：第 1 题，当 x→0 时，答案为 B。");
+        return completionResponse(
+          JSON.stringify({
+            transcription: "第 1 题，当 x→0 时，答案为 B。",
+            visual_metadata: "数学题截图。",
+            uncertain_text: [],
+          }),
+        );
       }
 
       mainCallCount += 1;
@@ -892,6 +985,8 @@ function createConfig() {
     localQwenImageCacheTtlMinutes: 720,
     localQwenImageCacheMaxChars: 24000,
     localQwenImageCacheTimeoutMs: 120000,
+    localQwenImageCacheReasoningEffort: "none",
+    localQwenImageCacheDetail: "high",
     deepseekApiKey: "sk-test-deepseek",
     deepseekBaseUrl: "http://deepseek.mock",
     deepseekModel: "deepseek-v4-flash",

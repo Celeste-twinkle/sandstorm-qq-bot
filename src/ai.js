@@ -251,6 +251,7 @@ class AiChatService {
         groupContextMessages,
         this.buildDirectGroupSystemPrompt(basePrompt),
         contextScale,
+        { preserveAnchorImages: true },
       );
     }
 
@@ -277,6 +278,7 @@ class AiChatService {
     contextMessages,
     systemPrompt,
     contextScale = 1,
+    options = {},
   ) {
     const selectedContext = contextMessages.slice(
       -Math.max(2, this.config.localQwenMaxHistoryMessages),
@@ -288,7 +290,11 @@ class AiChatService {
         content: systemPrompt,
       },
       ...prioritizedContext.map(({ message, annotation }) => {
-        return buildGroupContextModelMessage(message, annotation);
+        return buildGroupContextModelMessage(message, annotation, {
+          preserveOriginalImages:
+            options.preserveAnchorImages === true &&
+            annotation.startsWith("【当前锚点"),
+        });
       }),
     ];
 
@@ -421,7 +427,13 @@ function envelopeCurrentUserMessage(storedUserMessage, meta) {
         type: "text",
         text: `${sender}用户消息：${text}`,
       },
-      ...storedUserMessage.content.filter((part) => part?.type !== "text"),
+      ...storedUserMessage.content
+        .filter((part) => part?.type !== "text")
+        .map((part) =>
+          part?.type === "image_ref"
+            ? { ...part, preferOriginal: true }
+            : { ...part },
+        ),
     ],
   };
 }
@@ -610,7 +622,11 @@ function removeOldestConversationTurn(messages, preserveConversationTurns = true
   }
 }
 
-function buildGroupContextModelMessage(message, annotation = "") {
+function buildGroupContextModelMessage(
+  message,
+  annotation = "",
+  options = {},
+) {
   const role = message?.role === "assistant" ? "assistant" : "user";
   const text = formatGroupContextTextLine(message, false, annotation);
   const images = normalizeImageSources(message?.images);
@@ -632,6 +648,9 @@ function buildGroupContextModelMessage(message, annotation = "") {
       ...images.map((source) => ({
         type: "image_ref",
         source,
+        ...(options.preserveOriginalImages
+          ? { preferOriginal: true }
+          : {}),
       })),
     ],
   };

@@ -47,6 +47,20 @@ function parseStrongReasoningEffort(value) {
   return String(value || "").trim().toLowerCase() === "max" ? "max" : "high";
 }
 
+function parseReasoningEffort(value, fallback) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["none", "low", "medium", "high", "max"].includes(normalized)
+    ? normalized
+    : fallback;
+}
+
+function parseImageDetail(value, fallback = "high") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["auto", "low", "high"].includes(normalized)
+    ? normalized
+    : fallback;
+}
+
 const config = {
   port: parseInteger(process.env.PORT, 6700),
   wsPath: process.env.WS_PATH || "/onebot/v11/ws",
@@ -222,6 +236,14 @@ const config = {
     parseInteger(process.env.LOCAL_QWEN_IMAGE_CACHE_TIMEOUT_MS, 120000),
     1000,
     120000,
+  ),
+  localQwenImageCacheReasoningEffort: parseReasoningEffort(
+    process.env.LOCAL_QWEN_IMAGE_CACHE_REASONING_EFFORT,
+    "none",
+  ),
+  localQwenImageCacheDetail: parseImageDetail(
+    process.env.LOCAL_QWEN_IMAGE_CACHE_DETAIL,
+    "high",
   ),
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEKER_API_KEY || "",
   deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, ""),
