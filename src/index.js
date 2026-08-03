@@ -366,7 +366,7 @@ async function handleAmbientChatIdle(groupId, generation, client) {
   const reply = await chatService.ambientReply(messages, {
     ambientMode: "idle",
   });
-  sendBotReply(client, groupId, reply, {
+  await sendBotReply(client, groupId, reply, {
     qwenOnly: isQwenOnlyContextAnchor(messages),
   });
 }
@@ -414,9 +414,9 @@ function clearGroupConversationContext(groupId) {
   groupConversationContexts.delete(String(groupId));
 }
 
-function sendBotReply(client, groupId, reply, options = {}) {
+async function sendBotReply(client, groupId, reply, options = {}) {
   const text = typeof reply === "string" ? reply.trim() : "";
-  client.sendGroupMessage(groupId, reply);
+  await client.sendGroupMessage(groupId, reply);
   if (!text) {
     return;
   }
@@ -533,7 +533,7 @@ async function onGroupMessage(message, client) {
     console.log(`[bot] keyword hit in group ${groupId}: ${getMessageText(message)}`);
 
     const reply = await querySandstormStatus(config);
-    sendBotReply(client, groupId, reply);
+    await sendBotReply(client, groupId, reply);
     return;
   }
 
@@ -563,7 +563,7 @@ async function onGroupMessage(message, client) {
           senderName: getSenderName(message),
         },
       );
-      sendBotReply(client, groupId, reply, {
+      await sendBotReply(client, groupId, reply, {
         qwenOnly: incomingEntry?.qwenOnly === true,
       });
     } catch (error) {
@@ -579,12 +579,12 @@ async function onGroupMessage(message, client) {
   if (isResetCommand(text)) {
     chatService.resetSession(sessionId);
     clearGroupConversationContext(groupId);
-    sendBotReply(client, groupId, "已清空当前群聊会话上下文。");
+    await sendBotReply(client, groupId, "已清空当前群聊会话上下文。");
     return;
   }
 
   if (isHelpCommand(text)) {
-    sendBotReply(client, groupId, buildHelpText());
+    await sendBotReply(client, groupId, buildHelpText());
     return;
   }
 
@@ -619,12 +619,30 @@ async function onGroupMessage(message, client) {
         config.localQwenMaxHistoryMessages,
       ),
     });
-    sendBotReply(client, groupId, reply, {
-      qwenOnly: incomingEntry?.hasForwardedContent === true,
-    });
+    try {
+      await sendBotReply(client, groupId, reply, {
+        qwenOnly: incomingEntry?.hasForwardedContent === true,
+      });
+    } catch (error) {
+      const chunk =
+        Number.isInteger(error.chunkIndex) && Number.isInteger(error.chunkCount)
+          ? ` chunk=${error.chunkIndex + 1}/${error.chunkCount}`
+          : "";
+      console.error(`[onebot] AI reply delivery failed${chunk}: ${error.message}`);
+      try {
+        await client.sendGroupMessage(
+          groupId,
+          "回答已经生成，但发送到 QQ 时失败了，请稍后重试。",
+        );
+      } catch (fallbackError) {
+        console.error(
+          `[onebot] delivery failure notice failed: ${fallbackError.message}`,
+        );
+      }
+    }
   } catch (error) {
     console.error("[ai] chat failed:", error.message);
-    sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
+    await sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
   }
 }
 
@@ -663,7 +681,7 @@ async function handleBilibiliMessage(groupId, text, client) {
     const message = error.message.startsWith("Bilibili 解析失败：")
       ? error.message
       : `Bilibili 解析失败：${error.message}`;
-    sendBotReply(client, groupId, message);
+    await sendBotReply(client, groupId, message);
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "resolve_failure",
@@ -673,7 +691,7 @@ async function handleBilibiliMessage(groupId, text, client) {
   }
 
   if (!config.bilibiliSendVideo) {
-    sendBotReply(client, groupId, formatBilibiliResolveText(result));
+    await sendBotReply(client, groupId, formatBilibiliResolveText(result));
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "text_only",
@@ -728,7 +746,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       { traceId, bvid: result.bvid || "" },
     );
     uploadSucceeded = true;
-    sendBotReply(client, groupId, formatBilibiliResolveBrief(result));
+    await sendBotReply(client, groupId, formatBilibiliResolveBrief(result));
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "video_sent",
@@ -743,7 +761,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       durationMs: Date.now() - requestStartedAt,
       error: formatErrorForLog(error),
     });
-    sendBotReply(client, groupId, formatBilibiliUploadFallback(result, error));
+    await sendBotReply(client, groupId, formatBilibiliUploadFallback(result, error));
   } finally {
     if (downloaded && !uploadSucceeded && config.bilibiliKeepFailedVideo) {
       logBilibili("warn", "cleanup.retained", {

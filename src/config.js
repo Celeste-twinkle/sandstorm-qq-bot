@@ -65,6 +65,11 @@ const config = {
   port: parseInteger(process.env.PORT, 6700),
   wsPath: process.env.WS_PATH || "/onebot/v11/ws",
   accessToken: process.env.ACCESS_TOKEN || "",
+  oneBotTextChunkMaxChars: clampNumber(
+    parseInteger(process.env.ONEBOT_TEXT_CHUNK_MAX_CHARS, 1000),
+    200,
+    4000,
+  ),
   sandstormHost: process.env.SANDSTORM_HOST || "127.0.0.1",
   sandstormPort: parseInteger(process.env.SANDSTORM_PORT, 27015),
   queryTimeoutMs: parseInteger(process.env.QUERY_TIMEOUT_MS, 7000),
