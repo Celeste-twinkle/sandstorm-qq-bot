@@ -618,6 +618,198 @@ test("Qwen direct and ambient paths use 100 group records, including bot replies
   assert.match(calls[1].messages[0].content, /不得因为较早消息更有趣就复活旧话题/);
 });
 
+test("flattened forwarded records are visible to Qwen but hidden from DeepSeek", async () => {
+  const config = createConfig();
+  const forwardedImage = "https://img.example/forwarded-only.png";
+  const context = [
+    {
+      role: "user",
+      messageId: "forwarded-record",
+      senderName: "Alice",
+      text: "",
+      images: [],
+      qwenText:
+        "[合并转发聊天记录（嵌套内容已展平）]\nBob：仅 Qwen 可见的秘密内容",
+      qwenImages: [forwardedImage],
+      qwenOnly: true,
+      hasForwardedContent: true,
+      relation: "",
+      qwenRelation: "",
+      timestamp: 1,
+    },
+    {
+      role: "user",
+      messageId: "current-message",
+      senderName: "Carol",
+      text: "普通的新消息",
+      images: [],
+      relation: "",
+      timestamp: 2,
+    },
+  ];
+
+  let qwenMessages;
+  const qwenService = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: createQwenStub({
+      async createCompletion(messages) {
+        qwenMessages = messages;
+        return "Qwen forwarded reply";
+      },
+    }),
+    deepseekService: createDeepSeekStub({ configured: false }),
+  });
+
+  assert.equal(
+    await qwenService.ambientReply(context, { ambientMode: "idle" }),
+    "Qwen forwarded reply",
+  );
+  const qwenText = qwenMessages
+    .map((message) =>
+      Array.isArray(message.content)
+        ? message.content.map((part) => part.text || "").join("\n")
+        : message.content,
+    )
+    .join("\n");
+  assert.match(qwenText, /仅 Qwen 可见的秘密内容/);
+  assert.equal(
+    qwenMessages
+      .flatMap((message) =>
+        Array.isArray(message.content) ? message.content : [],
+      )
+      .some(
+        (part) =>
+          part.type === "image_ref" && part.source === forwardedImage,
+      ),
+    true,
+  );
+
+  let deepseekMessages;
+  const deepseekService = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: createQwenStub({ healthy: false }),
+    deepseekService: createDeepSeekStub({
+      async createCompletion(messages) {
+        deepseekMessages = messages;
+        return "DeepSeek ambient reply";
+      },
+    }),
+  });
+
+  assert.equal(
+    await deepseekService.ambientReply(context, { ambientMode: "idle" }),
+    "DeepSeek ambient reply",
+  );
+  const deepseekText = deepseekMessages
+    .map((message) => String(message.content || ""))
+    .join("\n");
+  assert.doesNotMatch(deepseekText, /仅 Qwen 可见的秘密内容/);
+  assert.doesNotMatch(deepseekText, /forwarded-only/);
+  assert.match(deepseekText, /普通的新消息/);
+});
+
+test("a forwarded-record ambient anchor never falls back to DeepSeek", async () => {
+  const config = createConfig();
+  let deepseekCalls = 0;
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: createQwenStub({
+      async createCompletion() {
+        throw new LocalQwenRequestError("Qwen unavailable", { status: 503 });
+      },
+    }),
+    deepseekService: createDeepSeekStub({
+      async createCompletion() {
+        deepseekCalls += 1;
+        return "must not be returned";
+      },
+    }),
+  });
+  const context = [
+    {
+      role: "user",
+      messageId: "normal-before-forward",
+      senderName: "Alice",
+      text: "DeepSeek 原本可见的旧消息",
+      images: [],
+      relation: "",
+      timestamp: 1,
+    },
+    {
+      role: "user",
+      messageId: "forward-anchor",
+      senderName: "Bob",
+      text: "",
+      images: [],
+      qwenText:
+        "[合并转发聊天记录（嵌套内容已展平）]\nCarol：只允许 Qwen 回应",
+      qwenImages: [],
+      qwenOnly: true,
+      hasForwardedContent: true,
+      relation: "",
+      timestamp: 2,
+    },
+  ];
+
+  await assert.rejects(
+    service.ambientReply(context, { ambientMode: "instant" }),
+    /Qwen unavailable/,
+  );
+  assert.equal(deepseekCalls, 0);
+});
+
+test("a Qwen answer based on forwarded records stays out of later DeepSeek history", async () => {
+  const config = createConfig();
+  let qwenCalls = 0;
+  let deepseekMessages;
+  const qwen = createQwenStub({
+    async createCompletion() {
+      qwenCalls += 1;
+      return "Qwen 根据转发秘密生成的总结";
+    },
+  });
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: qwen,
+    deepseekService: createDeepSeekStub({
+      async createCompletion(messages) {
+        deepseekMessages = messages;
+        return "DeepSeek later reply";
+      },
+    }),
+  });
+
+  await service.chat("group:user", "总结引用内容", {
+    qwenForwardedContext: true,
+    groupContextMessages: [
+      {
+        role: "user",
+        senderName: "Alice",
+        text: "总结引用内容",
+        images: [],
+        qwenText:
+          "总结引用内容\n\n[合并转发聊天记录（嵌套内容已展平）]\nBob：转发秘密",
+        qwenImages: [],
+        hasForwardedContent: true,
+      },
+    ],
+  });
+  assert.equal(qwenCalls, 1);
+
+  qwen.health = false;
+  assert.equal(
+    await service.chat("group:user", "普通后续问题"),
+    "DeepSeek later reply",
+  );
+  const deepseekText = deepseekMessages
+    .map((message) => String(message.content || ""))
+    .join("\n");
+  assert.doesNotMatch(deepseekText, /转发秘密/);
+  assert.doesNotMatch(deepseekText, /Qwen 根据转发秘密生成的总结/);
+  assert.doesNotMatch(deepseekText, /总结引用内容/);
+  assert.match(deepseekText, /普通后续问题/);
+});
+
 test("Qwen multimodal preparation converts only the latest 10 inline images", async () => {
   const config = createConfig();
   const content = [{ type: "text", text: "look" }];

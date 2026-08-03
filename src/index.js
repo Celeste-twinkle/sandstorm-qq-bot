@@ -116,7 +116,7 @@ function shouldAmbientChat(message, text) {
   return Math.random() < config.ambientChatProbability;
 }
 
-function shouldCollectAmbientChat(message, text) {
+function shouldCollectAmbientChat(message, text, hasQwenForwardedContent = false) {
   if (!config.chatEnabled || !config.ambientChatEnabled) {
     return false;
   }
@@ -125,7 +125,11 @@ function shouldCollectAmbientChat(message, text) {
     return false;
   }
 
-  return hasImageMessage(message) || (Boolean(text) && !isLikelyNonChatText(text));
+  return (
+    hasQwenForwardedContent ||
+    hasImageMessage(message) ||
+    (Boolean(text) && !isLikelyNonChatText(text))
+  );
 }
 
 function isAllowedGroup(groupId) {
@@ -205,11 +209,19 @@ function clearAmbientChatBuffer(groupId) {
   ambientChatBuffers.delete(key);
 }
 
-function recordIncomingGroupMessage(message, text) {
+function recordIncomingGroupMessage(message, text, forwarded = null) {
   const groupId = String(message.group_id || "");
-  const cached = groupMessageCache.add(message, text);
+  const cached = groupMessageCache.add(
+    message,
+    text,
+    "",
+    { forwarded },
+  );
   const images = cached?.images || extractImageSources(message);
-  if (!groupId || (!text && images.length === 0)) {
+  if (
+    !groupId ||
+    (!text && images.length === 0 && !cached?.hasForwardedContent)
+  ) {
     return null;
   }
 
@@ -221,9 +233,14 @@ function recordIncomingGroupMessage(message, text) {
     senderName: getSenderName(message) || String(message.user_id || "unknown"),
     text,
     images,
+    qwenText: cached?.qwenText || "",
+    qwenImages: cached?.qwenImages || [],
+    qwenOnly: cached?.qwenOnly === true,
+    hasForwardedContent: cached?.hasForwardedContent === true,
     relation: getReplyMessageId(message)
       ? "QQ引用来源未解析（仅用于定位，不代表语义相关）"
       : "",
+    qwenRelation: "",
     timestamp: Date.now(),
   };
   appendGroupConversationContext(groupId, entry);
@@ -262,6 +279,33 @@ async function linkRepliedMessage(message, client) {
     .reverse()
     .find((entry) => !currentMessageId || entry.messageId === currentMessageId);
   if (!current) {
+    return repliedMessage;
+  }
+
+  if (repliedMessage.hasForwardedContent) {
+    const currentQwenText = String(
+      current.qwenText || current.text || "",
+    ).trim();
+    const repliedQwenText = String(
+      repliedMessage.qwenText || repliedMessage.text || "",
+    ).trim();
+    current.qwenText = [
+      currentQwenText,
+      "[当前消息所引用的合并转发聊天记录]",
+      repliedQwenText,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    current.qwenImages = dedupeStrings([
+      ...(current.images || []),
+      ...(current.qwenImages || []),
+      ...(repliedMessage.qwenImages || []),
+    ]);
+    current.hasForwardedContent = true;
+    current.qwenOnly = !current.text && current.images.length === 0;
+    current.qwenRelation =
+      `QQ引用来源：${repliedMessage.senderName || "群成员"}发送的合并转发聊天记录` +
+      "（仅用于定位，不代表语义相关）";
     return repliedMessage;
   }
 
@@ -322,7 +366,9 @@ async function handleAmbientChatIdle(groupId, generation, client) {
   const reply = await chatService.ambientReply(messages, {
     ambientMode: "idle",
   });
-  sendBotReply(client, groupId, reply);
+  sendBotReply(client, groupId, reply, {
+    qwenOnly: isQwenOnlyContextAnchor(messages),
+  });
 }
 
 function appendGroupConversationContext(groupId, message) {
@@ -368,7 +414,7 @@ function clearGroupConversationContext(groupId) {
   groupConversationContexts.delete(String(groupId));
 }
 
-function sendBotReply(client, groupId, reply) {
+function sendBotReply(client, groupId, reply, options = {}) {
   const text = typeof reply === "string" ? reply.trim() : "";
   client.sendGroupMessage(groupId, reply);
   if (!text) {
@@ -381,6 +427,7 @@ function sendBotReply(client, groupId, reply) {
     senderName: config.botName,
     text,
     images: [],
+    qwenOnly: options.qwenOnly === true,
     relation: "",
     timestamp: Date.now(),
   });
@@ -423,6 +470,16 @@ function dedupeStrings(values) {
   return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
+function isQwenOnlyContextAnchor(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") {
+      return message?.qwenOnly === true;
+    }
+  }
+  return false;
+}
+
 async function onGroupMessage(message, client) {
   const groupId = message.group_id;
 
@@ -432,9 +489,24 @@ async function onGroupMessage(message, client) {
 
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
-  const canCollectAmbientChat = shouldCollectAmbientChat(message, text);
-  const incomingEntry = recordIncomingGroupMessage(message, text);
-  const incomingImagePrewarm = prewarmImageInsights(incomingEntry?.images);
+  const forwarded = await groupMessageCache.resolveForwardedMessage(
+    message,
+    client,
+  );
+  const hasQwenForwardedContent = Boolean(forwarded);
+  const ambientDecisionText =
+    text || (hasQwenForwardedContent ? "[合并转发聊天记录]" : "");
+  const canCollectAmbientChat = shouldCollectAmbientChat(
+    message,
+    text,
+    hasQwenForwardedContent,
+  );
+  const incomingEntry = recordIncomingGroupMessage(message, text, forwarded);
+  const incomingImagePrewarm = prewarmImageInsights(
+    incomingEntry?.hasForwardedContent
+      ? incomingEntry.qwenImages
+      : incomingEntry?.images,
+  );
 
   if (shouldHandleBilibili(text)) {
     if (!hasImageMessage(message)) {
@@ -471,7 +543,7 @@ async function onGroupMessage(message, client) {
     clearAmbientChatBuffer(groupId);
   }
 
-  if (shouldAmbientChat(message, text)) {
+  if (shouldAmbientChat(message, ambientDecisionText)) {
     if (isCoolingDown(groupId, config.ambientChatCooldownSeconds, ambientChatCooldowns)) {
       return;
     }
@@ -491,7 +563,9 @@ async function onGroupMessage(message, client) {
           senderName: getSenderName(message),
         },
       );
-      sendBotReply(client, groupId, reply);
+      sendBotReply(client, groupId, reply, {
+        qwenOnly: incomingEntry?.qwenOnly === true,
+      });
     } catch (error) {
       console.error("[ai] ambient chat failed:", error.message);
     }
@@ -523,7 +597,11 @@ async function onGroupMessage(message, client) {
     const repliedMessage = await linkRepliedMessage(message, client);
     await Promise.all([
       incomingImagePrewarm,
-      prewarmImageInsights(repliedMessage?.images),
+      prewarmImageInsights(
+        repliedMessage?.hasForwardedContent
+          ? repliedMessage.qwenImages
+          : repliedMessage?.images,
+      ),
     ]);
     const webSearch = shouldUseWebSearch(text);
     const thinking = shouldUseThinking(text);
@@ -535,12 +613,15 @@ async function onGroupMessage(message, client) {
       thinking,
       webSearch,
       images: extractImageSources(message),
+      qwenForwardedContext: incomingEntry?.hasForwardedContent === true,
       groupContextMessages: getGroupConversationContext(
         groupId,
         config.localQwenMaxHistoryMessages,
       ),
     });
-    sendBotReply(client, groupId, reply);
+    sendBotReply(client, groupId, reply, {
+      qwenOnly: incomingEntry?.hasForwardedContent === true,
+    });
   } catch (error) {
     console.error("[ai] chat failed:", error.message);
     sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
@@ -811,6 +892,7 @@ function buildHelpText() {
     "查服：@我 ins / 叛乱 / 沙漠风暴 / 服务器状态",
     "聊天：@我 直接提问，Qwen 会参考群内最近 100 条消息",
     "识图：@我 并附带图片，或回复上面的图片后 @我；最多参考最近 10 张",
+    "转发：合并转发聊天记录会递归展平并仅供 Qwen 阅读，DeepSeek 不读取",
     "表情：内置/超级/商城表情会作为语气和图片进入 Qwen 上下文",
     "深度思考：@我 深度思考 + 问题",
     "联网搜索：@我 联网搜索 / 联网查询 / 联网搜搜 + 问题",

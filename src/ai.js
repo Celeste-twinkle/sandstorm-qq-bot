@@ -88,7 +88,7 @@ class AiChatService {
       Math.max(1, configuredMax),
     );
     const selectedContext = contextMessages.slice(-maxContextMessages);
-    const result = await this.runWithFallback(async (provider, contextScale = 1) => {
+    const operation = async (provider, contextScale = 1) => {
       const isLocalQwen = provider === this.localQwen;
       const messages = isLocalQwen
         ? this.buildLocalQwenGroupMessages(
@@ -104,7 +104,10 @@ class AiChatService {
         temperature: Math.max(0.7, this.config.deepseekTemperature),
         timeoutMs: this.config.ambientChatTimeoutMs,
       });
-    });
+    };
+    const result = isQwenOnlyContextAnchor(selectedContext)
+      ? await this.runQwenOnly(operation)
+      : await this.runWithFallback(operation);
     return result.text;
   }
 
@@ -138,8 +141,18 @@ class AiChatService {
       );
     });
 
-    session.messages.push(storedUserMessage);
-    session.messages.push({ role: "assistant", content: result.text });
+    const qwenOnlyTurn =
+      Boolean(meta.qwenForwardedContext) &&
+      result.provider !== "deepseek";
+    session.messages.push({
+      ...storedUserMessage,
+      ...(qwenOnlyTurn ? { qwenOnly: true } : {}),
+    });
+    session.messages.push({
+      role: "assistant",
+      content: result.text,
+      ...(qwenOnlyTurn ? { qwenOnly: true } : {}),
+    });
     session.updatedAt = Date.now();
     this.trimSession(session);
     this.cleanupExpiredSessions();
@@ -196,6 +209,37 @@ class AiChatService {
     throw new Error("Local Qwen is unavailable and DeepSeek is not configured.");
   }
 
+  async runQwenOnly(operation) {
+    if (!this.localQwen.isConfigured()) {
+      throw new Error("Local Qwen is not configured for forwarded chat records.");
+    }
+
+    try {
+      const text = await operation(this.localQwen, 1);
+      return { text, provider: this.config.localQwenProviderId };
+    } catch (error) {
+      let qwenError = error;
+      if (isContextLengthError(error)) {
+        this.logger.warn(
+          `[ai] provider=${this.config.localQwenProviderId} context limit hit; retrying forwarded chat record with a smaller prompt`,
+        );
+        try {
+          const text = await operation(this.localQwen, 0.85);
+          return { text, provider: this.config.localQwenProviderId };
+        } catch (retryError) {
+          qwenError = retryError;
+        }
+      }
+
+      if (isProviderUnavailableError(qwenError)) {
+        this.localQwen.markUnavailable(
+          sanitizeErrorMessage(qwenError, this.config),
+        );
+      }
+      throw qwenError;
+    }
+  }
+
   getSession(sessionId) {
     const now = Date.now();
     const existing = this.sessions.get(sessionId);
@@ -217,7 +261,9 @@ class AiChatService {
 
   buildDeepSeekMessages(session, currentUserMessage) {
     const maxHistory = Math.max(2, this.config.chatMaxHistoryMessages);
-    const history = session.messages.slice(-maxHistory);
+    const history = session.messages
+      .filter((message) => !message?.qwenOnly)
+      .slice(-maxHistory);
     const messages = [
       {
         role: "system",
@@ -314,7 +360,7 @@ class AiChatService {
         ? "最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
         : "冷场闲聊也必须以最后一条标记为【当前锚点】的群成员消息为唯一出发点，只接它所在的最新话题链；不得因为较早消息更有趣就复活旧话题。若当前锚点只有图片或表情，把它视为对紧邻前文的反应。";
     const contextInstruction =
-      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。";
+      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。";
     const recencyPolicy =
       "上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。";
     return this.localQwen.buildSystemPrompt(
@@ -331,7 +377,7 @@ class AiChatService {
 
   buildDirectGroupSystemPrompt(basePrompt) {
     const contextInstruction =
-      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；“QQ引用来源”只用于定位被引用的文字或图片，绝不代表两条消息语义相关，也不能自动提高被引用内容的权重。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应作为语气和情绪的一部分理解。请先锁定最后一条群成员消息真正询问或表达的对象，再结合语义上相关的发送者、文字、表情、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把内容张冠李戴。";
+      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；“QQ引用来源”只用于定位被引用的文字或图片，绝不代表两条消息语义相关，也不能自动提高被引用内容的权重。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应作为语气和情绪的一部分理解。请先锁定最后一条群成员消息真正询问或表达的对象，再结合语义上相关的发送者、文字、表情、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把内容张冠李戴。";
     const recencyPolicy =
       "严格遵守消息上的新旧优先级标记：【当前锚点】是唯一必须回应的消息；其他所有消息都只能用于理解它，不能自行成为回答目标。【高优先级近邻】和【近期上下文】按距当前锚点由近到远递减使用；历史消息只有在语义上存在明确指代、同一对象/事件、条件修正、因果延续、语义承接或图片内容关联时才允许使用。QQ 回复/引用标记仅用于内容定位，不能作为关联判断依据；有引用但语义无关仍必须忽略。【较早参考】未通过纯语义门槛时一律忽略。新旧消息冲突时以更新消息为准。回答前静默检查一次：是否直接回应当前锚点、是否错误借用或复活语义无关的历史内容；若是则重写，不输出检查过程。";
     return this.localQwen.buildSystemPrompt(
@@ -347,6 +393,7 @@ class AiChatService {
         ? "请优先回应最后一条群成员消息。"
         : "请根据冷场前的最近话题自然接一句。";
     const contextText = contextMessages
+      .filter((message) => !message?.qwenOnly)
       .slice(-6)
       .map((message) => formatGroupContextTextLine(message, true))
       .join("\n");
@@ -628,8 +675,9 @@ function buildGroupContextModelMessage(
   options = {},
 ) {
   const role = message?.role === "assistant" ? "assistant" : "user";
-  const text = formatGroupContextTextLine(message, false, annotation);
-  const images = normalizeImageSources(message?.images);
+  const qwenMessage = getQwenContextMessage(message);
+  const text = formatGroupContextTextLine(qwenMessage, false, annotation);
+  const images = normalizeImageSources(qwenMessage?.images);
 
   if (role === "assistant" || images.length === 0) {
     return {
@@ -653,6 +701,26 @@ function buildGroupContextModelMessage(
           : {}),
       })),
     ],
+  };
+}
+
+function getQwenContextMessage(message) {
+  const hasQwenContent =
+    Boolean(message?.hasForwardedContent) ||
+    Boolean(String(message?.qwenText || "").trim()) ||
+    normalizeImageSources(message?.qwenImages).length > 0;
+  if (!hasQwenContent) {
+    return message;
+  }
+
+  return {
+    ...message,
+    text: String(message?.qwenText || message?.text || "").trim(),
+    images: normalizeImageSources([
+      ...(Array.isArray(message?.images) ? message.images : []),
+      ...(Array.isArray(message?.qwenImages) ? message.qwenImages : []),
+    ]),
+    relation: message?.qwenRelation || message?.relation || "",
   };
 }
 
@@ -695,6 +763,16 @@ function annotateGroupContextRecency(contextMessages) {
       annotation: buildRecencyAnnotation(distance),
     };
   });
+}
+
+function isQwenOnlyContextAnchor(contextMessages) {
+  for (let index = contextMessages.length - 1; index >= 0; index -= 1) {
+    const message = contextMessages[index];
+    if (message?.role !== "assistant") {
+      return message?.qwenOnly === true;
+    }
+  }
+  return false;
 }
 
 function buildRecencyAnnotation(distance) {

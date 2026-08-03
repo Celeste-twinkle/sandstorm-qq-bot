@@ -136,6 +136,22 @@ function createOneBotClient(ws, pendingActions) {
       );
       return response?.data || null;
     },
+    async getForwardMessage(forwardId) {
+      const response = await sendAction(
+        ws,
+        "get_forward_msg",
+        {
+          // OneBot v11 calls this field `id`, while current NapCat also
+          // accepts/recommends `message_id`. Sending both keeps the client
+          // compatible with either implementation.
+          id: forwardId,
+          message_id: forwardId,
+        },
+        pendingActions,
+        { timeoutMs: 10000 },
+      );
+      return response?.data || null;
+    },
   };
 }
 

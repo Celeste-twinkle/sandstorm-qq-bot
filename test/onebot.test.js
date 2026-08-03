@@ -57,3 +57,49 @@ test("OneBot client resolves a quoted message through get_msg", async () => {
     message: [{ type: "image", data: { url: "https://img.example/quoted.png" } }],
   });
 });
+
+test("OneBot client resolves merged chat records through get_forward_msg", async () => {
+  const sent = [];
+  const pendingActions = new Map();
+  const ws = {
+    OPEN: 1,
+    readyState: 1,
+    send(payload) {
+      sent.push(JSON.parse(payload));
+    },
+  };
+  const client = createOneBotClient(ws, pendingActions);
+
+  const resultPromise = client.getForwardMessage("forward-42");
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].action, "get_forward_msg");
+  assert.deepEqual(sent[0].params, {
+    id: "forward-42",
+    message_id: "forward-42",
+  });
+
+  const pending = pendingActions.get(sent[0].echo);
+  clearTimeout(pending.timeout);
+  pendingActions.delete(sent[0].echo);
+  pending.resolve({
+    status: "ok",
+    retcode: 0,
+    data: {
+      messages: [
+        {
+          sender: { nickname: "Alice" },
+          message: [{ type: "text", data: { text: "hello" } }],
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(await resultPromise, {
+    messages: [
+      {
+        sender: { nickname: "Alice" },
+        message: [{ type: "text", data: { text: "hello" } }],
+      },
+    ],
+  });
+});
