@@ -8,9 +8,10 @@
 
 1. 先运行 `03-停止Bot服务.ps1`。
 2. 用新包里的 `sandstorm-qq-bot.exe` 替换旧文件。
-3. 保留目标机器原有 `.env`，不要用 `.env.example` 直接覆盖；把新版 `.env.example` 中的 `LOCAL_QWEN_SYSTEM_PROMPT`、`DEEPSEEK_SYSTEM_PROMPT` 和其他新增配置合并进去，并保留真实 URL、API Key 和模型 ID。
-4. 建议同步替换 `.env.example`、`00-打开配置.ps1` 和本说明文件，方便以后维护。
-5. 运行 `02-启动Bot服务.ps1`；机器人启动后会立即检查 Qwen，之后每 10 秒检查一次，不可用时自动回退到 DeepSeek。
+3. 同步复制新包里的 `config` 目录，确保 `config\azur-lane-personas.json` 与 exe 保持这个相对位置；该文件未打进 exe，缺失时机器人会拒绝启动。
+4. 保留目标机器原有 `.env`，不要用 `.env.example` 直接覆盖；把新版 `.env.example` 中的 `PERSONA_CATALOG_FILE`、`PERSONA_CACHE_FILE`、`PERSONA_FLEXIBILITY_PROMPT` 和其他新增配置按需合并，并保留真实 URL、API Key 和模型 ID。三项人格配置留空即可使用推荐默认值。
+5. 建议同步替换 `.env.example`、`00-打开配置.ps1` 和本说明文件，方便以后维护。
+6. 运行 `02-启动Bot服务.ps1`；机器人启动后会立即检查 Qwen，之后每 10 秒检查一次，不可用时自动回退到 DeepSeek。
 
 ## 部署顺序
 
@@ -29,7 +30,9 @@
    - 默认 `REQUIRE_AT=true`，必须 `@机器人` 并输入关键词才回复
    - `ACCESS_TOKEN` 可留空；如果填写，NapCat 里也要填同一个 token
    - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
-   - `LOCAL_QWEN_SYSTEM_PROMPT` 和 `DEEPSEEK_SYSTEM_PROMPT` 分别控制两条 AI 路径的人格；默认都加载列克星敦人格。人格与敏感话题规则固定放在上下文前缀，便于服务端复用提示词缓存
+   - `LOCAL_QWEN_SYSTEM_PROMPT` 和 `DEEPSEEK_SYSTEM_PROMPT` 分别保存两条 AI 路径的列克星敦主人格；群友选择外置人格后，两条路径都会按“群号 + QQ号”独立切换，不影响其他人
+   - `PERSONA_CATALOG_FILE` 留空时读取 exe 同级的 `config\azur-lane-personas.json`；修改该文件并重启即可维护人格，无需重新打包 exe。`PERSONA_CACHE_FILE` 留空时把个人选择保存到 `data\persona-selections.json`
+   - 人格指令和完整帮助都必须真实艾特机器人；可发送 `@机器人 帮助`、`@机器人 人格列表`、`@机器人 切换人格 企业`、`@机器人 自定义人格 <提示词>`、`@机器人 当前人格` 或 `@机器人 重置人格`
    - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
    - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用 Exa → Parallel → Bing 自动降级的 `web_search` / `web_fetch` 工具；搜索后控制器会自动读取排名靠前的正文，避免模型停在搜索摘要；同一条消息再包含 `深度思考` 时会同时启用推理
    - Local Qwen 的艾特问答和主动闲聊共用群级最近 100 条上下文，群成员消息、图片和机器人自己的回复都计入；单次最多保留最近 10 张不同图片
@@ -58,6 +61,8 @@
 4. 在 QQ 群测试
    - 发送 `@机器人 ins`
    - 或发送 `@机器人 叛乱`
+   - 发送 `@机器人 帮助` 检查完整指令菜单
+   - 发送 `@机器人 人格列表`，切换一个人格后再发送 `@机器人 当前人格`
 
 ## 停止与日志
 

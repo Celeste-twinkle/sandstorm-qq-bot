@@ -18,7 +18,24 @@ const {
   getReplyMessageId,
   getSenderName,
 } = require("./message-context");
+const { buildHelpText, isHelpCommand } = require("./help");
 const { createOneBotServer } = require("./onebot");
+const { loadAzurLanePersonaCatalog } = require("./azur-lane-personas");
+const {
+  buildCustomPersonaPrompt,
+  calculateCustomPersonaMaxChars,
+  countUnicodeCharacters,
+  formatCurrentPersona,
+  formatMasterPersonaDetails,
+  formatPersonaCommandHelp,
+  formatPersonaDetails,
+  formatPersonaList,
+  formatUnknownPersona,
+  isMasterPersonaQuery,
+  normalizeCustomPersonaText,
+  resolvePersonaCommandRequest,
+} = require("./persona-commands");
+const { PersonaSelectionStore } = require("./persona-selection-store");
 const { querySandstormStatus } = require("./sandstorm");
 
 const groupCooldowns = new Map();
@@ -29,6 +46,22 @@ const groupConversationContexts = new Map();
 const bilibiliCooldowns = new Map();
 const chatService = new AiChatService(config);
 const groupMessageCache = new GroupMessageCache(config);
+const personaCatalog = loadAzurLanePersonaCatalog({
+  filePath: config.personaCatalogFile,
+});
+const customPersonaMaxChars = calculateCustomPersonaMaxChars(personaCatalog, [
+  config.localQwenSystemPrompt,
+  config.deepseekSystemPrompt,
+]);
+const personaSelectionStore = new PersonaSelectionStore({
+  filePath: config.personaCacheFile,
+  customPersonaMaxChars,
+}).load();
+
+console.log(
+  `[persona] loaded ${personaCatalog.personas.length} external personas from ${personaCatalog.filePath}`,
+);
+console.log(`[persona] custom persona prompt limit: ${customPersonaMaxChars} characters`);
 
 function getMessageText(message) {
   if (typeof message.raw_message === "string") {
@@ -150,6 +183,129 @@ function getSessionId(message) {
   return `${message.group_id}:${message.user_id || "unknown"}`;
 }
 
+function getSelectedPersona(groupId, userId) {
+  const selection = personaSelectionStore.getSelection(groupId, userId);
+  return selection?.type === "catalog"
+    ? personaCatalog.getById(selection.personaId)
+    : null;
+}
+
+function getSelectedPersonaMeta(groupId, userId) {
+  const selection = personaSelectionStore.getSelection(groupId, userId);
+  if (selection?.type === "custom") {
+    return {
+      personaId: "custom-persona",
+      personaName: "自定义人格",
+      personaPrompt: buildCustomPersonaPrompt(selection.prompt),
+    };
+  }
+  const persona = getSelectedPersona(groupId, userId);
+  return persona
+    ? {
+        personaId: persona.id,
+        personaName: persona.name,
+        personaPrompt: personaCatalog.buildPrompt(persona),
+      }
+    : {
+        personaId: "lexington-master",
+        personaName: "列克星敦",
+        personaPrompt: "",
+      };
+}
+
+async function handlePersonaCommand(command, message, client) {
+  const groupId = String(message.group_id || "");
+  const userId = String(message.user_id || "");
+  const sessionId = getSessionId(message);
+
+  if (command.type === "help") {
+    await client.sendGroupMessage(
+      groupId,
+      formatPersonaCommandHelp({ customPersonaMaxChars }),
+    );
+    return;
+  }
+  if (command.type === "list") {
+    await client.sendGroupMessage(
+      groupId,
+      formatPersonaList(personaCatalog, command.faction, {
+        customPersonaMaxChars,
+      }),
+    );
+    return;
+  }
+  if (command.type === "current") {
+    const selection = personaSelectionStore.getSelection(groupId, userId);
+    await client.sendGroupMessage(
+      groupId,
+      formatCurrentPersona(getSelectedPersona(groupId, userId), {
+        customPrompt: selection?.type === "custom" ? selection.prompt : "",
+      }),
+    );
+    return;
+  }
+  if (command.type === "detail") {
+    const reply = isMasterPersonaQuery(command.query)
+      ? formatMasterPersonaDetails()
+      : personaCatalog.find(command.query)
+        ? formatPersonaDetails(personaCatalog.find(command.query))
+        : formatUnknownPersona(command.query, personaCatalog);
+    await client.sendGroupMessage(groupId, reply);
+    return;
+  }
+  if (command.type === "custom") {
+    const customPrompt = normalizeCustomPersonaText(command.prompt);
+    if (!customPrompt) {
+      await client.sendGroupMessage(
+        groupId,
+        `请提供自定义人格提示词。\n格式：@机器人 自定义人格 <提示词>\n最多 ${customPersonaMaxChars} 字。`,
+      );
+      return;
+    }
+    const promptLength = countUnicodeCharacters(customPrompt);
+    if (promptLength > customPersonaMaxChars) {
+      await client.sendGroupMessage(
+        groupId,
+        `自定义人格提示词过长：当前 ${promptLength} 字，最多 ${customPersonaMaxChars} 字。请精简后重试。`,
+      );
+      return;
+    }
+
+    await personaSelectionStore.setCustom(groupId, userId, customPrompt);
+    chatService.resetSession(sessionId);
+    await client.sendGroupMessage(
+      groupId,
+      `已在当前群启用你的自定义人格（${promptLength}/${customPersonaMaxChars} 字）。\n它只影响 bot 对你的回复；原台词、口癖和固定句式仍只会在语境合适时使用。`,
+    );
+    return;
+  }
+  if (command.type === "reset" || isMasterPersonaQuery(command.query)) {
+    await personaSelectionStore.clear(groupId, userId);
+    chatService.resetSession(sessionId);
+    await client.sendGroupMessage(
+      groupId,
+      "已恢复主人格：列克星敦。这个选择只影响你在当前群的对话。",
+    );
+    return;
+  }
+
+  const persona = personaCatalog.find(command.query);
+  if (!persona) {
+    await client.sendGroupMessage(
+      groupId,
+      formatUnknownPersona(command.query, personaCatalog),
+    );
+    return;
+  }
+
+  await personaSelectionStore.setCatalog(groupId, userId, persona.id);
+  chatService.resetSession(sessionId);
+  await client.sendGroupMessage(
+    groupId,
+    `已在当前群切换为：${persona.name}（${persona.faction}）。\n之后 bot 回复你时会使用该人格；其他群友的选择不受影响。`,
+  );
+}
+
 function getCleanMessageText(message) {
   return extractSemanticMessageText(message);
 }
@@ -157,11 +313,6 @@ function getCleanMessageText(message) {
 function isResetCommand(text) {
   const normalized = text.trim().toLowerCase();
   return ["清空上下文", "重置会话", "清除记忆", "reset", "/reset"].includes(normalized);
-}
-
-function isHelpCommand(text) {
-  const normalized = text.trim().toLowerCase();
-  return ["帮助", "help", "/help", "使用说明", "功能", "菜单"].includes(normalized);
 }
 
 function shouldUseThinking(text) {
@@ -230,6 +381,7 @@ function recordIncomingGroupMessage(message, text, forwarded = null) {
     messageId:
       getMessageId(message) ||
       `incoming-${groupId}-${message.user_id || "unknown"}-${Date.now()}`,
+    userId: String(message.user_id || ""),
     senderName: getSenderName(message) || String(message.user_id || "unknown"),
     text,
     images,
@@ -363,8 +515,10 @@ async function handleAmbientChatIdle(groupId, generation, client) {
 
   const text = formatAmbientChatMessages(messages);
   console.log(`[bot] ambient idle chat hit in group ${groupId}, messages=${messages.length}: ${text}`);
+  const anchor = getLatestGroupMemberMessage(messages);
   const reply = await chatService.ambientReply(messages, {
     ambientMode: "idle",
+    ...getSelectedPersonaMeta(groupId, anchor?.userId),
   });
   await sendBotReply(client, groupId, reply, {
     qwenOnly: isQwenOnlyContextAnchor(messages),
@@ -480,6 +634,15 @@ function isQwenOnlyContextAnchor(messages) {
   return false;
 }
 
+function getLatestGroupMemberMessage(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      return messages[index];
+    }
+  }
+  return null;
+}
+
 async function onGroupMessage(message, client) {
   const groupId = message.group_id;
 
@@ -489,6 +652,39 @@ async function onGroupMessage(message, client) {
 
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
+  const botMentioned = isMentioned(message);
+  const {
+    command: personaCommand,
+    blockedByMissingMention,
+  } = resolvePersonaCommandRequest(text, botMentioned);
+  if (blockedByMissingMention) {
+    return;
+  }
+  if (personaCommand) {
+    clearAmbientChatBuffer(groupId);
+    try {
+      await handlePersonaCommand(personaCommand, message, client);
+    } catch (error) {
+      console.error("[persona] command failed:", error.message);
+      await client.sendGroupMessage(
+        groupId,
+        "人格设置暂时无法保存，请检查外部人格文件和缓存目录权限。",
+      );
+    }
+    return;
+  }
+  if (isHelpCommand(text)) {
+    if (!botMentioned) {
+      return;
+    }
+    clearAmbientChatBuffer(groupId);
+    await client.sendGroupMessage(
+      groupId,
+      buildHelpText({ customPersonaMaxChars }),
+    );
+    return;
+  }
+
   const forwarded = await groupMessageCache.resolveForwardedMessage(
     message,
     client,
@@ -561,6 +757,7 @@ async function onGroupMessage(message, client) {
         {
           ambientMode: "instant",
           senderName: getSenderName(message),
+          ...getSelectedPersonaMeta(groupId, message.user_id),
         },
       );
       await sendBotReply(client, groupId, reply, {
@@ -580,11 +777,6 @@ async function onGroupMessage(message, client) {
     chatService.resetSession(sessionId);
     clearGroupConversationContext(groupId);
     await sendBotReply(client, groupId, "已清空当前群聊会话上下文。");
-    return;
-  }
-
-  if (isHelpCommand(text)) {
-    await sendBotReply(client, groupId, buildHelpText());
     return;
   }
 
@@ -618,6 +810,7 @@ async function onGroupMessage(message, client) {
         groupId,
         config.localQwenMaxHistoryMessages,
       ),
+      ...getSelectedPersonaMeta(groupId, message.user_id),
     });
     try {
       await sendBotReply(client, groupId, reply, {
@@ -901,24 +1094,6 @@ function getUrlHost(value) {
   } catch {
     return "";
   }
-}
-
-function buildHelpText() {
-  return [
-    "Sandstorm QQ Bot 使用说明",
-    "",
-    "查服：@我 ins / 叛乱 / 沙漠风暴 / 服务器状态",
-    "聊天：@我 直接提问，Qwen 会参考群内最近 100 条消息",
-    "识图：@我 并附带图片，或回复上面的图片后 @我；最多参考最近 10 张",
-    "转发：合并转发聊天记录会递归展平并仅供 Qwen 阅读，DeepSeek 不读取",
-    "表情：内置/超级/商城表情会作为语气和图片进入 Qwen 上下文",
-    "深度思考：@我 深度思考 + 问题",
-    "联网搜索：@我 联网搜索 / 联网查询 / 联网搜搜 + 问题",
-    "组合：@我 联网搜索 深度思考 + 问题",
-    "清空群上下文：@我 清空上下文 / 重置会话 / reset",
-    "Bilibili：群里直接发 B 站或 b23.tv 视频链接，无需 @我",
-    "帮助：@我 帮助 / help / 使用说明",
-  ].join("\n");
 }
 
 function formatBilibiliResolveText(result) {

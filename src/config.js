@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const {
   DEFAULT_AI_PERSONA_PROMPT,
+  DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
   DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
 } = require("./persona");
 
@@ -82,6 +83,14 @@ const config = {
   cooldownSeconds: parseInteger(process.env.COOLDOWN_SECONDS, 20),
   allowedGroupIds: new Set(parseList(process.env.ALLOWED_GROUP_IDS)),
   botName: process.env.BOT_NAME || "沙暴状态",
+  personaCatalogFile: process.env.PERSONA_CATALOG_FILE || "",
+  personaCacheFile:
+    process.env.PERSONA_CACHE_FILE ||
+    process.env.PERSONA_SELECTION_CACHE_FILE ||
+    "",
+  personaFlexibilityPrompt:
+    process.env.PERSONA_FLEXIBILITY_PROMPT ||
+    DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
   localQwenEnabled: parseBoolean(process.env.LOCAL_QWEN_ENABLED, true),
   localQwenProviderId: process.env.LOCAL_QWEN_PROVIDER_ID || "local-qwen-manual",
   localQwenDisplayName: process.env.LOCAL_QWEN_DISPLAY_NAME || "Local Qwen Manual",

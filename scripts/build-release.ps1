@@ -27,6 +27,11 @@ Copy-Item -Path (Join-Path $root "scripts\stop-exe.ps1") -Destination (Join-Path
 Copy-Item -Path (Join-Path $root "scripts\install-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "install-onebot-napcat.ps1") -Force
 Copy-Item -Path (Join-Path $root "scripts\start-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "start-onebot-napcat.ps1") -Force
 
+# Keep persona data outside the executable so it can be maintained without rebuilding.
+$releaseConfigDir = Join-Path $releaseDir "config"
+New-Item -ItemType Directory -Path $releaseConfigDir -Force | Out-Null
+Copy-Item -Path (Join-Path $root "config\azur-lane-personas.json") -Destination (Join-Path $releaseConfigDir "azur-lane-personas.json") -Force
+
 $releaseOneBotDir = Join-Path $releaseDir "onebot"
 New-Item -ItemType Directory -Path $releaseOneBotDir -Force | Out-Null
 Copy-Item -Path (Join-Path $root "onebot\README.md") -Destination (Join-Path $releaseOneBotDir "README.md") -Force
