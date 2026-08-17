@@ -8,7 +8,7 @@
 
 1. 先运行 `03-停止Bot服务.ps1`。
 2. 用新包里的 `sandstorm-qq-bot.exe` 替换旧文件。
-3. 保留目标机器原有 `.env`，不要用 `.env.example` 直接覆盖；把 `.env.example` 新增的 `LOCAL_QWEN_*` 配置合并进去，并填写真实 URL、API Key 和模型 ID。
+3. 保留目标机器原有 `.env`，不要用 `.env.example` 直接覆盖；把新版 `.env.example` 中的 `LOCAL_QWEN_SYSTEM_PROMPT`、`DEEPSEEK_SYSTEM_PROMPT` 和其他新增配置合并进去，并保留真实 URL、API Key 和模型 ID。
 4. 建议同步替换 `.env.example`、`00-打开配置.ps1` 和本说明文件，方便以后维护。
 5. 运行 `02-启动Bot服务.ps1`；机器人启动后会立即检查 Qwen，之后每 10 秒检查一次，不可用时自动回退到 DeepSeek。
 
@@ -29,6 +29,7 @@
    - 默认 `REQUIRE_AT=true`，必须 `@机器人` 并输入关键词才回复
    - `ACCESS_TOKEN` 可留空；如果填写，NapCat 里也要填同一个 token
    - 如需优先使用本地 Qwen，填写 `LOCAL_QWEN_BASE_URL`、`LOCAL_QWEN_API_KEY` 和 `LOCAL_QWEN_MODEL`；机器人每 10 秒检查一次连通性，不可用时自动回退到 `DEEPSEEK_API_KEY` 对应的 DeepSeek
+   - `LOCAL_QWEN_SYSTEM_PROMPT` 和 `DEEPSEEK_SYSTEM_PROMPT` 分别控制两条 AI 路径的人格；默认都加载列克星敦人格。人格与敏感话题规则固定放在上下文前缀，便于服务端复用提示词缓存
    - Qwen 默认优先回答最后一条用户消息，自动判断承接或换题并解析最近指代；可用 `LOCAL_QWEN_DIALOGUE_PROMPT` 调整对话理解规则
    - 消息里包含 `联网搜索`、`联网查询` 或 `联网搜搜` 时会使用 Exa → Parallel → Bing 自动降级的 `web_search` / `web_fetch` 工具；搜索后控制器会自动读取排名靠前的正文，避免模型停在搜索摘要；同一条消息再包含 `深度思考` 时会同时启用推理
    - Local Qwen 的艾特问答和主动闲聊共用群级最近 100 条上下文，群成员消息、图片和机器人自己的回复都计入；单次最多保留最近 10 张不同图片

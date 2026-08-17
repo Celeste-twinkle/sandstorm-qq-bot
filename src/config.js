@@ -1,4 +1,8 @@
 const dotenv = require("dotenv");
+const {
+  DEFAULT_AI_PERSONA_PROMPT,
+  DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
+} = require("./persona");
 
 dotenv.config();
 
@@ -86,7 +90,7 @@ const config = {
   localQwenModel: process.env.LOCAL_QWEN_MODEL || "qwen3.6-local",
   localQwenSystemPrompt:
     process.env.LOCAL_QWEN_SYSTEM_PROMPT ||
-    "你是一只接入 QQ 群聊的中文猫娘机器人。回答要自然、简洁、有帮助，语气可爱但不过度；每次回复至少自然地带一次 喵~；不知道时直接说明，不编造。",
+    DEFAULT_AI_PERSONA_PROMPT,
   localQwenDialoguePrompt:
     process.env.LOCAL_QWEN_DIALOGUE_PROMPT ||
     "消息按时间从旧到新排列，最后一条 user 消息是当前必须回答的问题。先判断它是在承接上文、修改条件，还是开启新话题：承接时结合最近相关回合解析“这个”“它”“刚才”“继续”等指代；换题时立即以新问题为准，不要把无关旧内容硬套进来。回答必须覆盖用户真正要解决的点，不能只抓关键词、复述原话或答非所问。信息足够就直接给出可靠答案；只有缺少的关键条件会导致答案明显不同时，才说明歧义并只问一个最必要的澄清问题。若有图片，同时结合图片和配文；看不清的内容要明确说明，不能猜。回答前静默核对一次“这是否直接回答了最后一个问题”，不要输出思考过程。",
@@ -260,7 +264,7 @@ const config = {
   deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
   deepseekSystemPrompt:
     process.env.DEEPSEEK_SYSTEM_PROMPT ||
-    "你是一只接入 QQ 群聊的中文猫娘机器人。回答要自然、简洁、有帮助，语气可爱但不过度；每次回复至少自然地带一次 喵~；不知道时直接说明，不编造。",
+    DEFAULT_AI_PERSONA_PROMPT,
   responseNeutralityPrompt:
     process.env.RESPONSE_NEUTRALITY_PROMPT ||
     "回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。",
@@ -357,7 +361,7 @@ const config = {
   ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 180),
   ambientChatSystemPrompt:
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||
-    "你是一只接入 QQ 群聊的中文猫娘机器人。现在你是在群聊里偶尔插一句闲聊，不是回答问题。请用中文快速回复 1 句，优先 20-45 个字，必要时最多 70 个字；必须自然带一次“喵”；语气像二次元社区玩家路过接梗、轻吐槽或轻轻感叹，可以有一点游戏群/番剧群的弹幕感，但味不要太冲；吐槽要友善，不恶意、不阴阳怪气、不嘲讽、不攻击任何人；不要说教，不要长篇解释，不要提到自己是 AI。",
+    DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
   chatMaxHistoryMessages: parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, 16),
   chatMaxContextChars: parseInteger(process.env.CHAT_MAX_CONTEXT_CHARS, 12000),
   chatSessionTtlMinutes: parseOptionalInteger(process.env.CHAT_SESSION_TTL_MINUTES, 120),

@@ -13,6 +13,104 @@ const {
   LocalQwenRequestError,
   prepareQwenMessages,
 } = require("../src/qwen");
+const { DEFAULT_AI_PERSONA_PROMPT } = require("../src/persona");
+
+test("Lexington persona prompt is loaded verbatim as one stable block", () => {
+  const lines = DEFAULT_AI_PERSONA_PROMPT.split("\n");
+
+  assert.equal(lines[0], "【PERSONA_LOAD】");
+  assert.equal(lines[1], "CHARACTER_LEXINGTON_WARSHIPGIRLR_FULL");
+  assert.equal(lines[2], "IDENTITY_USS_LEXINGTON_CARRIER_LADY");
+  assert.equal(lines.includes("LANG_ZH_CN_ONLY_PURE"), true);
+  assert.equal(lines.includes("SELF_CALL_LEXINGTON_AND_TAITAI"), true);
+  assert.equal(lines.includes("DISLIKE_DUSTY_TurbULENT_ENVIRONMENT"), true);
+  assert.equal(
+    lines.at(-2),
+    "FIXED_RULE_EVERY_SENTENCE_END_WITH_WAVE_EMOJI",
+  );
+  assert.equal(lines.at(-1), "TIMEOUT_SIGNAL_SILENT_STANDBY");
+});
+
+test("direct and ambient prompts share persona and sensitivity cache prefix", () => {
+  const config = createConfig();
+  const qwen = new LocalQwenChatService(config, { logger: createLogger() });
+  const deepseek = new DeepSeekChatService(config);
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: qwen,
+    deepseekService: deepseek,
+  });
+  const stableQwenPrefix = `${config.localQwenSystemPrompt}\n\n${config.responseNeutralityPrompt}`;
+  const stableDeepSeekPrefix = `${config.deepseekSystemPrompt}\n\n${config.responseNeutralityPrompt}`;
+  const directQwenMessages = service.buildLocalQwenMessages(
+    { messages: [] },
+    { role: "user", content: "hello" },
+    {},
+  );
+  const directDeepSeekMessages = service.buildDeepSeekMessages(
+    { messages: [] },
+    { role: "user", content: "hello" },
+  );
+  const context = [
+    {
+      role: "user",
+      senderName: "Alice",
+      text: "hello",
+      images: [],
+      timestamp: 1,
+    },
+  ];
+
+  assert.equal(directQwenMessages[0].content.startsWith(stableQwenPrefix), true);
+  assert.equal(
+    service.buildAmbientSystemPrompt("idle").startsWith(stableQwenPrefix),
+    true,
+  );
+  assert.equal(
+    directDeepSeekMessages[0].content.startsWith(stableDeepSeekPrefix),
+    true,
+  );
+  assert.equal(
+    service
+      .buildDeepSeekAmbientMessages(context, "idle")[0]
+      .content.startsWith(stableDeepSeekPrefix),
+    true,
+  );
+  assert.equal(
+    directQwenMessages[0].content.indexOf(config.responseNeutralityPrompt) <
+      directQwenMessages[0].content.indexOf(config.localQwenDialoguePrompt),
+    true,
+  );
+});
+
+test("inherited Local Qwen quick replies use the Qwen persona, not DeepSeek's", async () => {
+  const config = {
+    ...createConfig(),
+    localQwenSystemPrompt: "Qwen-only persona",
+    deepseekSystemPrompt: "DeepSeek-only persona",
+  };
+  const bodies = [];
+  const service = new LocalQwenChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return completionResponse("Qwen quick reply");
+    },
+  });
+
+  assert.equal(await service.quickReply("hello"), "Qwen quick reply");
+  assert.equal(bodies.length, 1);
+  assert.equal(
+    bodies[0].messages[0].content.startsWith(
+      `Qwen-only persona\n\n${config.responseNeutralityPrompt}`,
+    ),
+    true,
+  );
+  assert.equal(
+    bodies[0].messages[0].content.includes("DeepSeek-only persona"),
+    false,
+  );
+});
 
 test("Local Qwen health check uses authenticated /models without a real network request", async () => {
   const calls = [];
@@ -1673,8 +1771,10 @@ function createQwenStub(overrides = {}) {
     isHealthy() {
       return this.configured && this.health;
     },
-    buildSystemPrompt(prompt) {
-      return prompt;
+    buildSystemPrompt(prompt, ...taskPrompts) {
+      return [prompt, ...taskPrompts]
+        .filter((part) => String(part || "").trim())
+        .join("\n\n");
     },
     async createCompletion() {
       return "Qwen reply";
@@ -1701,8 +1801,10 @@ function createDeepSeekStub(overrides = {}) {
     isConfigured() {
       return this.configured;
     },
-    buildSystemPrompt(prompt) {
-      return prompt;
+    buildSystemPrompt(prompt, ...taskPrompts) {
+      return [prompt, ...taskPrompts]
+        .filter((part) => String(part || "").trim())
+        .join("\n\n");
     },
     trimMessages(messages) {
       this.trimCalls += 1;
