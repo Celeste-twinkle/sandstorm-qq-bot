@@ -53,7 +53,7 @@ class DeepSeekChatService {
       {
         role: "system",
         content: this.buildSystemPrompt(
-          this.getPersonaPrompt(),
+          this.resolvePersonaPrompt(meta.personaPrompt),
           this.config.ambientChatSystemPrompt,
         ),
       },
@@ -82,7 +82,7 @@ class DeepSeekChatService {
       content: this.formatUserMessage(userText, meta),
     };
 
-    const messages = this.buildMessages(session, userMessage);
+    const messages = this.buildMessages(session, userMessage, meta.personaPrompt);
     const assistantText = await this.createCompletion(messages, {
       thinking: Boolean(meta.thinking),
       webSearch: Boolean(meta.webSearch),
@@ -116,11 +116,11 @@ class DeepSeekChatService {
     return ttlMs > 0 && now - session.updatedAt > ttlMs;
   }
 
-  buildMessages(session, userMessage) {
+  buildMessages(session, userMessage, personaPrompt = "") {
     return this.trimMessages([
       {
         role: "system",
-        content: this.buildSystemPrompt(this.getPersonaPrompt()),
+        content: this.buildSystemPrompt(this.resolvePersonaPrompt(personaPrompt)),
       },
       ...session.messages,
       userMessage,
@@ -131,9 +131,15 @@ class DeepSeekChatService {
     return this.config.deepseekSystemPrompt;
   }
 
+  resolvePersonaPrompt(selectedPrompt) {
+    const selected = String(selectedPrompt || "").trim();
+    return selected || this.getPersonaPrompt();
+  }
+
   buildSystemPrompt(personaPrompt, ...taskPrompts) {
     return [
       personaPrompt,
+      this.config.personaFlexibilityPrompt,
       this.config.responseNeutralityPrompt,
       ...taskPrompts,
     ]

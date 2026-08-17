@@ -10,3 +10,5 @@ pnpm-debug.log*
 logs/
 *.log
 bot.pid
+data/persona-selections.json
+data/persona-selections.json.*.tmp

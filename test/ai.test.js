@@ -13,7 +13,10 @@ const {
   LocalQwenRequestError,
   prepareQwenMessages,
 } = require("../src/qwen");
-const { DEFAULT_AI_PERSONA_PROMPT } = require("../src/persona");
+const {
+  DEFAULT_AI_PERSONA_PROMPT,
+  DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
+} = require("../src/persona");
 
 test("Lexington persona prompt is loaded verbatim as one stable block", () => {
   const lines = DEFAULT_AI_PERSONA_PROMPT.split("\n");
@@ -31,7 +34,16 @@ test("Lexington persona prompt is loaded verbatim as one stable block", () => {
   assert.equal(lines.at(-1), "TIMEOUT_SIGNAL_SILENT_STANDBY");
 });
 
-test("direct and ambient prompts share persona and sensitivity cache prefix", () => {
+test("shared persona flexibility keeps character voice without forcing canon lines", () => {
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /保留当前角色的核心性格/);
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /不要照着角色原有台词表演/);
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /以本规则为准.*一律降为可选/);
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /不合适时完全不用/);
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /每句固定结尾/);
+  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /机械复读/);
+});
+
+test("direct and ambient prompts share persona, flexibility, and sensitivity cache prefix", () => {
   const config = createConfig();
   const qwen = new LocalQwenChatService(config, { logger: createLogger() });
   const deepseek = new DeepSeekChatService(config);
@@ -40,8 +52,8 @@ test("direct and ambient prompts share persona and sensitivity cache prefix", ()
     localQwenService: qwen,
     deepseekService: deepseek,
   });
-  const stableQwenPrefix = `${config.localQwenSystemPrompt}\n\n${config.responseNeutralityPrompt}`;
-  const stableDeepSeekPrefix = `${config.deepseekSystemPrompt}\n\n${config.responseNeutralityPrompt}`;
+  const stableQwenPrefix = `${config.localQwenSystemPrompt}\n\n${config.personaFlexibilityPrompt}\n\n${config.responseNeutralityPrompt}`;
+  const stableDeepSeekPrefix = `${config.deepseekSystemPrompt}\n\n${config.personaFlexibilityPrompt}\n\n${config.responseNeutralityPrompt}`;
   const directQwenMessages = service.buildLocalQwenMessages(
     { messages: [] },
     { role: "user", content: "hello" },
@@ -77,10 +89,85 @@ test("direct and ambient prompts share persona and sensitivity cache prefix", ()
     true,
   );
   assert.equal(
+    directQwenMessages[0].content.indexOf(config.personaFlexibilityPrompt) <
+      directQwenMessages[0].content.indexOf(config.responseNeutralityPrompt),
+    true,
+  );
+  assert.equal(
     directQwenMessages[0].content.indexOf(config.responseNeutralityPrompt) <
       directQwenMessages[0].content.indexOf(config.localQwenDialoguePrompt),
     true,
   );
+});
+
+test("a selected member persona overrides defaults in direct and ambient replies", () => {
+  const config = createConfig();
+  const qwen = new LocalQwenChatService(config, { logger: createLogger() });
+  const deepseek = new DeepSeekChatService(config);
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: qwen,
+    deepseekService: deepseek,
+  });
+  const selectedPersona = [
+    "【PERSONA_LOAD】",
+    "CHARACTER_ENTERPRISE_AZUR_LANE_FULL",
+    "AFFECTION_STATE_MAX_WITH_CURRENT_GROUP_MEMBER",
+  ].join("\n");
+  const session = { messages: [] };
+  const current = { role: "user", content: "hello" };
+  const context = [
+    {
+      role: "user",
+      userId: "10001",
+      senderName: "Alice",
+      text: "hello",
+      images: [],
+      timestamp: 1,
+    },
+  ];
+
+  const qwenDirect = service.buildLocalQwenMessages(
+    session,
+    current,
+    {},
+    1,
+    [],
+    selectedPersona,
+  )[0].content;
+  const qwenGroup = service.buildLocalQwenMessages(
+    session,
+    current,
+    {},
+    1,
+    context,
+    selectedPersona,
+  )[0].content;
+  const qwenAmbient = service.buildAmbientSystemPrompt("idle", selectedPersona);
+  const deepseekDirect = service.buildDeepSeekMessages(
+    session,
+    current,
+    selectedPersona,
+  )[0].content;
+  const deepseekAmbient = service.buildDeepSeekAmbientMessages(
+    context,
+    "idle",
+    selectedPersona,
+  )[0].content;
+
+  for (const prompt of [
+    qwenDirect,
+    qwenGroup,
+    qwenAmbient,
+    deepseekDirect,
+    deepseekAmbient,
+  ]) {
+    assert.equal(prompt.startsWith(selectedPersona), true);
+    assert.equal(prompt.includes(config.localQwenSystemPrompt), false);
+    assert.equal(prompt.includes(config.deepseekSystemPrompt), false);
+    assert.equal(prompt.includes(config.personaFlexibilityPrompt), true);
+    assert.equal(prompt.includes(config.responseNeutralityPrompt), true);
+  }
 });
 
 test("inherited Local Qwen quick replies use the Qwen persona, not DeepSeek's", async () => {
@@ -102,7 +189,7 @@ test("inherited Local Qwen quick replies use the Qwen persona, not DeepSeek's", 
   assert.equal(bodies.length, 1);
   assert.equal(
     bodies[0].messages[0].content.startsWith(
-      `Qwen-only persona\n\n${config.responseNeutralityPrompt}`,
+      `Qwen-only persona\n\n${config.personaFlexibilityPrompt}\n\n${config.responseNeutralityPrompt}`,
     ),
     true,
   );
@@ -1739,6 +1826,7 @@ function createConfig() {
     deepseekBaseUrl: "http://deepseek.mock",
     deepseekModel: "deepseek-v4-flash",
     deepseekSystemPrompt: "DeepSeek system",
+    personaFlexibilityPrompt: "Flexible roleplay",
     responseNeutralityPrompt: "Neutral",
     deepseekTimeoutMs: 30000,
     deepseekThinkingTimeoutMs: 60000,
