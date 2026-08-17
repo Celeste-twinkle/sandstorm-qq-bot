@@ -279,6 +279,10 @@ class LocalQwenChatService extends DeepSeekChatService {
     return this.isConfigured() && this.healthStatus === "healthy";
   }
 
+  getPersonaPrompt() {
+    return this.config.localQwenSystemPrompt;
+  }
+
   async startHealthChecks(options = {}) {
     if (!this.isConfigured() || this.healthTimer) {
       return this.isHealthy();

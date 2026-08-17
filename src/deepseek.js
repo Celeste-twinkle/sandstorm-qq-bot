@@ -66,7 +66,10 @@ class DeepSeekChatService {
     const messages = this.trimMessages([
       {
         role: "system",
-        content: this.buildSystemPrompt(this.config.ambientChatSystemPrompt),
+        content: this.buildSystemPrompt(
+          this.getPersonaPrompt(),
+          this.config.ambientChatSystemPrompt,
+        ),
       },
       {
         role: "user",
@@ -131,15 +134,23 @@ class DeepSeekChatService {
     return this.trimMessages([
       {
         role: "system",
-        content: this.buildSystemPrompt(this.config.deepseekSystemPrompt),
+        content: this.buildSystemPrompt(this.getPersonaPrompt()),
       },
       ...session.messages,
       userMessage,
     ]);
   }
 
-  buildSystemPrompt(basePrompt) {
-    return [basePrompt, this.config.responseNeutralityPrompt]
+  getPersonaPrompt() {
+    return this.config.deepseekSystemPrompt;
+  }
+
+  buildSystemPrompt(personaPrompt, ...taskPrompts) {
+    return [
+      personaPrompt,
+      this.config.responseNeutralityPrompt,
+      ...taskPrompts,
+    ]
       .filter((part) => String(part || "").trim())
       .join("\n\n");
   }

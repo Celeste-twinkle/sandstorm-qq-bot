@@ -58,7 +58,7 @@ REQUIRE_AT=false
 
 Local Qwen 使用 OpenAI 兼容的 `/chat/completions` 接口和 Bearer 认证。机器人启动时会立即请求一次 `/models`，之后默认每 10 秒检查一次；网络错误、超时或服务端错误会触发当前整轮请求回退到 DeepSeek，服务恢复后自动切回。健康检查间隔、路径和超时可通过 `LOCAL_QWEN_HEALTH_INTERVAL_MS`、`LOCAL_QWEN_HEALTH_PATH`、`LOCAL_QWEN_HEALTH_TIMEOUT_MS` 调整。
 
-Qwen 的提示词分为角色、对话理解和长度控制三层，可分别通过 `LOCAL_QWEN_SYSTEM_PROMPT`、`LOCAL_QWEN_DIALOGUE_PROMPT`、`LOCAL_QWEN_CONCISE_PROMPT` 调整。默认对话规则会优先回答最后一条用户消息，区分承接上文与切换话题，解析最近相关指代，并且只在真正影响答案的关键歧义上追问。
+Local Qwen 与 DeepSeek 回退分别通过 `LOCAL_QWEN_SYSTEM_PROMPT` 和 `DEEPSEEK_SYSTEM_PROMPT` 配置人格，两条路径默认都完整加载同一份列克星敦人格。Qwen 的对话理解和长度控制可分别通过 `LOCAL_QWEN_DIALOGUE_PROMPT`、`LOCAL_QWEN_CONCISE_PROMPT` 调整。原有的 `RESPONSE_NEUTRALITY_PROMPT` 敏感话题限制保持启用，并紧跟在各自人格之后。人格与敏感话题限制组成普通问答和主动闲聊共用的稳定前缀，任务规则随后追加，动态群聊上下文只放在后续消息中，以便提高服务端前缀缓存命中率。默认对话规则仍会优先回答最后一条用户消息，区分承接上文与切换话题，解析最近相关指代，并且只在真正影响答案的关键歧义上追问。
 
 Local Qwen 的普通问答、主动闲聊和图片问答统一启用强推理，不再按问题类型分级；`LOCAL_QWEN_REASONING_EFFORT` 只接受 `high` 或 `max`，默认 `high` 兼顾推理质量与速度。所有用户可见的 Qwen 回复仍统一使用 `LOCAL_QWEN_MODEL_MAX_OUTPUT_TOKENS` 作为 `max_tokens`，避免隐藏推理耗尽小生成预算后没有正文。后台图片任务是低成本视觉预索引，不只是 OCR：默认使用 `none`、确定性采样和 `detail=high`，通过代理实测支持的 JSON Schema 一次生成逐字转录、文字不确定项，以及图片类型、主体、布局、动作关系、显著细节、文档/界面结构、可能实体和视觉不确定项，不增加推理档位或额外模型调用。配套本地代理会把 `detail=high` 转换成原图总览和最多四个带重叠的放大切片；普通/auto 请求不做切片，因此不会拖慢普通对话。手写、题字、小字号和低清内容会显式标成需要原图复核；可通过 `LOCAL_QWEN_IMAGE_CACHE_REASONING_EFFORT` 和 `LOCAL_QWEN_IMAGE_CACHE_DETAIL` 独立调整预索引。用户直接发送图片提问或引用图片提问时，当前锚点只把原图交给 `high/max` 对话推理，不混入低成本缓存，避免错误 OCR 或实体名称产生锚定；旧上下文图片以及原图加载失败时才使用文字缓存。主动闲聊默认超时相应提高到 30 秒。DeepSeek 回退仍使用自己的输出和推理配置。
 
