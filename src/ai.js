@@ -1,17 +1,49 @@
 const { DeepSeekChatService } = require("./deepseek");
-const { LocalQwenChatService, LocalQwenRequestError } = require("./qwen");
+const {
+  ImageInsightCache,
+  LocalQwenChatService,
+  LocalQwenRequestError,
+  prepareQwenMessagesDetailed,
+} = require("./qwen");
 
 class AiChatService {
   constructor(config, options = {}) {
     this.config = config;
     this.logger = options.logger || console;
+    const sharedImageInsightCache =
+      options.imageInsightCache ||
+      new ImageInsightCache(config, {
+        enabled:
+          config.localQwenImageCacheEnabled !== false ||
+          config.deepseekImageCacheEnabled !== false,
+        maxEntries: Math.max(
+          Number(config.localQwenImageCacheMaxEntries) || 0,
+          Number(config.deepseekImageCacheMaxEntries) || 0,
+        ),
+        ttlMinutes: Math.max(
+          Number(config.localQwenImageCacheTtlMinutes) || 0,
+          Number(config.deepseekImageCacheTtlMinutes) || 0,
+        ),
+        maxChars: Math.max(
+          Number(config.localQwenImageCacheMaxChars) || 0,
+          Number(config.deepseekImageCacheMaxChars) || 0,
+        ),
+        logger: this.logger,
+        providerLabel: "Vision",
+      });
     this.deepseek =
       options.deepseekService ||
-      new DeepSeekChatService(config);
+      new DeepSeekChatService(config, {
+        fetch: options.fetch,
+        imageInsightCache: sharedImageInsightCache,
+        logger: this.logger,
+        prepareVisionMessages: prepareQwenMessagesDetailed,
+      });
     this.localQwen =
       options.localQwenService ||
       new LocalQwenChatService(config, {
         fetch: options.fetch,
+        imageInsightCache: sharedImageInsightCache,
         logger: this.logger,
       });
     this.sessions = new Map();
@@ -27,10 +59,24 @@ class AiChatService {
   }
 
   async prewarmImages(images) {
-    if (typeof this.localQwen.prewarmImages !== "function") {
+    if (this.localQwen.isConfigured() && this.localQwen.isHealthy()) {
+      if (
+        this.config.localQwenImageCacheEnabled !== false &&
+        typeof this.localQwen.prewarmImages === "function"
+      ) {
+        return this.localQwen.prewarmImages(images);
+      }
       return 0;
     }
-    return this.localQwen.prewarmImages(images);
+
+    if (
+      typeof this.deepseek.prewarmImages === "function" &&
+      this.deepseek.isConfigured()
+    ) {
+      return this.deepseek.prewarmImages(images);
+    }
+
+    return 0;
   }
 
   isConfigured() {
@@ -129,7 +175,11 @@ class AiChatService {
             contextScale,
             meta.groupContextMessages,
           )
-        : this.buildDeepSeekMessages(session, currentUserMessage);
+        : this.buildDeepSeekMessages(
+            session,
+            currentUserMessage,
+            meta.groupContextMessages,
+          );
       return provider.createCompletion(
         messages,
         provider === this.localQwen
@@ -259,19 +309,34 @@ class AiChatService {
     return ttlMs > 0 && now - session.updatedAt > ttlMs;
   }
 
-  buildDeepSeekMessages(session, currentUserMessage) {
+  buildDeepSeekMessages(
+    session,
+    currentUserMessage,
+    groupContextMessages = [],
+  ) {
     const maxHistory = Math.max(2, this.config.chatMaxHistoryMessages);
     const history = session.messages
       .filter((message) => !message?.qwenOnly)
       .slice(-maxHistory);
+    const latestGroupUserMessage = Array.isArray(groupContextMessages)
+      ? groupContextMessages
+          .filter((message) => message?.role !== "assistant" && !message?.qwenOnly)
+          .at(-1)
+      : null;
+    const currentWithQuotedImages = mergeUserMessageImages(
+      currentUserMessage,
+      latestGroupUserMessage?.images,
+    );
     const messages = [
       {
         role: "system",
         content: this.deepseek.buildSystemPrompt(this.config.deepseekSystemPrompt),
       },
       ...history,
-      currentUserMessage,
-    ].map(convertMessageForTextProvider);
+      currentWithQuotedImages,
+    ].map(cloneMessageForDeepSeek);
+
+    limitImagesInMessages(messages, this.config.deepseekMaxImages);
 
     return this.deepseek.trimMessages(messages);
   }
@@ -392,21 +457,25 @@ class AiChatService {
       ambientMode === "instant"
         ? "请优先回应最后一条群成员消息。"
         : "请根据冷场前的最近话题自然接一句。";
-    const contextText = contextMessages
+    const selectedContext = contextMessages
       .filter((message) => !message?.qwenOnly)
-      .slice(-6)
-      .map((message) => formatGroupContextTextLine(message, true))
-      .join("\n");
-    return this.deepseek.trimMessages([
+      .slice(-6);
+    const prioritizedContext = annotateGroupContextRecency(selectedContext);
+    const messages = [
       {
         role: "system",
-        content: this.deepseek.buildSystemPrompt(this.config.ambientChatSystemPrompt),
+        content: this.deepseek.buildSystemPrompt(
+          `${this.config.ambientChatSystemPrompt}\n\n${modeInstruction}`,
+        ),
       },
-      {
-        role: "user",
-        content: `${modeInstruction}\n以下消息按时间从旧到新排列：\n${contextText}`,
-      },
-    ]);
+      ...prioritizedContext.map(({ message, annotation }) =>
+        buildGroupContextModelMessage(message, annotation, {
+          includeQwenContent: false,
+        }),
+      ),
+    ].map(cloneMessageForDeepSeek);
+    limitImagesInMessages(messages, this.config.deepseekMaxImages);
+    return this.deepseek.trimMessages(messages);
   }
 
   trimSession(session) {
@@ -529,6 +598,60 @@ function convertMessageForTextProvider(message) {
   return {
     ...message,
     content: text || "[空消息]",
+  };
+}
+
+function mergeUserMessageImages(message, images) {
+  const extraSources = normalizeImageSources(images);
+  if (extraSources.length === 0) {
+    return cloneMessageForDeepSeek(message);
+  }
+
+  const content = Array.isArray(message?.content)
+    ? message.content.map((part) => ({ ...part }))
+    : [{ type: "text", text: String(message?.content || "[空消息]") }];
+  const existingSources = new Set(
+    content
+      .filter((part) => part?.type === "image_ref")
+      .map((part) => String(part.source || "")),
+  );
+
+  for (const source of extraSources) {
+    if (existingSources.has(source)) {
+      continue;
+    }
+    existingSources.add(source);
+    content.push({
+      type: "image_ref",
+      source,
+      preferOriginal: true,
+    });
+  }
+
+  return {
+    ...message,
+    role: "user",
+    content,
+  };
+}
+
+function cloneMessageForDeepSeek(message) {
+  if (!Array.isArray(message?.content)) {
+    return { ...message };
+  }
+
+  if (message.role !== "user") {
+    return convertMessageForTextProvider(message);
+  }
+
+  return {
+    ...message,
+    content: message.content.map((part) => ({
+      ...part,
+      ...(part?.type === "image_url" && part.image_url
+        ? { image_url: { ...part.image_url } }
+        : {}),
+    })),
   };
 }
 
@@ -675,7 +798,9 @@ function buildGroupContextModelMessage(
   options = {},
 ) {
   const role = message?.role === "assistant" ? "assistant" : "user";
-  const qwenMessage = getQwenContextMessage(message);
+  const qwenMessage = options.includeQwenContent === false
+    ? message
+    : getQwenContextMessage(message);
   const text = formatGroupContextTextLine(qwenMessage, false, annotation);
   const images = normalizeImageSources(qwenMessage?.images);
 

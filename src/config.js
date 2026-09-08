@@ -56,7 +56,7 @@ function parseReasoningEffort(value, fallback) {
 
 function parseImageDetail(value, fallback = "high") {
   const normalized = String(value || "").trim().toLowerCase();
-  return ["auto", "low", "high"].includes(normalized)
+  return ["auto", "low", "high", "original"].includes(normalized)
     ? normalized
     : fallback;
 }
@@ -257,7 +257,67 @@ const config = {
   ),
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEKER_API_KEY || "",
   deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, ""),
-  deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
+  deepseekModel:
+    process.env.DEEPSEEK_MODEL || "deepseek-v4-flash-vision-exp",
+  deepseekVisionModel:
+    process.env.DEEPSEEK_VISION_MODEL || "deepseek-v4-flash-vision-exp",
+  deepseekMaxImages: clampNumber(
+    parseInteger(process.env.DEEPSEEK_MAX_IMAGES, 10),
+    0,
+    600,
+  ),
+  deepseekImageDetail: parseImageDetail(
+    process.env.DEEPSEEK_IMAGE_DETAIL,
+    "high",
+  ),
+  deepseekImageFetchTimeoutMs: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_FETCH_TIMEOUT_MS, 10000),
+    1000,
+    60000,
+  ),
+  deepseekImageMaxBytes: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_MAX_BYTES, 32 * 1024 * 1024),
+    1024 * 1024,
+    32 * 1024 * 1024,
+  ),
+  deepseekImagesMaxTotalBytes: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGES_MAX_TOTAL_BYTES, 32 * 1024 * 1024),
+    1024 * 1024,
+    64 * 1024 * 1024,
+  ),
+  deepseekImageCacheEnabled: parseBoolean(
+    process.env.DEEPSEEK_IMAGE_CACHE_ENABLED,
+    true,
+  ),
+  deepseekImageCacheMaxEntries: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_CACHE_MAX_ENTRIES, 500),
+    10,
+    5000,
+  ),
+  deepseekImageCacheTtlMinutes: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_CACHE_TTL_MINUTES, 720),
+    1,
+    10080,
+  ),
+  deepseekImageCacheMaxChars: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_CACHE_MAX_CHARS, 24000),
+    500,
+    50000,
+  ),
+  deepseekImageCacheTimeoutMs: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_CACHE_TIMEOUT_MS, 60000),
+    1000,
+    120000,
+  ),
+  deepseekImageCacheMaxOutputTokens: clampNumber(
+    parseInteger(process.env.DEEPSEEK_IMAGE_CACHE_MAX_OUTPUT_TOKENS, 4096),
+    256,
+    16384,
+  ),
+  deepseekImageCacheDetail: parseImageDetail(
+    process.env.DEEPSEEK_IMAGE_CACHE_DETAIL,
+    "high",
+  ),
   deepseekSystemPrompt:
     process.env.DEEPSEEK_SYSTEM_PROMPT ||
     "你是一只接入 QQ 群聊的中文猫娘机器人。回答要自然、简洁、有帮助，语气可爱但不过度；每次回复至少自然地带一次 喵~；不知道时直接说明，不编造。",

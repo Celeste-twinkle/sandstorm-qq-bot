@@ -92,21 +92,28 @@ class LocalQwenRequestError extends Error {
 
 class ImageInsightCache {
   constructor(config, options = {}) {
-    this.enabled = config.localQwenImageCacheEnabled !== false;
+    this.enabled =
+      options.enabled === undefined
+        ? config.localQwenImageCacheEnabled !== false
+        : options.enabled !== false;
     this.maxEntries = Math.max(
       1,
-      Number(config.localQwenImageCacheMaxEntries) || 500,
+      Number(options.maxEntries ?? config.localQwenImageCacheMaxEntries) || 500,
     );
     this.ttlMs =
-      Math.max(1, Number(config.localQwenImageCacheTtlMinutes) || 720) *
+      Math.max(
+        1,
+        Number(options.ttlMinutes ?? config.localQwenImageCacheTtlMinutes) || 720,
+      ) *
       60 *
       1000;
     this.maxChars = Math.max(
       200,
-      Number(config.localQwenImageCacheMaxChars) || 24000,
+      Number(options.maxChars ?? config.localQwenImageCacheMaxChars) || 24000,
     );
     this.logger = options.logger || console;
     this.now = options.now || Date.now;
+    this.providerLabel = String(options.providerLabel || "Local Qwen");
     this.byDigest = new Map();
     this.sourceToDigest = new Map();
     this.pendingByDigest = new Map();
@@ -185,7 +192,7 @@ class ImageInsightCache {
         });
         this.prune();
         this.logger.log?.(
-          `[ai] Local Qwen image insight cached digest=${candidate.digest.slice(0, 12)} chars=${normalizedText.length}`,
+          `[ai] ${this.providerLabel} image insight cached digest=${candidate.digest.slice(0, 12)} chars=${normalizedText.length}`,
         );
       })
       .catch((error) => {
@@ -195,7 +202,7 @@ class ImageInsightCache {
           }
         }
         this.logger.warn(
-          `[ai] Local Qwen image insight cache warm failed source=${safeImageSource(candidate.source)} reason=${error.message}`,
+          `[ai] ${this.providerLabel} image insight cache warm failed source=${safeImageSource(candidate.source)} reason=${error.message}`,
         );
       })
       .finally(() => {
@@ -1457,6 +1464,9 @@ async function prepareQwenMessagesDetailed(
           type: "image_url",
           image_url: {
             url: image.dataUrl,
+            ...(options.imageDetail
+              ? { detail: options.imageDetail }
+              : {}),
           },
         },
         // Do not mix a low-cost cache with a successfully loaded current
@@ -1477,7 +1487,7 @@ async function prepareQwenMessagesDetailed(
       }
     } catch (error) {
       logger.warn(
-        `[ai] Local Qwen image omitted source=${safeImageSource(entry.part.source)} reason=${error.message}`,
+        `[ai] ${options.providerLabel || "Local Qwen"} image omitted source=${safeImageSource(entry.part.source)} reason=${error.message}`,
       );
       if (sourceInsight) {
         preparedImages.set(entry.position, {

@@ -717,7 +717,7 @@ test("DeepSeek fallback keeps its existing 16-message and character trimming pat
   assert.equal(deepseek.trimCalls > 0, true);
 });
 
-test("Qwen keeps only the newest 10 images while DeepSeek receives text placeholders", async () => {
+test("Qwen and DeepSeek keep only the newest 10 images", async () => {
   const config = createConfig();
   const images = Array.from({ length: 12 }, (_, index) => {
     return `data:image/png;base64,${Buffer.from(`image-${index}`).toString("base64")}`;
@@ -763,7 +763,52 @@ test("Qwen keeps only the newest 10 images while DeepSeek receives text placehol
   });
 
   await fallbackService.chat("group:deepseek", "", { images });
-  assert.equal((deepseekMessages.at(-1).content.match(/\[图片\]/g) || []).length, 12);
+  const deepseekContent = deepseekMessages.at(-1).content;
+  assert.equal(
+    deepseekContent.filter((part) => part.type === "image_ref").length,
+    10,
+  );
+  assert.equal(
+    deepseekContent.filter(
+      (part) => part.type === "text" && part.text === "[较早图片已省略]",
+    ).length,
+    2,
+  );
+});
+
+test("DeepSeek attaches the image recovered from the current QQ reply context", async () => {
+  const config = createConfig();
+  const quotedImage = "https://img.example/quoted.png";
+  let deepseekMessages;
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    localQwenService: createQwenStub({ healthy: false }),
+    deepseekService: createDeepSeekStub({
+      async createCompletion(messages) {
+        deepseekMessages = messages;
+        return "quoted image reply";
+      },
+    }),
+  });
+
+  await service.chat("group:deepseek-quote", "这张图是什么？", {
+    groupContextMessages: [
+      {
+        role: "user",
+        senderName: "Tester",
+        text: "这张图是什么？",
+        images: [quotedImage],
+        relation: "QQ引用图片来源：Alice（仅用于定位，不代表语义相关）",
+      },
+    ],
+  });
+
+  assert.equal(
+    deepseekMessages.at(-1).content.some(
+      (part) => part.type === "image_ref" && part.source === quotedImage,
+    ),
+    true,
+  );
 });
 
 test("Qwen direct and ambient paths use 100 group records, including bot replies and quoted images", async () => {
@@ -1368,13 +1413,13 @@ test("Qwen context trimming removes oldest complete turns and preserves the late
   assert.equal(trimmed.length < messages.length, true);
 });
 
-test("DeepSeek request body remains unchanged", () => {
+test("DeepSeek uses the configured vision model in normal and thinking modes", () => {
   const config = createConfig();
   const service = new DeepSeekChatService(config);
   const messages = [{ role: "user", content: "hello" }];
 
   assert.deepEqual(service.buildCompletionBody(messages, false), {
-    model: "deepseek-v4-flash",
+    model: "deepseek-v4-flash-vision-exp",
     messages,
     stream: false,
     max_tokens: 1600,
@@ -1382,13 +1427,155 @@ test("DeepSeek request body remains unchanged", () => {
     temperature: 0.7,
   });
   assert.deepEqual(service.buildCompletionBody(messages, true), {
-    model: "deepseek-v4-pro",
+    model: "deepseek-v4-flash-vision-exp",
     messages,
     stream: false,
     max_tokens: 3200,
     thinking: { type: "enabled" },
     reasoning_effort: "high",
   });
+});
+
+test("DeepSeek performs one OCR pass per image digest before vision reasoning", async () => {
+  const config = createConfig();
+  const bodies = [];
+  const bytes = Buffer.from("same-image-content");
+  const dataUrl = `data:image/png;base64,${bytes.toString("base64")}`;
+  const legacyBase64 = `base64://${bytes.toString("base64")}`;
+  const service = new DeepSeekChatService(config, {
+    logger: createLogger(),
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      bodies.push(body);
+      if (body.response_format?.type === "json_object") {
+        return completionResponse(
+          JSON.stringify({
+            transcription: "OCR text",
+            uncertain_text: [],
+            visual_description: "A test image",
+            possible_entities: [],
+            visual_uncertainties: [],
+          }),
+        );
+      }
+      return completionResponse("DeepSeek vision reply");
+    },
+  });
+
+  assert.equal(await service.prewarmImages([dataUrl, legacyBase64]), 1);
+  assert.equal(
+    await service.createCompletion([
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "历史回复" },
+          { type: "image_ref", source: dataUrl },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "这张图是什么？" },
+          { type: "image_ref", source: dataUrl, preferOriginal: true },
+        ],
+      },
+    ]),
+    "DeepSeek vision reply",
+  );
+  await service.waitForImageCacheIdle();
+
+  const ocrBodies = bodies.filter(
+    (body) => body.response_format?.type === "json_object",
+  );
+  const reasoningBodies = bodies.filter((body) => !body.response_format);
+  assert.equal(ocrBodies.length, 1);
+  assert.equal(reasoningBodies.length, 1);
+  assert.equal(bodies[0], ocrBodies[0]);
+  assert.equal(bodies[1], reasoningBodies[0]);
+  assert.equal(ocrBodies[0].model, "deepseek-v4-flash-vision-exp");
+  assert.equal(ocrBodies[0].temperature, 0);
+  assert.equal(countRequestImages(ocrBodies[0]), 1);
+  assert.equal(countRequestImages(reasoningBodies[0]), 1);
+  assert.equal(
+    reasoningBodies[0].messages.at(-1).content.at(-1).image_url.detail,
+    "high",
+  );
+  assert.equal(
+    reasoningBodies[0].messages
+      .filter((message) => message.role !== "user")
+      .some((message) => countMessageImages(message) > 0),
+    false,
+  );
+
+  assert.equal(await service.prewarmImages([legacyBase64, dataUrl]), 0);
+  await service.waitForImageCacheIdle();
+  assert.equal(
+    bodies.filter((body) => body.response_format?.type === "json_object").length,
+    1,
+  );
+});
+
+test("Qwen OCR cache is reused by DeepSeek after a provider fallback", async () => {
+  const config = {
+    ...createConfig(),
+    localQwenImageCacheEnabled: true,
+  };
+  const calls = [];
+  const dataUrl = `data:image/png;base64,${Buffer.from("shared-image").toString("base64")}`;
+  const service = new AiChatService(config, {
+    logger: createLogger(),
+    fetch: async (url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push({ url, body });
+      if (body.response_format?.type === "json_schema") {
+        return completionResponse(
+          JSON.stringify({
+            transcription: "shared OCR",
+            uncertain_text: [],
+            image_type_style: "test image",
+            subjects: [],
+            scene_layout: "",
+            actions_relationships: [],
+            salient_details: [],
+            document_ui_structure: "",
+            possible_entities: [],
+            visual_uncertainties: [],
+          }),
+        );
+      }
+      return completionResponse("DeepSeek fallback vision reply");
+    },
+  });
+  service.localQwen.healthStatus = "healthy";
+
+  assert.equal(await service.prewarmImages([dataUrl]), 1);
+  await service.localQwen.waitForImageCacheIdle();
+  service.localQwen.healthStatus = "unhealthy";
+  assert.equal(
+    await service.deepseek.createCompletion([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "识别这张图" },
+          { type: "image_ref", source: dataUrl, preferOriginal: true },
+        ],
+      },
+    ]),
+    "DeepSeek fallback vision reply",
+  );
+
+  assert.equal(
+    calls.filter((call) => call.body.response_format?.type === "json_schema").length,
+    1,
+  );
+  assert.equal(
+    calls.filter((call) => call.body.response_format?.type === "json_object").length,
+    0,
+  );
+  assert.equal(
+    calls.filter((call) => call.url === "http://deepseek.mock/chat/completions").length,
+    1,
+  );
 });
 
 test("DeepSeek web search uses the shared evidence research policy", () => {
@@ -1639,7 +1826,20 @@ function createConfig() {
     localQwenImageCacheDetail: "high",
     deepseekApiKey: "sk-test-deepseek",
     deepseekBaseUrl: "http://deepseek.mock",
-    deepseekModel: "deepseek-v4-flash",
+    deepseekModel: "deepseek-v4-flash-vision-exp",
+    deepseekVisionModel: "deepseek-v4-flash-vision-exp",
+    deepseekMaxImages: 10,
+    deepseekImageDetail: "high",
+    deepseekImageFetchTimeoutMs: 1000,
+    deepseekImageMaxBytes: 8 * 1024 * 1024,
+    deepseekImagesMaxTotalBytes: 32 * 1024 * 1024,
+    deepseekImageCacheEnabled: true,
+    deepseekImageCacheMaxEntries: 500,
+    deepseekImageCacheTtlMinutes: 720,
+    deepseekImageCacheMaxChars: 24000,
+    deepseekImageCacheTimeoutMs: 60000,
+    deepseekImageCacheMaxOutputTokens: 4096,
+    deepseekImageCacheDetail: "high",
     deepseekSystemPrompt: "DeepSeek system",
     responseNeutralityPrompt: "Neutral",
     deepseekTimeoutMs: 30000,
@@ -1759,12 +1959,13 @@ function completionResponse(content) {
 
 function countRequestImages(body) {
   return (body.messages || []).reduce((count, message) => {
-    if (!Array.isArray(message.content)) {
-      return count;
-    }
-    return (
-      count +
-      message.content.filter((part) => part?.type === "image_url").length
-    );
+    return count + countMessageImages(message);
   }, 0);
+}
+
+function countMessageImages(message) {
+  if (!Array.isArray(message?.content)) {
+    return 0;
+  }
+  return message.content.filter((part) => part?.type === "image_url").length;
 }
