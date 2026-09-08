@@ -69,13 +69,8 @@ class AiChatService {
       return 0;
     }
 
-    if (
-      typeof this.deepseek.prewarmImages === "function" &&
-      this.deepseek.isConfigured()
-    ) {
-      return this.deepseek.prewarmImages(images);
-    }
-
+    // DeepSeek performs OCR only when the current user request explicitly
+    // needs image text. Receiving an image alone must not spend OCR tokens.
     return 0;
   }
 
@@ -321,6 +316,11 @@ class AiChatService {
     groupContextMessages = [],
     personaPrompt = "",
   ) {
+    if (!Array.isArray(groupContextMessages)) {
+      personaPrompt = groupContextMessages;
+      groupContextMessages = [];
+    }
+
     const maxHistory = Math.max(2, this.config.chatMaxHistoryMessages);
     const history = session.messages
       .filter((message) => !message?.qwenOnly)

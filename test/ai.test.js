@@ -1621,7 +1621,7 @@ test("DeepSeek uses the configured vision model in normal and thinking modes", (
   });
 });
 
-test("DeepSeek performs one OCR pass per image digest before vision reasoning", async () => {
+test("DeepSeek OCR is demand-driven and reuses one cached result per image digest", async () => {
   const config = createConfig();
   const bodies = [];
   const bytes = Buffer.from("same-image-content");
@@ -1637,9 +1637,6 @@ test("DeepSeek performs one OCR pass per image digest before vision reasoning", 
           JSON.stringify({
             transcription: "OCR text",
             uncertain_text: [],
-            visual_description: "A test image",
-            possible_entities: [],
-            visual_uncertainties: [],
           }),
         );
       }
@@ -1647,7 +1644,9 @@ test("DeepSeek performs one OCR pass per image digest before vision reasoning", 
     },
   });
 
-  assert.equal(await service.prewarmImages([dataUrl, legacyBase64]), 1);
+  assert.equal(await service.prewarmImages([dataUrl, legacyBase64]), 0);
+  assert.equal(bodies.length, 0);
+
   assert.equal(
     await service.createCompletion([
       {
@@ -1667,33 +1666,59 @@ test("DeepSeek performs one OCR pass per image digest before vision reasoning", 
     ]),
     "DeepSeek vision reply",
   );
-  await service.waitForImageCacheIdle();
+  assert.equal(bodies.length, 1);
+  assert.equal(bodies[0].response_format, undefined);
+  assert.equal(countRequestImages(bodies[0]), 1);
+
+  assert.equal(
+    await service.createCompletion([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "提取这张图里的文字" },
+          { type: "image_ref", source: legacyBase64, preferOriginal: true },
+        ],
+      },
+    ]),
+    "DeepSeek vision reply",
+  );
+
+  assert.equal(
+    await service.createCompletion([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "OCR 这张图片" },
+          { type: "image_ref", source: dataUrl, preferOriginal: true },
+        ],
+      },
+    ]),
+    "DeepSeek vision reply",
+  );
 
   const ocrBodies = bodies.filter(
     (body) => body.response_format?.type === "json_object",
   );
   const reasoningBodies = bodies.filter((body) => !body.response_format);
   assert.equal(ocrBodies.length, 1);
-  assert.equal(reasoningBodies.length, 1);
-  assert.equal(bodies[0], ocrBodies[0]);
-  assert.equal(bodies[1], reasoningBodies[0]);
+  assert.equal(reasoningBodies.length, 3);
+  assert.equal(bodies[1], ocrBodies[0]);
+  assert.equal(bodies[2], reasoningBodies[1]);
+  assert.equal(bodies[3], reasoningBodies[2]);
   assert.equal(ocrBodies[0].model, "deepseek-v4-flash-vision-exp");
   assert.equal(ocrBodies[0].temperature, 0);
   assert.equal(countRequestImages(ocrBodies[0]), 1);
   assert.equal(countRequestImages(reasoningBodies[0]), 1);
+  assert.equal(countRequestImages(reasoningBodies[1]), 0);
+  assert.equal(countRequestImages(reasoningBodies[2]), 0);
   assert.equal(
-    reasoningBodies[0].messages.at(-1).content.at(-1).image_url.detail,
-    "high",
+    JSON.stringify(reasoningBodies[1].messages).includes("OCR text"),
+    true,
   );
   assert.equal(
-    reasoningBodies[0].messages
-      .filter((message) => message.role !== "user")
-      .some((message) => countMessageImages(message) > 0),
-    false,
+    JSON.stringify(reasoningBodies[2].messages).includes("OCR text"),
+    true,
   );
-
-  assert.equal(await service.prewarmImages([legacyBase64, dataUrl]), 0);
-  await service.waitForImageCacheIdle();
   assert.equal(
     bodies.filter((body) => body.response_format?.type === "json_object").length,
     1,
@@ -1741,7 +1766,7 @@ test("Qwen OCR cache is reused by DeepSeek after a provider fallback", async () 
       {
         role: "user",
         content: [
-          { type: "text", text: "识别这张图" },
+          { type: "text", text: "识别这张图里的文字" },
           { type: "image_ref", source: dataUrl, preferOriginal: true },
         ],
       },
@@ -1761,6 +1786,11 @@ test("Qwen OCR cache is reused by DeepSeek after a provider fallback", async () 
     calls.filter((call) => call.url === "http://deepseek.mock/chat/completions").length,
     1,
   );
+  const deepseekBody = calls.find(
+    (call) => call.url === "http://deepseek.mock/chat/completions",
+  ).body;
+  assert.equal(countRequestImages(deepseekBody), 0);
+  assert.match(JSON.stringify(deepseekBody.messages), /shared OCR/);
 });
 
 test("DeepSeek web search uses the shared evidence research policy", () => {
