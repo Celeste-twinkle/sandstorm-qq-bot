@@ -1,0 +1,37 @@
+{
+  "upstreamRevision": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+  "method": "核对官方固定提交源码，先独立调用原生搜索接口，再用真实聊天模型、原生搜索与公开 HTTP 页面跑通合成群聊。未连接 OneBot。",
+  "checks": {
+    "unitAndRegressionTests": 140,
+    "passed": 140,
+    "syntaxCheck": "npm run check 通过",
+    "windowsBuild": "npm run build:exe 通过；构建输出包含仓库原有 gamedig main 警告",
+    "packagedRuntime": "Node v22.22.3，直接加载 exe 内的 snapshot 模块验证原生协议、Markdown 表格、Undici 依赖与内网地址拦截；详见 package-smoke.json"
+  },
+  "liveIntegration": {
+    "rawReport": "integration.json",
+    "reviewedPassed": 5,
+    "cases": 5,
+    "assertionCorrection": "首次脚本把 search 场景通过条件误写为搜索结果自身必须含可用引用片段，导致原始报告为 4/5。官方允许只返回网址，再由模型 web_fetch；该样本搜索正常返回 8 个来源、继续成功读取官网并给出带官网链接的答案，实际链路成功。脚本已修正为：预期工具成功执行、整条链路取得证据、最终答复带链接。保留原始 4/5 文件，不重新生成模型回复或覆盖原记录。",
+    "casesReviewed": [
+      { "id": "casual", "passed": true, "finding": "一轮普通回复，没有工具或辅助搜索请求。" },
+      { "id": "native-search", "passed": true, "finding": "模型发起 2 条查询；原生结果没有引用片段，继续读取网页。raw.githubusercontent.com 抓取失败，但 nodejs.org 官网页面读取成功并被最终答案引用。" },
+      { "id": "direct-page", "passed": true, "finding": "用户提供网址后直接 web_fetch，没有额外原生搜索调用，正文转换为 Markdown 后用于答复。" },
+      { "id": "no-search", "passed": true, "finding": "遵守别联网，一轮回复“不清楚。”，没有工具调用。" },
+      { "id": "missing-search-key", "passed": true, "finding": "仅替换搜索适配器的 Key 为空，聊天 Key 正常；工具返回 WEB_PROVIDER_CREDENTIAL_MISSING，没有发出辅助搜索请求，最终说明不确定。" }
+    ],
+    "mainChatThinking": "全部聊天请求保持 disabled；辅助搜索按官方 Messages 协议执行，实际出现 thinking 块，但不保留或转发其内容。",
+    "pageVerification": "page.json 是复取的同一官网页面，转换结果 SHA-256 与两条原始成功读取记录均相同；页面支持最终答复中的 LTS 大版本、版本号和发布周期说明。"
+  },
+  "cost": {
+    "initialProbe": { "requests": 1, "inputTokensIncludingCache": 2467, "outputTokens": 504, "nativeSearches": 1 },
+    "integration": { "chatRequests": 9, "nativeSearchRequests": 2, "chatInputTokens": 21077, "chatOutputTokens": 603, "searchInputTokensIncludingCache": 9648, "searchOutputTokens": 1332 },
+    "interpretation": "辅助搜索是额外模型请求；多查询分别计费。此处只记录实际 token，不推算价格，也不与旧链路的单一样本作平均成本比较。"
+  },
+  "limits": [
+    "这轮验证搜索实现与工具执行，不是新一轮真人感 A/B；网页说明样本仍偏长，不能据此声称语气质量改善。",
+    "HTTP 读取不执行页面 JavaScript，不携带浏览器登录态；保留官方公网 DNS 校验与同源重定向限制。",
+    "官方模式没有第三方提供方自动降级。缺少可用引用片段时，需要继续 web_fetch 或说明不确定。",
+    "通过 CommonJS 适配复制官方核心模块，未搬入 Harness 的 UI、账号登录和进程级代理服务；差异和许可记录在 src/vendor/deepseek-harness/VENDOR-NOTES.md。"
+  ]
+}

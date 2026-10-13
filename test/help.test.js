@@ -22,6 +22,8 @@ test("complete help lists every command family and the custom persona limit", ()
     "Sandstorm QQ Bot 全部指令",
     "@机器人 ins",
     "@机器人 <问题>",
+    "DeepSeek V4.1 Flash",
+    "最近 50 条消息（含 bot 回复）",
     "@机器人 深度思考 <问题>",
     "@机器人 联网搜索",
     "@机器人 人格列表 [阵营]",

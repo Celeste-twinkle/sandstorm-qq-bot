@@ -1,0 +1,128 @@
+{
+  "testedAt": "2026-10-13T15:18:39.507Z",
+  "endpoint": "https://api.deepseek.com/anthropic/v1/messages",
+  "request": {
+    "model": "deepseek-v4-flash",
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Perform a web search for the query: Node.js latest LTS version site:nodejs.org"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 5
+      }
+    ]
+  },
+  "httpStatus": 200,
+  "elapsedMs": 3497,
+  "model": "deepseek-v4-flash",
+  "usage": {
+    "input_tokens": 2211,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 256,
+    "output_tokens": 504,
+    "service_tier": "standard",
+    "server_tool_use": {
+      "web_search_requests": 1
+    }
+  },
+  "stopReason": "end_turn",
+  "content": [
+    {
+      "type": "thinking"
+    },
+    {
+      "type": "server_tool_use",
+      "id": "call_00_idv40RQXmcGxc9bwb3sW5003",
+      "name": "web_search",
+      "input": {
+        "query": "Node.js latest LTS version site:nodejs.org"
+      },
+      "caller": {
+        "type": "direct"
+      }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "call_00_idv40RQXmcGxc9bwb3sW5003",
+      "content": [
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Node.js 24.16.0 (LTS)",
+          "url": "https://nodejs.org/en/blog/release/v24.16.0",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Versions de Node.js",
+          "url": "https://nodejs.org/fr/about/previous-releases",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Lansări Node.js",
+          "url": "https://nodejs.org/ro/about/previous-releases",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Node.js 22.23.3 (LTS)",
+          "url": "https://nodejs.org/en/blog/release/v22.23.3",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Node.js リリース",
+          "url": "https://nodejs.org/ja/about/previous-releases",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Релізи Node.js",
+          "url": "https://nodejs.org/uk/about/previous-releases",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Evolving the Node.js Release Schedule",
+          "url": "https://nodejs.org/zh-tw/blog/announcements/evolving-the-nodejs-release-schedule",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Node.js 版本",
+          "url": "https://nodejs.org/zh-cn/about/previous-releases?noffollow",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js — Node.js Releases",
+          "url": "https://nodejs.org/zh-tw/about/previous-releases?ref=ivanlu.dev",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "title": "Node.js",
+          "url": "https://nodejs.org/tr/blog/year-2025/page/1",
+          "page_age": null
+        }
+      ]
+    },
+    {
+      "type": "thinking"
+    },
+    {
+      "type": "text"
+    }
+  ]
+}

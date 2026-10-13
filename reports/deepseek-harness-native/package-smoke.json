@@ -1,0 +1,10 @@
+{
+  "testedAt": "2026-10-13T15:44:43.586Z",
+  "node": "v22.22.3",
+  "packaged": true,
+  "snapshotModules": "C:\\snapshot\\sandstorm-qq-bot\\src",
+  "nativeProtocol": true,
+  "markdownTables": true,
+  "undiciLoaded": true,
+  "privateAddressBlocked": true
+}

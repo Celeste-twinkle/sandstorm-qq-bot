@@ -29,6 +29,7 @@ test("web evidence policy preserves the generated skill's reliability requiremen
 
 test("web fetch rejects search-engine result pages even if search returned them", async () => {
   const runner = new WebToolRunner({
+    webSearchProvider: "auto",
     webFetchMaxChars: 3000,
   });
   const url = "https://www.google.com/search?q=current+version";

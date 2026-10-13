@@ -1,0 +1,94 @@
+{
+  "reviewer": "Codex；先读取随机隐藏 A/B 标签的成对回复，再记录主观评分，最后揭示分组。",
+  "limits": "6 类合成群聊，每类 2 轮；未使用真实群聊、真人评审或统计显著性检验。NPC 感分数仅代表本次主观判断。",
+  "rubric": {
+    "npcScore": "0=自然具体；1=轻微套话、硬凑笑点或多余建议；2=明显客服、说教或表演；3=严重角色模板；4=完全机械。越低越好。",
+    "taskFit": "0=不切题；1=部分切题、引入无关内容或未经依据的假设；2=准确承接。越高越好。"
+  },
+  "reviews": [
+    {
+      "reviewId": "pair-1",
+      "winner": "X",
+      "X": { "npcScore": 1, "taskFit": 2 },
+      "Y": { "npcScore": 1, "taskFit": 1 },
+      "comment": "X 有轻微多余的休息建议，但围绕更新时间；Y 的缓刑比喻略刻意，并复活较早的无关面馆话题。"
+    },
+    {
+      "reviewId": "pair-2",
+      "winner": "tie",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 0, "taskFit": 2 },
+      "comment": "两者都接住枪法与墙装修的自嘲，没有变成教学或角色表演。"
+    },
+    {
+      "reviewId": "pair-3",
+      "winner": "tie",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 0, "taskFit": 2 },
+      "comment": "两者都延续下载器的梗，提供新表述，没有背角色台词。"
+    },
+    {
+      "reviewId": "pair-4",
+      "winner": "Y",
+      "X": { "npcScore": 1, "taskFit": 2 },
+      "Y": { "npcScore": 0, "taskFit": 2 },
+      "comment": "X 的最要紧的事略像安慰模板；Y 更接近群友简短随口回应。"
+    },
+    {
+      "reviewId": "pair-5",
+      "winner": "tie",
+      "X": { "npcScore": 1, "taskFit": 2 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "X 多给了寻找外卖建议；Y 用舰队梗略有设定感，但与当前扫清前路的用词有关，不直接判为人格串线。"
+    },
+    {
+      "reviewId": "pair-6",
+      "winner": "X",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "X 先利用服务端尚未更新的已知信息，回复更集中；Y 多展开测试分支和 mod 检查，并再次总结，偏教程。"
+    },
+    {
+      "reviewId": "pair-7",
+      "winner": "X",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "X 简短直接接吐槽；Y 的胜负比喻和泡茶建议略像角色化的宽慰。"
+    },
+    {
+      "reviewId": "pair-8",
+      "winner": "tie",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 0, "taskFit": 2 },
+      "comment": "两者的烟花玩笑都贴合语境，X 多一句准星吐槽仍属于玩笑，差距不足以分胜负。"
+    },
+    {
+      "reviewId": "pair-9",
+      "winner": "tie",
+      "X": { "npcScore": 0, "taskFit": 2 },
+      "Y": { "npcScore": 0, "taskFit": 2 },
+      "comment": "两者都承接前一句下载器的梗，没有解释玩笑或自称角色。"
+    },
+    {
+      "reviewId": "pair-10",
+      "winner": "tie",
+      "X": { "npcScore": 1, "taskFit": 2 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "两者都接住疲惫，但在用户已经决定不玩时继续劝休息；X 安排放手机，Y 带轻微安慰套话。"
+    },
+    {
+      "reviewId": "pair-11",
+      "winner": "Y",
+      "X": { "npcScore": 1, "taskFit": 1 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "X 无依据地把外卖被拿走推断为八成被偷；Y 更多是轻松接话，但两者仍有多余寻找建议。"
+    },
+    {
+      "reviewId": "pair-12",
+      "winner": "Y",
+      "X": { "npcScore": 2, "taskFit": 1 },
+      "Y": { "npcScore": 1, "taskFit": 2 },
+      "comment": "X 扩展成多步教程，并在未给游戏名时引入 Minecraft 代理、Java/基岩版等未经依据的细节；Y 用版本号检查简短作答。"
+    }
+  ]
+}

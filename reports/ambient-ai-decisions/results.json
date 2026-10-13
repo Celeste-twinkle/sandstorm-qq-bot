@@ -1,0 +1,591 @@
+{
+  "startedAt": "2026-10-13T13:58:13.764Z",
+  "model": "deepseek-flash",
+  "defaultThinking": false,
+  "method": "12 synthetic conversations; judge first, generate only if accepted. No QQ connection.",
+  "results": [
+    {
+      "id": "bot-nickname-question",
+      "expected": true,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "太太，这更新一小时都没动静，先查哪里？别让我重装"
+        ]
+      ],
+      "decision": true,
+      "reply": "先看更新程序有没有卡在下载上，去任务管理器看看带宽和硬盘占用。别急着重装，进度文件多半还在。",
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 557,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 750,
+            "completion_tokens": 7,
+            "total_tokens": 757,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "prompt_cache_hit_tokens": 0,
+            "prompt_cache_miss_tokens": 750
+          },
+          "finishReason": "stop"
+        },
+        {
+          "decisionRequest": false,
+          "thinking": "disabled",
+          "maxTokens": 180,
+          "messageCount": 2,
+          "latencyMs": 965,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 992,
+            "completion_tokens": 29,
+            "total_tokens": 1021,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 224
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "followup-to-bot",
+      "expected": true,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "进服报版本不一致"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "先对一下客户端和服务端版本号。"
+        ],
+        [
+          "user",
+          "Alice",
+          "那版本号在哪看？"
+        ]
+      ],
+      "decision": true,
+      "reply": "主界面右下角，或者启动器标题栏下面一般都有。",
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 4,
+          "latencyMs": 632,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 767,
+            "completion_tokens": 7,
+            "total_tokens": 774,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 255
+          },
+          "finishReason": "stop"
+        },
+        {
+          "decisionRequest": false,
+          "thinking": "disabled",
+          "maxTokens": 180,
+          "messageCount": 4,
+          "latencyMs": 876,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1009,
+            "completion_tokens": 14,
+            "total_tokens": 1023,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 241
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "already-answered-idle",
+      "expected": false,
+      "mode": "idle",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "所以我等管理更完就能进了？"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "对，等服务端更新到同一版本就行，不用重装。"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 3,
+          "latencyMs": 722,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 772,
+            "completion_tokens": 7,
+            "total_tokens": 779,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 260
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "ended-goodnight",
+      "expected": false,
+      "mode": "idle",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "今天先到这吧，大家晚安，不聊了"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 392,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 749,
+            "completion_tokens": 7,
+            "total_tokens": 756,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 237
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "acknowledgement",
+      "expected": false,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "我先等服务器更新吧"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "嗯，更完再连就行。"
+        ],
+        [
+          "user",
+          "Alice",
+          "好的"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 4,
+          "latencyMs": 693,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 761,
+            "completion_tokens": 7,
+            "total_tokens": 768,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 249
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "ack-with-question",
+      "expected": true,
+      "mode": "instant",
+      "messages": [
+        [
+          "assistant",
+          "Bot",
+          "先对一下两边的版本。"
+        ],
+        [
+          "user",
+          "Alice",
+          "好的，那版本号在哪看？"
+        ]
+      ],
+      "decision": true,
+      "reply": "游戏主界面右下角，或者设置里的“关于”都能看到。",
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 3,
+          "latencyMs": 472,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 752,
+            "completion_tokens": 7,
+            "total_tokens": 759,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 240
+          },
+          "finishReason": "stop"
+        },
+        {
+          "decisionRequest": false,
+          "thinking": "disabled",
+          "maxTokens": 180,
+          "messageCount": 3,
+          "latencyMs": 581,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 994,
+            "completion_tokens": 15,
+            "total_tokens": 1009,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 226
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "mentions-another-member",
+      "expected": false,
+      "mode": "instant",
+      "recipientHint": "艾特其他群成员",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "老王，明天的车票你买了吗？这事我们俩商量就行"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 564,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 754,
+            "completion_tokens": 7,
+            "total_tokens": 761,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 242
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "explicit-no-reply",
+      "expected": false,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "我就是吐槽两句，不用接话，也别给建议"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 676,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 745,
+            "completion_tokens": 7,
+            "total_tokens": 752,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 233
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "members-making-plan",
+      "expected": false,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "阿泽，你今晚下班来我家取包裹吗"
+        ],
+        [
+          "user",
+          "Bob",
+          "来，我八点到，你到时候下楼拿给我就行"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 3,
+          "latencyMs": 876,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 767,
+            "completion_tokens": 7,
+            "total_tokens": 774,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 255
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "explicit-bot-invitation",
+      "expected": true,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "太太，你也说两句，这次更新你怎么看？"
+        ]
+      ],
+      "decision": true,
+      "reply": "这次改动还行吧，新机制上手不复杂，就是肝度感觉又上去了些。",
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 475,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 745,
+            "completion_tokens": 7,
+            "total_tokens": 752,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 233
+          },
+          "finishReason": "stop"
+        },
+        {
+          "decisionRequest": false,
+          "thinking": "disabled",
+          "maxTokens": 180,
+          "messageCount": 2,
+          "latencyMs": 1068,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 987,
+            "completion_tokens": 20,
+            "total_tokens": 1007,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 219
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "natural-close-idle",
+      "expected": false,
+      "mode": "idle",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "那就这么定，明晚再约，今天散了"
+        ]
+      ],
+      "decision": false,
+      "reply": null,
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 2,
+          "latencyMs": 383,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 749,
+            "completion_tokens": 7,
+            "total_tokens": 756,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 237
+          },
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "new-question-after-answer",
+      "expected": true,
+      "mode": "instant",
+      "messages": [
+        [
+          "user",
+          "Alice",
+          "等服务端更新就行？"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "对，先等管理把服务端更新。"
+        ],
+        [
+          "user",
+          "Alice",
+          "那如果更完还不一致呢？"
+        ]
+      ],
+      "decision": true,
+      "reply": "那就把两边的版本号截图发出来，对着看差在哪。",
+      "passed": true,
+      "captures": [
+        {
+          "decisionRequest": true,
+          "thinking": "disabled",
+          "maxTokens": 64,
+          "messageCount": 4,
+          "latencyMs": 795,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 770,
+            "completion_tokens": 7,
+            "total_tokens": 777,
+            "prompt_tokens_details": {
+              "cached_tokens": 512
+            },
+            "prompt_cache_hit_tokens": 512,
+            "prompt_cache_miss_tokens": 258
+          },
+          "finishReason": "stop"
+        },
+        {
+          "decisionRequest": false,
+          "thinking": "disabled",
+          "maxTokens": 180,
+          "messageCount": 4,
+          "latencyMs": 749,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1012,
+            "completion_tokens": 15,
+            "total_tokens": 1027,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 244
+          },
+          "finishReason": "stop"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "cases": 12,
+    "matchedExpected": 12,
+    "accepted": 5,
+    "declined": 7,
+    "apiRequests": 17,
+    "promptTokens": 14075,
+    "outputTokens": 177
+  },
+  "finishedAt": "2026-10-13T13:58:25.250Z"
+}

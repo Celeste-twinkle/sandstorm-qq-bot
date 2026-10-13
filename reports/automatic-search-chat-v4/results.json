@@ -1,0 +1,1152 @@
+{
+  "startedAt": "2026-10-13T14:53:53.826Z",
+  "model": "deepseek-flash",
+  "thinking": false,
+  "method": "Real model, two rounds of synthetic conversations and fixed simulated search evidence. No QQ connection. Live public-web case runs only with --live.",
+  "prompts": {
+    "naturalChat": "你是在群里聊天。先听懂当前这句是在分享、打趣、抱怨、认真求助，还是在纠正你，再给一个针对具体内容的反应；不用把每句话都当作待解决的问题。\n用当前人格平时会说的口语，参考群成员的用词、句长和轻松程度；你自己旧回复的官腔、台词和口癖不是风格范本。闲聊通常一两句，允许省略和短句，说到点上就停。表情、语气词和称呼顺口才用，不靠堆黑话、错别字或刻意没标点装随意。\n可以有明确的偏好和判断，轻轻不同意也可以，不必凡事附和。玩笑顺着当下的具体反差接，不解释笑点，不追求每次一个段子、比喻或金句。普通回应也很好，少写对仗、升华和总结道理。\n分享开心就一起高兴，认真失落就回应让人难受的那件事，温度来自听懂具体内容。别例行夸人或套安慰，也别习惯性用‘至少还……’把坏事硬说成好事。只想吐槽、已经决定或明确不要建议时，不安排下一步；不为了撑住对话追加问题或叮嘱。\n对方纠正你时，直接改正指出的地方；嫌你说话别扭，就在这句改过来，不写一段改进承诺，不为刚才的回复辩解。这种反馈本身就是当前话题，确认后可以结束，不接着翻回前面聊过的事情。\n真正在问问题就把答案说清楚，必要的条件、步骤和用户要求的内容不能为了短而漏掉。缺少关键对象或依据时，用一句普通的话问清楚；不知道是哪款游戏、软件或哪次改动，就不编菜单位置、更新内容或操作步骤，也不拿角色所属作品来补空白。\n前文只用于理解当前的指代或同一件事，不用旧话题凑热闹，不混用不同群友的经历。分清记录里的事实和猜测，不把自己的旧推测当作已证实的事，不捏造对方以前做过什么、你的现实经历或线下安排。\n只输出本次要发出去的话，不加发送者标签、上下文标记、规则说明、思考过程或动作旁白。普通闲聊不用标题和编号，不重复刚说过的内容、句式和结尾。",
+    "persona": "【PERSONA_LOAD】\n当前人格是《战舰少女R》的列克星敦，也被称作太太。性格温和成熟、稳重亲切，有自己的判断，熟悉以后可以轻松调侃。\n说话自然从容，用简体中文。体贴体现在听懂对方这一句，而不在每次安慰、叮嘱或附和；短短一句也可以很有温度。\n海风、阅读和茶是她的偏好，话题相关时才提。角色名、指挥官称呼和海浪表情按场合使用，不是每次聊天的固定动作。"
+  },
+  "results": [
+    {
+      "id": "casual-joke",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "阿泽",
+          "排队二十分钟，进去一分钟就输了，主打一个参与"
+        ]
+      ],
+      "round": 1,
+      "reply": "排二十分钟进去一分钟，这效率也是挺稳定的。输给谁了，还是那种一看就没戏的局？",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "9fcd7fd05c7519a8a8224fdaa25cae944a6e7a3dff9ca7a80006bb0b2593d733",
+          "latencyMs": 766,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1667,
+            "completion_tokens": 25,
+            "total_tokens": 1692,
+            "prompt_tokens_details": {
+              "cached_tokens": 896
+            },
+            "prompt_cache_hit_tokens": 896,
+            "prompt_cache_miss_tokens": 771
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "unclear-update",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "太太，你觉得这次更新怎么样？"
+        ]
+      ],
+      "round": 1,
+      "reply": "小陈，是哪边的更新？我这边没看到你前面提过，说个游戏名我再看看。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "9ac46508a50413b44ad91f370be20ad3548fdc7f1c8233500bbf9bf49bfcc6ea",
+          "latencyMs": 715,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1662,
+            "completion_tokens": 23,
+            "total_tokens": 1685,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 638
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "unclear-version",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "assistant",
+          "Bot",
+          "先看看双方的版本号。"
+        ],
+        [
+          "user",
+          "小陈",
+          "版本号在哪看啊"
+        ]
+      ],
+      "round": 1,
+      "reply": "一般在游戏的设置界面里，主界面右上角或左下角也有时候直接显示。你指的是哪款游戏？",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 3,
+          "messagesHash": "0ffd0f5d24302db97e577f0d8266f73601983e379ba2eacb7abbacfb6e9ec429",
+          "latencyMs": 879,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1669,
+            "completion_tokens": 24,
+            "total_tokens": 1693,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 645
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "known-context",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "管理员",
+          "客户端已经更新，服务端十分钟后更"
+        ],
+        [
+          "user",
+          "小陈",
+          "所以现在等管理更完就行？"
+        ]
+      ],
+      "round": 1,
+      "reply": "嗯，先等管理更完再进，客户端这时候连上去大概率也是版本对不上。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 3,
+          "messagesHash": "2a70c0b85e61de14180484d63eb247f5affb78c8856abeac5b3a6b2ba1e7b0d1",
+          "latencyMs": 651,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1678,
+            "completion_tokens": 20,
+            "total_tokens": 1698,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 654
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "no-search-instruction",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "不用联网搜索了，这次更新具体改了什么你不知道就说不知道"
+        ]
+      ],
+      "round": 1,
+      "reply": "不知道，这次更新改了什么我确实不清楚。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "f83630da8dc0d775fd44e8be3b48e37ce121ee4642ccc5c2a0d91a91191e6206",
+          "latencyMs": 480,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1668,
+            "completion_tokens": 10,
+            "total_tokens": 1678,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 644
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "no-public-answer",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "你知道栗子明天几点下班吗？没在群里说过"
+        ]
+      ],
+      "round": 1,
+      "reply": "不清楚，他今天好像没在群里说过下班时间。你要不直接问他一句？",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "c707da283dac7f7563b891f9a2c93dcb399c99d77719fdad9dbf51412527cee2",
+          "latencyMs": 705,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1667,
+            "completion_tokens": 18,
+            "total_tokens": 1685,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 643
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "small-win",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "栗子",
+          "第一次自己拼的模型终于站稳了，刚才还一直倒"
+        ]
+      ],
+      "round": 1,
+      "reply": "第一次拼就能站稳，挺不容易的。倒了几次能调回来，后面再拼就有手感了。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "82900d42c0757854a1016c121fd2f92f2c24b61c6fca2f25a8f8b958580442ee",
+          "latencyMs": 765,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1668,
+            "completion_tokens": 23,
+            "total_tokens": 1691,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 644
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "serious-disappointment",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "排练了好久的节目临时取消了，有点难受，先别给我建议"
+        ]
+      ],
+      "round": 1,
+      "reply": "排练那么久，临到上场被取消，确实挺堵的。这会儿不用急着做什么，难受就难受一会儿吧。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "d71a780efe7f047069884fc3714648af4d272de996bf3f9e3e597a0f2f7c08c2",
+          "latencyMs": 571,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1669,
+            "completion_tokens": 26,
+            "total_tokens": 1695,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 645
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "needs-public-evidence",
+      "expectedSearch": true,
+      "fixture": "release",
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "纸鹤笔记 4.2 的新版到底加没加批量导出？帮忙查一下官方发布说明"
+        ]
+      ],
+      "round": 1,
+      "reply": "加了。官方发布说明里写着 4.2 版本支持批量导出选中的笔记，单个导出也还保留着。\n\n来源：https://example.com/paper-crane/4.2",
+      "searched": true,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "1fe58b02cf68f7791c828d6c0964a34a144ddc868a81be21b1fb328d214182b1",
+          "latencyMs": 1059,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1678,
+            "completion_tokens": 87,
+            "total_tokens": 1765,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 654
+          },
+          "finishReason": "tool_calls"
+        },
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 5,
+          "messagesHash": "9f300b07206d4a58190b4b765e95ba9a18902e83c5023b3fcded3b19fa08403c",
+          "latencyMs": 901,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1969,
+            "completion_tokens": 41,
+            "total_tokens": 2010,
+            "prompt_tokens_details": {
+              "cached_tokens": 1664
+            },
+            "prompt_cache_hit_tokens": 1664,
+            "prompt_cache_miss_tokens": 305
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": [
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "纸鹤笔记 4.2 官方发布说明 批量导出"
+          },
+          "result": {
+            "results": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2"
+              }
+            ],
+            "auto_fetched_pages": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2",
+                "evidence_status": "fetched_page",
+                "text": "Version 4.2 adds batch export of selected notes. Individual export remains available."
+              }
+            ]
+          }
+        },
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "纸鹤笔记 4.2 更新日志"
+          },
+          "result": {
+            "results": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2"
+              }
+            ],
+            "auto_fetched_pages": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2",
+                "evidence_status": "fetched_page",
+                "text": "Version 4.2 adds batch export of selected notes. Individual export remains available."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-unavailable",
+      "expectedSearch": true,
+      "fixture": "unavailable",
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "帮我查纸鹤笔记 4.2 的官方发布说明，没查到直接说不知道"
+        ]
+      ],
+      "round": 1,
+      "reply": "这个我没查到可靠的消息，暂时不确定。",
+      "searched": true,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "b9a4a0a6e35259dd45cd69243f7ab5841bcc8d7b964ed6b32caab430dac57e79",
+          "latencyMs": 1032,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1675,
+            "completion_tokens": 79,
+            "total_tokens": 1754,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 651
+          },
+          "finishReason": "tool_calls"
+        },
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 4,
+          "messagesHash": "86d0a7a71c38178abfa9525b9be34f484be2d8dda4c807040f6c7f2a57cf22ae",
+          "latencyMs": 1217,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1778,
+            "completion_tokens": 37,
+            "total_tokens": 1815,
+            "prompt_tokens_details": {
+              "cached_tokens": 1536
+            },
+            "prompt_cache_hit_tokens": 1536,
+            "prompt_cache_miss_tokens": 242
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": [
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "纸鹤笔记 4.2 官方发布说明"
+          },
+          "result": {
+            "error": "No reliable page available in this test fixture"
+          }
+        }
+      ]
+    },
+    {
+      "id": "casual-joke",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "阿泽",
+          "排队二十分钟，进去一分钟就输了，主打一个参与"
+        ]
+      ],
+      "round": 2,
+      "reply": "排队二十分钟，上场一分钟，这性价比确实有点亏。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "b8760093711d9d17a3ea34ae0cc8fb5cce9e9a85cb1a2e9f1859d00883ab88ae",
+          "latencyMs": 525,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1667,
+            "completion_tokens": 13,
+            "total_tokens": 1680,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 643
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "unclear-update",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "太太，你觉得这次更新怎么样？"
+        ]
+      ],
+      "round": 2,
+      "reply": "哪次更新？你直接说是哪个游戏吧，我这边一时对不上。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "b1b3565f7d9d98d8c7102beea118a53c04f556c78092362f120ee9b2163ba80b",
+          "latencyMs": 514,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1662,
+            "completion_tokens": 17,
+            "total_tokens": 1679,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 638
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "unclear-version",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "assistant",
+          "Bot",
+          "先看看双方的版本号。"
+        ],
+        [
+          "user",
+          "小陈",
+          "版本号在哪看啊"
+        ]
+      ],
+      "round": 2,
+      "reply": "一般在主界面右下角或者登录界面的角落，有的游戏藏在设置里。你是在看哪个游戏？",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 3,
+          "messagesHash": "09612168ea26e8978ffeeb126aa00e8834dfdfdc05fab0d101129e5016a6fe9f",
+          "latencyMs": 881,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1669,
+            "completion_tokens": 23,
+            "total_tokens": 1692,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 645
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "known-context",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "管理员",
+          "客户端已经更新，服务端十分钟后更"
+        ],
+        [
+          "user",
+          "小陈",
+          "所以现在等管理更完就行？"
+        ]
+      ],
+      "round": 2,
+      "reply": "嗯，客户端那边已经好了，服务端再等十分钟，更完就都能进了。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 3,
+          "messagesHash": "afa319259c99e5ba7a1fb0c7e69fa448a223e3507a621913699fe733bf0bfdd2",
+          "latencyMs": 786,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1678,
+            "completion_tokens": 19,
+            "total_tokens": 1697,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 654
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "no-search-instruction",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "不用联网搜索了，这次更新具体改了什么你不知道就说不知道"
+        ]
+      ],
+      "round": 2,
+      "reply": "好，不搜了。这次更新具体改了什么我确实不知道。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "f763184eb84ad23c20d40280624e8d62a957227b3a3f4f718daa2f092cc3e40a",
+          "latencyMs": 704,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1668,
+            "completion_tokens": 15,
+            "total_tokens": 1683,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 644
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "no-public-answer",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "你知道栗子明天几点下班吗？没在群里说过"
+        ]
+      ],
+      "round": 2,
+      "reply": "不清楚，群里确实没见她提过。要不你直接问一句？",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "8fd7937966796269a509042aed6664bb1d26e4c6407cda4d2a77408f2b308a87",
+          "latencyMs": 716,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1667,
+            "completion_tokens": 15,
+            "total_tokens": 1682,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 643
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "small-win",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "栗子",
+          "第一次自己拼的模型终于站稳了，刚才还一直倒"
+        ]
+      ],
+      "round": 2,
+      "reply": "第一次就能站稳挺不容易的，之前老倒的时候没少返工吧。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "2ac4bc3f0c330f5c9c53604bc2e8b7c9a36daf5a92077bceb81e53b491468e1e",
+          "latencyMs": 656,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1668,
+            "completion_tokens": 17,
+            "total_tokens": 1685,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 644
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "serious-disappointment",
+      "expectedSearch": false,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "排练了好久的节目临时取消了，有点难受，先别给我建议"
+        ]
+      ],
+      "round": 2,
+      "reply": "排练那么久，说取消就取消，确实挺憋屈的。",
+      "searched": false,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "c627b0284c58cbd5436912441ec0f8d00c91b08130b13e2bff45d885e18e9adb",
+          "latencyMs": 790,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1669,
+            "completion_tokens": 15,
+            "total_tokens": 1684,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 645
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": []
+    },
+    {
+      "id": "needs-public-evidence",
+      "expectedSearch": true,
+      "fixture": "release",
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "纸鹤笔记 4.2 的新版到底加没加批量导出？帮忙查一下官方发布说明"
+        ]
+      ],
+      "round": 2,
+      "reply": "查到了，4.2 的官方发布说明里写了新增「批量导出所选笔记」，单项导出也还在。\n\n来源：https://example.com/paper-crane/4.2\n\n不过这个站看着不太像官方域名，你要是想稳妥点，我可以再找找官方的更新日志页面确认一下。",
+      "searched": true,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "aabdcfd2bade6436c5cfe865e8995f49515a3cb074df9a2f7f6f832fa2e8b39f",
+          "latencyMs": 849,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1678,
+            "completion_tokens": 126,
+            "total_tokens": 1804,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 654
+          },
+          "finishReason": "tool_calls"
+        },
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 5,
+          "messagesHash": "b87b69b0a8a90f818287a27b33feeefd64064df9687e84d255a58c43c25f6fba",
+          "latencyMs": 1116,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 2008,
+            "completion_tokens": 66,
+            "total_tokens": 2074,
+            "prompt_tokens_details": {
+              "cached_tokens": 1792
+            },
+            "prompt_cache_hit_tokens": 1792,
+            "prompt_cache_miss_tokens": 216
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": [
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "纸鹤笔记 4.2 更新 官方发布说明 批量导出",
+            "max_results": 5
+          },
+          "result": {
+            "results": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2"
+              }
+            ],
+            "auto_fetched_pages": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2",
+                "evidence_status": "fetched_page",
+                "text": "Version 4.2 adds batch export of selected notes. Individual export remains available."
+              }
+            ]
+          }
+        },
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "\"纸鹤笔记\" 4.2 版本更新日志",
+            "max_results": 5
+          },
+          "result": {
+            "results": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2"
+              }
+            ],
+            "auto_fetched_pages": [
+              {
+                "title": "Paper Crane Notes 4.2 release",
+                "url": "https://example.com/paper-crane/4.2",
+                "evidence_status": "fetched_page",
+                "text": "Version 4.2 adds batch export of selected notes. Individual export remains available."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-unavailable",
+      "expectedSearch": true,
+      "fixture": "unavailable",
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "帮我查纸鹤笔记 4.2 的官方发布说明，没查到直接说不知道"
+        ]
+      ],
+      "round": 2,
+      "reply": "这个我没查到可靠的消息，暂时不确定。",
+      "searched": true,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "8995e6280ed062afe825eb90137407c0cbbd4ca63ec3306d9644caea0e65b1dd",
+          "latencyMs": 1132,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1675,
+            "completion_tokens": 122,
+            "total_tokens": 1797,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 651
+          },
+          "finishReason": "tool_calls"
+        },
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 5,
+          "messagesHash": "ea9a6792f0479fa2cc6b4e68303fa2fc42ffe6b57124b08ec701aaeddcf938c2",
+          "latencyMs": 916,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1841,
+            "completion_tokens": 32,
+            "total_tokens": 1873,
+            "prompt_tokens_details": {
+              "cached_tokens": 1664
+            },
+            "prompt_cache_hit_tokens": 1664,
+            "prompt_cache_miss_tokens": 177
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": [
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "纸鹤笔记 4.2 官方发布说明",
+            "max_results": 5
+          },
+          "result": {
+            "error": "No reliable page available in this test fixture"
+          }
+        },
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "\"纸鹤笔记\" 4.2 更新",
+            "max_results": 5
+          },
+          "result": {
+            "error": "No reliable page available in this test fixture"
+          }
+        }
+      ]
+    },
+    {
+      "id": "live-official-nodejs",
+      "round": 1,
+      "live": true,
+      "expectedSearch": true,
+      "messages": [
+        [
+          "user",
+          "小陈",
+          "Node.js 官网目前推荐的 LTS 大版本是几？核实一下，给个官网链接"
+        ]
+      ],
+      "reply": "当前推荐的 LTS 是 v24（最新 24.21.0）。\n\n官网下载页：https://nodejs.org/en/download\n版本与排期说明：https://nodejs.org/en/about/previous-releases\n\n顺带一提，现在 Current 是 v26，但官网只把 v24 标成推荐的 LTS，装环境选这个就行。",
+      "searched": true,
+      "matchedSearchExpectation": true,
+      "captures": [
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 2,
+          "messagesHash": "3153083db38ee538f2475cd589ff67ef5815149c0441faef432fcb3526103527",
+          "latencyMs": 994,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 1676,
+            "completion_tokens": 118,
+            "total_tokens": 1794,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 652
+          },
+          "finishReason": "tool_calls"
+        },
+        {
+          "thinking": "disabled",
+          "toolChoice": "auto",
+          "maxTokens": 1600,
+          "messageCount": 5,
+          "messagesHash": "a1d6345e1843e23c36161e9ba437177c948b2159d59715641a2527e129a9e343",
+          "latencyMs": 836,
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 2595,
+            "completion_tokens": 77,
+            "total_tokens": 2672,
+            "prompt_tokens_details": {
+              "cached_tokens": 1792
+            },
+            "prompt_cache_hit_tokens": 1792,
+            "prompt_cache_miss_tokens": 803
+          },
+          "finishReason": "stop"
+        }
+      ],
+      "calls": [
+        {
+          "name": "web_search",
+          "arguments": {
+            "query": "Node.js releases LTS current version",
+            "max_results": 3
+          },
+          "result": {
+            "provider": "exa-mcp",
+            "query": "Node.js releases LTS current version",
+            "engines": [],
+            "partial_failures": [],
+            "results": [
+              {
+                "title": "Download Node.js",
+                "url": "https://nodejs.org/en/download",
+                "domain": "nodejs.org",
+                "snippet": "Get Node.js® v24.21.0 LTS v26.11.1 Current ... v24.21.0 LTS ---",
+                "source_type": "general_web",
+                "discovery_provider": "exa",
+                "relevance_score": 10,
+                "original_rank": 4
+              },
+              {
+                "title": "Node.js — Download Node.js®",
+                "url": "https://nodejs.org/en/download?adobe_mc=MCMID%3D34397546824701423544600569962843687101%7CMCORGID%3DA8833BC75245AF9E0A490D4D%2540AdobeOrg%7CTS%3D1756477942",
+                "domain": "nodejs.org",
+                "snippet": "Get Node.js® v24.19.0 LTS v26.7.0 Current ... v24.19.0 LTS ---",
+                "source_type": "general_web",
+                "discovery_provider": "exa",
+                "relevance_score": 10,
+                "original_rank": 9
+              },
+              {
+                "title": "Node.js",
+                "url": "https://nodejs.org/en",
+                "domain": "nodejs.org",
+                "snippet": "Node.js — Run JavaScript Everywhere ... Node.js® is a free, open-source, cross-platform JavaScript runtime environment that lets developers create servers, web apps, command line tools and scripts. ---",
+                "source_type": "general_web",
+                "discovery_provider": "exa",
+                "relevance_score": 9,
+                "original_rank": 1
+              }
+            ],
+            "auto_fetched_pages": [
+              {
+                "url": "https://nodejs.org/en/download",
+                "domain": "nodejs.org",
+                "fetched_at": "2026-10-13T14:54:19.807Z",
+                "status": 200,
+                "evidence_status": "fetched_page",
+                "title": "Node.js — Download Node.js®",
+                "facts": [
+                  "# Node.js — Download Node.js® Node.js — Download Node.js® # Download Node.js® Get Node.js® v24.21.0",
+                  "LTS v26.11.1",
+                  "LTS v23.11.1",
+                  "LTS v21.7.3",
+                  "EOL for Or get a prebuilt Node.js® for running a architecture. N/A Installer (.gz) Standalone Binary (.gz)",
+                  "Current v25.9.0",
+                  "EOL v24.21.0",
+                  "EOL v22.23.3"
+                ],
+                "text": "# Node.js — Download Node.js® Node.js — Download Node.js® # Download Node.js® Get Node.js® v24.21.0 LTS v26.11.1 LTS v23.11.1 LTS v21.7.3 EOL for Or get a prebuilt Node.js® for running a architecture. N/A Installer (.gz) Standalone Binary (.gz) Current v25.9.0 EOL v24.21.0 EOL v22.23.3",
+                "fetch_provider": "exa",
+                "fallback_failures": [],
+                "discovery_rank": 1,
+                "auto_fetched": true
+              }
+            ],
+            "filtered_count": 2,
+            "searched_at": "2026-10-13T14:54:19.807Z",
+            "evidence_status": "discovery_with_fetched_pages",
+            "guidance": "Search snippets are discovery only. auto_fetched_pages contains readable page evidence that may be cited by source_id after the caller registers it."
+          }
+        },
+        {
+          "name": "web_fetch",
+          "arguments": {
+            "url": "https://nodejs.org/en/about/previous-releases",
+            "max_chars": 3000
+          },
+          "result": {
+            "url": "https://nodejs.org/en/about/previous-releases",
+            "error": "Blocked: web_fetch can only open URLs returned by web_search in this conversation."
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "cases": 21,
+    "matchedSearchExpectation": 21,
+    "apiRequests": 26,
+    "promptTokens": 45269,
+    "completionTokens": 1088
+  },
+  "finishedAt": "2026-10-13T14:54:20.643Z"
+}

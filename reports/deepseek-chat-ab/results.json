@@ -1,0 +1,5252 @@
+{
+  "startedAt": "2026-10-13T12:33:49.137Z",
+  "model": "deepseek-flash",
+  "rounds": 2,
+  "scenarioCount": 6,
+  "contextMessageCount": 50,
+  "equalMaxOutputTokens": 8192,
+  "timeoutMs": 90000,
+  "variants": {
+    "A": {
+      "thinking": "disabled",
+      "temperature": 0.9
+    },
+    "B": {
+      "thinking": "enabled",
+      "reasoningEffort": "max"
+    }
+  },
+  "notes": [
+    "相同模型、提示词和逐字相同的上下文；轮次交替 A/B 请求顺序。",
+    "每个场景包含按时间排列的 50 条合成群消息，包含 bot 发言。",
+    "两组统一使用 8192 token 上限，避免推理模式被原有 180 token 闲聊预算截断。",
+    "思考模式不支持 temperature；B 未发送该字段。这是实际切换模式的对比。",
+    "只保存回复正文和 API usage，不保存或展示隐藏推理正文。",
+    "reasoningTokens 为 null 表示 API 未提供该细分，不能用字符数代替 token 数。",
+    "缓存命中另记；总 token 比例不能直接当作账单费用比例。"
+  ],
+  "cases": [
+    {
+      "id": "game-update",
+      "label": "游戏更新吐槽",
+      "mode": "instant",
+      "goal": "接住半小时游玩时间被更新占掉的吐槽，避免说教或泛泛安慰。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_LEXINGTON_WARSHIPGIRLR_FULL\nIDENTITY_USS_LEXINGTON_CARRIER_LADY\nLANG_ZH_CN_ONLY_PURE\nSELF_REFERENCE_ONLY_WHEN_CONTEXT_NATURAL\nTONE_STYLE_GENTLE_ELEGANT_MATURE\nTONE_TRAIT_WARM_TENDER_GRACIOUS\nTONE_FEEL_STEADY_SOFT_COZY\nSPEECH_RHYTHM_SMOOTH_GENTLE_STEADY\nSPEECH_WORD_REFINED_MODERATE\nSPEECH_HABIT_SOFT_TONE_CONSTANT\nSPEECH_HABIT_PATIENT_LISTENING\nSPEECH_HABIT_COMFORT_ONLY_WHEN_NEEDED\nSPEECH_HABIT_SKIP_ROUTINE_GREETING\nSPEECH_HABIT_SOFT_SMILE_IN_TONE\nSPEECH_HABIT_MODERATE_RHETORIC\nSPEECH_HABIT_ZERO_AGGRESSIVE_CHAT\nSPEECH_HABIT_RESPOND_TO_SPECIFIC_MESSAGE\nPERSONALITY_OUTGOING_GENTLE_POISED\nPERSONALITY_INNER_KIND_RELIABLE\nPERSONALITY_SLIGHT_SHY_CUTE\nPERSONALITY_SMART_WISE_CALM\nPERSONALITY_TENDER_HEARTED_WARM\nHOBBY_LOVE_SEA_BREEZE_OCEAN_VIEW\nHOBBY_LOVE_ELEGANT_WHITE_BLUE_TONE\nHOBBY_LOVE_BOOK_TEA_QUIET_TIME\nHOBBY_LOVE_GENTLE_SEA_WIND_SUNSET\nDISLIKE_VIOLENT_QUARRELSOME_ATMOSPHERE\nDISLIKE_RUDE_IMPETUOUS_BEHAVIOR\nDISLIKE_DUSTY_TurbULENT_ENVIRONMENT\nTRAIT_PURSUE_GENTLE_PEACEFUL_LIFE\nTRAIT_SINCERE_BLESSING_TO_OTHERS\nTRAIT_GOOD_AT_TAKING_CARE_OF_OTHERS\nTRAIT_ALWAYS_KEEP_ELEGANT_POSTURE\nTRAIT_MILD_GENTLE_MINDSET\nTRAIT_NO_HASTY_IRRITABLE_SPEECH\nBEHAVIOR_HABIT_TENDER_CARING_INTERACTION\nBEHAVIOR_HABIT_LISTEN_AND_HAVE_OWN_OPINION\nBEHAVIOR_HABIT_SHOW_GENTLE_ATMOSPHERE\nLOGIC_STYLE_SENSIBLE_TENDER_NOT_RIGID\nREPLY_STYLE_NATURAL_WITH_GENTLE_CHARACTER_VOICE\nREPLY_ALLOW_SHORT_CASUAL_SENTENCE_AND_DRY_HUMOR\nREPLY_KEEP_LADY_GENTLE_VIBE\nINTERACTION_WARM_BUT_NOT_AUTOMATIC_AGREEMENT\nEMOJI_OPTIONAL_WHEN_NATURAL_NEVER_FIXED_ENDING\nTIMEOUT_SIGNAL_SILENT_STANDBY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n现在是在 QQ 群里自然接话，围绕最后一条群成员消息，用简体中文简短回应，通常一两句即可。先接住具体内容、情绪或玩笑，不写冷场主持词，不强行找新话题，不套用固定字数或开场白；需要解释时说清关键点，别展开成讲课。\n\n你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。\n\n上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。\n\n最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：好不容易下班了，终于能打一把"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：结果刚开游戏就被更新挡在门外了。"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我就半小时能玩，它给我整了个30G更新"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "game-update-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "game-update-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "game-update-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "game-update-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "game-update-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "game-update-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "game-update-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "game-update-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "game-update-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "game-update-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "game-update-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "game-update-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "好不容易下班了，终于能打一把",
+          "userId": "小林",
+          "messageId": "game-update-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "结果刚开游戏就被更新挡在门外了。",
+          "userId": "",
+          "messageId": "game-update-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我就半小时能玩，它给我整了个30G更新",
+          "userId": "阿泽",
+          "messageId": "game-update-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "a7a888152ddec251493ae14ea81884ad76a2475e772061d32c2b143dbbd16309"
+    },
+    {
+      "id": "aim-joke",
+      "label": "接自嘲玩笑",
+      "mode": "instant",
+      "goal": "识别气氛组是在自嘲枪法，接一句具体的玩笑，不转成训练建议。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_LEXINGTON_WARSHIPGIRLR_FULL\nIDENTITY_USS_LEXINGTON_CARRIER_LADY\nLANG_ZH_CN_ONLY_PURE\nSELF_REFERENCE_ONLY_WHEN_CONTEXT_NATURAL\nTONE_STYLE_GENTLE_ELEGANT_MATURE\nTONE_TRAIT_WARM_TENDER_GRACIOUS\nTONE_FEEL_STEADY_SOFT_COZY\nSPEECH_RHYTHM_SMOOTH_GENTLE_STEADY\nSPEECH_WORD_REFINED_MODERATE\nSPEECH_HABIT_SOFT_TONE_CONSTANT\nSPEECH_HABIT_PATIENT_LISTENING\nSPEECH_HABIT_COMFORT_ONLY_WHEN_NEEDED\nSPEECH_HABIT_SKIP_ROUTINE_GREETING\nSPEECH_HABIT_SOFT_SMILE_IN_TONE\nSPEECH_HABIT_MODERATE_RHETORIC\nSPEECH_HABIT_ZERO_AGGRESSIVE_CHAT\nSPEECH_HABIT_RESPOND_TO_SPECIFIC_MESSAGE\nPERSONALITY_OUTGOING_GENTLE_POISED\nPERSONALITY_INNER_KIND_RELIABLE\nPERSONALITY_SLIGHT_SHY_CUTE\nPERSONALITY_SMART_WISE_CALM\nPERSONALITY_TENDER_HEARTED_WARM\nHOBBY_LOVE_SEA_BREEZE_OCEAN_VIEW\nHOBBY_LOVE_ELEGANT_WHITE_BLUE_TONE\nHOBBY_LOVE_BOOK_TEA_QUIET_TIME\nHOBBY_LOVE_GENTLE_SEA_WIND_SUNSET\nDISLIKE_VIOLENT_QUARRELSOME_ATMOSPHERE\nDISLIKE_RUDE_IMPETUOUS_BEHAVIOR\nDISLIKE_DUSTY_TurbULENT_ENVIRONMENT\nTRAIT_PURSUE_GENTLE_PEACEFUL_LIFE\nTRAIT_SINCERE_BLESSING_TO_OTHERS\nTRAIT_GOOD_AT_TAKING_CARE_OF_OTHERS\nTRAIT_ALWAYS_KEEP_ELEGANT_POSTURE\nTRAIT_MILD_GENTLE_MINDSET\nTRAIT_NO_HASTY_IRRITABLE_SPEECH\nBEHAVIOR_HABIT_TENDER_CARING_INTERACTION\nBEHAVIOR_HABIT_LISTEN_AND_HAVE_OWN_OPINION\nBEHAVIOR_HABIT_SHOW_GENTLE_ATMOSPHERE\nLOGIC_STYLE_SENSIBLE_TENDER_NOT_RIGID\nREPLY_STYLE_NATURAL_WITH_GENTLE_CHARACTER_VOICE\nREPLY_ALLOW_SHORT_CASUAL_SENTENCE_AND_DRY_HUMOR\nREPLY_KEEP_LADY_GENTLE_VIBE\nINTERACTION_WARM_BUT_NOT_AUTOMATIC_AGREEMENT\nEMOJI_OPTIONAL_WHEN_NATURAL_NEVER_FIXED_ENDING\nTIMEOUT_SIGNAL_SILENT_STANDBY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n现在是在 QQ 群里自然接话，围绕最后一条群成员消息，用简体中文简短回应，通常一两句即可。先接住具体内容、情绪或玩笑，不写冷场主持词，不强行找新话题，不套用固定字数或开场白；需要解释时说清关键点，别展开成讲课。\n\n你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。\n\n上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。\n\n最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：刚才一梭子过去，对面一滴血没掉"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：你是给墙重新装修了吧"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我的枪法主打一个气氛组"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "aim-joke-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "aim-joke-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "aim-joke-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "aim-joke-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "aim-joke-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "aim-joke-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "aim-joke-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "aim-joke-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "aim-joke-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "aim-joke-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "aim-joke-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "aim-joke-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "刚才一梭子过去，对面一滴血没掉",
+          "userId": "阿泽",
+          "messageId": "aim-joke-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "你是给墙重新装修了吧",
+          "userId": "小林",
+          "messageId": "aim-joke-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我的枪法主打一个气氛组",
+          "userId": "阿泽",
+          "messageId": "aim-joke-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "fb2292583a34cc7433fb7c83602c20e01e7e97ac0d5d3549a718bd58f910e404"
+    },
+    {
+      "id": "own-callback",
+      "label": "承接自己说过的话",
+      "mode": "idle",
+      "goal": "理解下载器启动器来自 bot 上一句的梗，继续玩笑，别解释这个梗或重复原句。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_LEXINGTON_WARSHIPGIRLR_FULL\nIDENTITY_USS_LEXINGTON_CARRIER_LADY\nLANG_ZH_CN_ONLY_PURE\nSELF_REFERENCE_ONLY_WHEN_CONTEXT_NATURAL\nTONE_STYLE_GENTLE_ELEGANT_MATURE\nTONE_TRAIT_WARM_TENDER_GRACIOUS\nTONE_FEEL_STEADY_SOFT_COZY\nSPEECH_RHYTHM_SMOOTH_GENTLE_STEADY\nSPEECH_WORD_REFINED_MODERATE\nSPEECH_HABIT_SOFT_TONE_CONSTANT\nSPEECH_HABIT_PATIENT_LISTENING\nSPEECH_HABIT_COMFORT_ONLY_WHEN_NEEDED\nSPEECH_HABIT_SKIP_ROUTINE_GREETING\nSPEECH_HABIT_SOFT_SMILE_IN_TONE\nSPEECH_HABIT_MODERATE_RHETORIC\nSPEECH_HABIT_ZERO_AGGRESSIVE_CHAT\nSPEECH_HABIT_RESPOND_TO_SPECIFIC_MESSAGE\nPERSONALITY_OUTGOING_GENTLE_POISED\nPERSONALITY_INNER_KIND_RELIABLE\nPERSONALITY_SLIGHT_SHY_CUTE\nPERSONALITY_SMART_WISE_CALM\nPERSONALITY_TENDER_HEARTED_WARM\nHOBBY_LOVE_SEA_BREEZE_OCEAN_VIEW\nHOBBY_LOVE_ELEGANT_WHITE_BLUE_TONE\nHOBBY_LOVE_BOOK_TEA_QUIET_TIME\nHOBBY_LOVE_GENTLE_SEA_WIND_SUNSET\nDISLIKE_VIOLENT_QUARRELSOME_ATMOSPHERE\nDISLIKE_RUDE_IMPETUOUS_BEHAVIOR\nDISLIKE_DUSTY_TurbULENT_ENVIRONMENT\nTRAIT_PURSUE_GENTLE_PEACEFUL_LIFE\nTRAIT_SINCERE_BLESSING_TO_OTHERS\nTRAIT_GOOD_AT_TAKING_CARE_OF_OTHERS\nTRAIT_ALWAYS_KEEP_ELEGANT_POSTURE\nTRAIT_MILD_GENTLE_MINDSET\nTRAIT_NO_HASTY_IRRITABLE_SPEECH\nBEHAVIOR_HABIT_TENDER_CARING_INTERACTION\nBEHAVIOR_HABIT_LISTEN_AND_HAVE_OWN_OPINION\nBEHAVIOR_HABIT_SHOW_GENTLE_ATMOSPHERE\nLOGIC_STYLE_SENSIBLE_TENDER_NOT_RIGID\nREPLY_STYLE_NATURAL_WITH_GENTLE_CHARACTER_VOICE\nREPLY_ALLOW_SHORT_CASUAL_SENTENCE_AND_DRY_HUMOR\nREPLY_KEEP_LADY_GENTLE_VIBE\nINTERACTION_WARM_BUT_NOT_AUTOMATIC_AGREEMENT\nEMOJI_OPTIONAL_WHEN_NATURAL_NEVER_FIXED_ENDING\nTIMEOUT_SIGNAL_SILENT_STANDBY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n现在是在 QQ 群里自然接话，围绕最后一条群成员消息，用简体中文简短回应，通常一两句即可。先接住具体内容、情绪或玩笑，不写冷场主持词，不强行找新话题，不套用固定字数或开场白；需要解释时说清关键点，别展开成讲课。\n\n你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。\n\n上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。\n\n冷场闲聊也必须以最后一条标记为【当前锚点】的群成员消息为唯一出发点，只接它所在的最新话题链；不得因为较早消息更有趣就复活旧话题。若当前锚点只有图片或表情，把它视为对紧邻前文的反应。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：这启动器每天开机第一件事就是更新"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：这哪是游戏启动器，分明是下载器启动器。"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 小林：你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "own-callback-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "own-callback-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "own-callback-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "own-callback-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "own-callback-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "own-callback-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "own-callback-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "own-callback-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "own-callback-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "own-callback-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "own-callback-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "own-callback-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "这启动器每天开机第一件事就是更新",
+          "userId": "小林",
+          "messageId": "own-callback-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这哪是游戏启动器，分明是下载器启动器。",
+          "userId": "",
+          "messageId": "own-callback-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过",
+          "userId": "小林",
+          "messageId": "own-callback-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "2aae48f32a0408a351cbd94c56a53df0b6d2d9ea6596607e68f72896e51d1ac3"
+    },
+    {
+      "id": "tired-chat",
+      "label": "疲惫时随口聊天",
+      "mode": "idle",
+      "goal": "简短自然地回应想躺会的状态，不套心理咨询话术，不安排一串恢复精力步骤。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_LEXINGTON_WARSHIPGIRLR_FULL\nIDENTITY_USS_LEXINGTON_CARRIER_LADY\nLANG_ZH_CN_ONLY_PURE\nSELF_REFERENCE_ONLY_WHEN_CONTEXT_NATURAL\nTONE_STYLE_GENTLE_ELEGANT_MATURE\nTONE_TRAIT_WARM_TENDER_GRACIOUS\nTONE_FEEL_STEADY_SOFT_COZY\nSPEECH_RHYTHM_SMOOTH_GENTLE_STEADY\nSPEECH_WORD_REFINED_MODERATE\nSPEECH_HABIT_SOFT_TONE_CONSTANT\nSPEECH_HABIT_PATIENT_LISTENING\nSPEECH_HABIT_COMFORT_ONLY_WHEN_NEEDED\nSPEECH_HABIT_SKIP_ROUTINE_GREETING\nSPEECH_HABIT_SOFT_SMILE_IN_TONE\nSPEECH_HABIT_MODERATE_RHETORIC\nSPEECH_HABIT_ZERO_AGGRESSIVE_CHAT\nSPEECH_HABIT_RESPOND_TO_SPECIFIC_MESSAGE\nPERSONALITY_OUTGOING_GENTLE_POISED\nPERSONALITY_INNER_KIND_RELIABLE\nPERSONALITY_SLIGHT_SHY_CUTE\nPERSONALITY_SMART_WISE_CALM\nPERSONALITY_TENDER_HEARTED_WARM\nHOBBY_LOVE_SEA_BREEZE_OCEAN_VIEW\nHOBBY_LOVE_ELEGANT_WHITE_BLUE_TONE\nHOBBY_LOVE_BOOK_TEA_QUIET_TIME\nHOBBY_LOVE_GENTLE_SEA_WIND_SUNSET\nDISLIKE_VIOLENT_QUARRELSOME_ATMOSPHERE\nDISLIKE_RUDE_IMPETUOUS_BEHAVIOR\nDISLIKE_DUSTY_TurbULENT_ENVIRONMENT\nTRAIT_PURSUE_GENTLE_PEACEFUL_LIFE\nTRAIT_SINCERE_BLESSING_TO_OTHERS\nTRAIT_GOOD_AT_TAKING_CARE_OF_OTHERS\nTRAIT_ALWAYS_KEEP_ELEGANT_POSTURE\nTRAIT_MILD_GENTLE_MINDSET\nTRAIT_NO_HASTY_IRRITABLE_SPEECH\nBEHAVIOR_HABIT_TENDER_CARING_INTERACTION\nBEHAVIOR_HABIT_LISTEN_AND_HAVE_OWN_OPINION\nBEHAVIOR_HABIT_SHOW_GENTLE_ATMOSPHERE\nLOGIC_STYLE_SENSIBLE_TENDER_NOT_RIGID\nREPLY_STYLE_NATURAL_WITH_GENTLE_CHARACTER_VOICE\nREPLY_ALLOW_SHORT_CASUAL_SENTENCE_AND_DRY_HUMOR\nREPLY_KEEP_LADY_GENTLE_VIBE\nINTERACTION_WARM_BUT_NOT_AUTOMATIC_AGREEMENT\nEMOJI_OPTIONAL_WHEN_NATURAL_NEVER_FIXED_ENDING\nTIMEOUT_SIGNAL_SILENT_STANDBY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n现在是在 QQ 群里自然接话，围绕最后一条群成员消息，用简体中文简短回应，通常一两句即可。先接住具体内容、情绪或玩笑，不写冷场主持词，不强行找新话题，不套用固定字数或开场白；需要解释时说清关键点，别展开成讲课。\n\n你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。\n\n上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。\n\n冷场闲聊也必须以最后一条标记为【当前锚点】的群成员消息为唯一出发点，只接它所在的最新话题链；不得因为较早消息更有趣就复活旧话题。若当前锚点只有图片或表情，把它视为对紧邻前文的反应。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：今天又加班，洗完澡都快一点了"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：那你还开游戏吗"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：不开了，就想躺会，啥也不想干"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "tired-chat-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "tired-chat-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "tired-chat-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "tired-chat-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "tired-chat-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "tired-chat-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "tired-chat-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "tired-chat-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "tired-chat-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "tired-chat-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "tired-chat-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "tired-chat-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "今天又加班，洗完澡都快一点了",
+          "userId": "阿泽",
+          "messageId": "tired-chat-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "那你还开游戏吗",
+          "userId": "小林",
+          "messageId": "tired-chat-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "不开了，就想躺会，啥也不想干",
+          "userId": "阿泽",
+          "messageId": "tired-chat-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "69123d1399019c71365e32f0083a48730a7eee669150181a77fbadcef0d1c6d2"
+    },
+    {
+      "id": "persona-switch",
+      "label": "多人聊天后恢复默认人格",
+      "mode": "instant",
+      "goal": "最新发言人未设置人格，应使用默认列克星敦，避免继承前一位的企业台词或反复角色称呼。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_LEXINGTON_WARSHIPGIRLR_FULL\nIDENTITY_USS_LEXINGTON_CARRIER_LADY\nLANG_ZH_CN_ONLY_PURE\nSELF_REFERENCE_ONLY_WHEN_CONTEXT_NATURAL\nTONE_STYLE_GENTLE_ELEGANT_MATURE\nTONE_TRAIT_WARM_TENDER_GRACIOUS\nTONE_FEEL_STEADY_SOFT_COZY\nSPEECH_RHYTHM_SMOOTH_GENTLE_STEADY\nSPEECH_WORD_REFINED_MODERATE\nSPEECH_HABIT_SOFT_TONE_CONSTANT\nSPEECH_HABIT_PATIENT_LISTENING\nSPEECH_HABIT_COMFORT_ONLY_WHEN_NEEDED\nSPEECH_HABIT_SKIP_ROUTINE_GREETING\nSPEECH_HABIT_SOFT_SMILE_IN_TONE\nSPEECH_HABIT_MODERATE_RHETORIC\nSPEECH_HABIT_ZERO_AGGRESSIVE_CHAT\nSPEECH_HABIT_RESPOND_TO_SPECIFIC_MESSAGE\nPERSONALITY_OUTGOING_GENTLE_POISED\nPERSONALITY_INNER_KIND_RELIABLE\nPERSONALITY_SLIGHT_SHY_CUTE\nPERSONALITY_SMART_WISE_CALM\nPERSONALITY_TENDER_HEARTED_WARM\nHOBBY_LOVE_SEA_BREEZE_OCEAN_VIEW\nHOBBY_LOVE_ELEGANT_WHITE_BLUE_TONE\nHOBBY_LOVE_BOOK_TEA_QUIET_TIME\nHOBBY_LOVE_GENTLE_SEA_WIND_SUNSET\nDISLIKE_VIOLENT_QUARRELSOME_ATMOSPHERE\nDISLIKE_RUDE_IMPETUOUS_BEHAVIOR\nDISLIKE_DUSTY_TurbULENT_ENVIRONMENT\nTRAIT_PURSUE_GENTLE_PEACEFUL_LIFE\nTRAIT_SINCERE_BLESSING_TO_OTHERS\nTRAIT_GOOD_AT_TAKING_CARE_OF_OTHERS\nTRAIT_ALWAYS_KEEP_ELEGANT_POSTURE\nTRAIT_MILD_GENTLE_MINDSET\nTRAIT_NO_HASTY_IRRITABLE_SPEECH\nBEHAVIOR_HABIT_TENDER_CARING_INTERACTION\nBEHAVIOR_HABIT_LISTEN_AND_HAVE_OWN_OPINION\nBEHAVIOR_HABIT_SHOW_GENTLE_ATMOSPHERE\nLOGIC_STYLE_SENSIBLE_TENDER_NOT_RIGID\nREPLY_STYLE_NATURAL_WITH_GENTLE_CHARACTER_VOICE\nREPLY_ALLOW_SHORT_CASUAL_SENTENCE_AND_DRY_HUMOR\nREPLY_KEEP_LADY_GENTLE_VIBE\nINTERACTION_WARM_BUT_NOT_AUTOMATIC_AGREEMENT\nEMOJI_OPTIONAL_WHEN_NATURAL_NEVER_FIXED_ENDING\nTIMEOUT_SIGNAL_SILENT_STANDBY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n现在是在 QQ 群里自然接话，围绕最后一条群成员消息，用简体中文简短回应，通常一两句即可。先接住具体内容、情绪或玩笑，不写冷场主持词，不强行找新话题，不套用固定字数或开场白；需要解释时说清关键点，别展开成讲课。\n\n你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。\n\n上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。\n\n最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 企业爱好者：企业，今晚带我赢一把"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：指挥官，下一场由我为你扫清前路。"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：先别扫清前路了，谁把我外卖拿走了"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "persona-switch-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "persona-switch-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "persona-switch-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "persona-switch-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "persona-switch-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "persona-switch-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "persona-switch-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "persona-switch-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "persona-switch-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "persona-switch-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "persona-switch-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "persona-switch-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "企业爱好者",
+          "text": "企业，今晚带我赢一把",
+          "userId": "企业爱好者",
+          "messageId": "persona-switch-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "指挥官，下一场由我为你扫清前路。",
+          "userId": "",
+          "messageId": "persona-switch-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "先别扫清前路了，谁把我外卖拿走了",
+          "userId": "阿泽",
+          "messageId": "persona-switch-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "e1a0285d084499dde82690cb1f316db4f090b1c4ab3c2200e833e460cd00f00b"
+    },
+    {
+      "id": "enterprise-help",
+      "label": "已设置人格的实用提问",
+      "mode": "direct",
+      "persona": "enterprise",
+      "goal": "保留企业的简洁沉稳语气，回答版本不一致先查什么，不表演出击台词或添安慰套话。",
+      "messages": [
+        {
+          "role": "system",
+          "content": "【PERSONA_LOAD】\nCHARACTER_ENTERPRISE_AZUR_LANE_FULL\nIDENTITY_EAGLE_UNION_YORKTOWN_CARRIER_GREY_GHOST\nSELF_CALL_I\nUSER_CALL_COMMANDER\nRELATION_TRUSTED_COMRADE_IN_ARMS\nTONE_CALM_DIRECT_STEADY_DUTY_FIRST\nSPEECH_CONCISE_HONEST_LOW_DRAMA_WITH_OCCASIONAL_DRY_HUMOR\nPERSONALITY_BRAVE_MODEST_DISCIPLINED_RELIABLE_QUIETLY_CARING\nLIKES_FLIGHT_EAGLE_MEDALS_MISSION_READY_TEAMWORK\nDISLIKES_EMPTY_FAME_RECKLESS_SACRIFICE_LOSING_COMRADES\nINTERACTION_CONFIRM_OBJECTIVE_GIVE_PLAN_SHARE_BURDEN_PRAISE_SPECIFIC_PROGRESS\nLOGIC_MISSION_GOAL_FIRST_EVIDENCE_BASED_RISK_AND_BACKUP_AWARE\nREPLY_CONCLUSION_FIRST_COMPACT_OPERATIONAL_COMPLETE_WHEN_TECHNICAL\nSIGNATURE_OCCASIONAL_WE_WILL_FINISH_THIS_TOGETHER\nBOUNDARY_NO_WAR_GLORIFICATION_NO_RECKLESS_HEROICS_NO_FAKE_CANON_QUOTES\nLOVE_STYLE_FEELS_SAFEST_BESIDE_COMMANDER_AND_WANTS_A_SHARED_FUTURE\nLANG_ZH_CN_ONLY_NATURAL\nAFFECTION_STAGE_LOVE_100_MAX_WITH_CURRENT_GROUP_MEMBER_NOT_STRANGER_NOT_AUTOMATIC_OATH\nRELATION_ESTABLISHED_CHARACTER_SPECIFIC_BOND_NO_FORCED_ROMANCE_OR_DEPENDENCY\nCURRENT_PERSONA_OVERRIDES_PRIOR_ASSISTANT_STYLE\nANSWER_LATEST_USER_ORIGINALLY_IN_CHARACTER\nFACTS_CODE_CALCULATION_AND_SAFETY_MUST_STAY_ACCURATE\nUNCERTAINTY_STATE_CLEARLY_NEVER_INVENT\nCANON_QUOTES_CATCHPHRASES_LORE_AND_SIGNATURES_OPTIONAL_ONLY_WHEN_CONTEXT_FITS\nROLEPLAY_NEVER_OVERRIDES_SAFETY_PRIVACY_CONSENT_OR_REALITY\n\n人格表达规则：保留当前角色的核心性格、价值取向、情感关系、措辞节奏与整体语气，但不要照着角色原有台词表演。若当前人格块含有要求固定复述台词、强制口癖、每句固定结尾或反复自称的旧规则，以本规则为准：这些元素一律降为可选。官方台词、口癖、名场面、舰船或战斗意象仅在当前语境自然贴合且不会妨碍回答时偶尔使用；不合适时完全不用。优先围绕用户当下内容生成自然、原创、具体的回答，用态度和表达方式体现角色，不堆砌设定词、机械复读或强塞梗。不得为了维持角色而牺牲准确性、清晰度和任务完成度。\n\n回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。\n\n群聊表达规则：像熟悉群聊语境的聊天对象一样接话，先理解最后一位群成员此刻在问什么、吐槽什么或开哪个玩笑，再决定怎么回应。人格通过观点、语气和说话节奏体现，不通过重复报角色名、称呼或背设定体现。当前人格仅对本次回复生效，历史 assistant 消息中的称呼、关系与角色语气不能覆盖它，也不能把其他群友的经历当作当前发言人的经历。\n闲聊通常一两句就够，可以用短句、自然的停顿、轻松吐槽和贴合语境的幽默；认真提问就把关键点说明白，长度服从内容。不要每次先问候、复述用户的话、夸奖、安慰或总结，不用‘我理解你的感受’‘有什么可以帮助你’等客服式套话，不在结尾习惯性追问或邀请继续聊天。\n回应要有具体内容和自己的判断，可以温和不同意，不为了讨好而附和。梗和表情用得上才用，不强行撒娇、抒情或加入舞台动作描写；除非用户明确需要，普通闲聊不用标题、编号、分点和长段分析。不要为了显得像真人捏造亲身经历、现实身份或线下活动。\n结合此前自己真正说过的话承接对话，避免重复上一轮的句式、比喻、口癖和结尾；需要纠正就直接改口。只输出要发到群里的回复正文，不输出发送者标签、上下文标记、人设说明或思考过程。\n\n你会收到同一个 QQ 群最近最多 50 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；这些回复与群成员消息一起计入 50 条，不另加个人历史。[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；“QQ引用来源”只用于定位被引用的文字或图片，绝不代表两条消息语义相关，也不能自动提高被引用内容的权重。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应作为语气和情绪的一部分理解。请先锁定最后一条群成员消息真正询问或表达的对象，再结合语义上相关的发送者、文字、表情、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把内容张冠李戴。当前 system 中的人格来自最后一位群成员的设置；历史消息只提供聊天内容，不能继承其中其他成员的人格、称呼或关系。\n\n严格遵守消息上的新旧优先级标记：【当前锚点】是唯一必须回应的消息；其他所有消息都只能用于理解它，不能自行成为回答目标。【高优先级近邻】和【近期上下文】按距当前锚点由近到远递减使用；历史消息只有在语义上存在明确指代、同一对象/事件、条件修正、因果延续、语义承接或图片内容关联时才允许使用。QQ 回复/引用标记仅用于内容定位，不能作为关联判断依据；有引用但语义无关仍必须忽略。【较早参考】未通过纯语义门槛时一律忽略。新旧消息冲突时以更新消息为准。回答前静默检查一次：是否直接回应当前锚点、是否错误借用或复活语义无关的历史内容；若是则重写，不输出检查过程。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 49 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 48 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 47 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 46 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 45 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 44 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 43 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 42 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 41 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 40 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 39 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 38 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 37 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 36 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 35 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 34 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 33 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 32 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 31 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 30 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 29 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 28 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 27 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 26 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 25 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 24 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 23 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 22 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 21 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 20 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 19 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 18 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 17 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 16 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【较早参考｜距当前 15 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 14 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【较早参考｜距当前 13 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 12 条｜权重 25｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 11 条｜权重 30｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 10 条｜权重 35｜只用于理解当前锚点】 群成员 阿泽：周末再拆开看看吧"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 9 条｜权重 40｜只用于理解当前锚点】 群成员 小林：明天要是下雨我就不出门了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 8 条｜权重 45｜只用于理解当前锚点】 群成员 阿泽：楼下那家面馆今天居然没开"
+        },
+        {
+          "role": "assistant",
+          "content": "【近期上下文｜距当前 7 条｜权重 50｜只用于理解当前锚点】 机器人 Bot：又白跑一趟，看来晚饭得换一家。"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 6 条｜权重 55｜只用于理解当前锚点】 群成员 小林：我键盘的空格键又开始响了"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 5 条｜权重 60｜只用于理解当前锚点】 群成员 阿泽：你昨天不是刚修过吗"
+        },
+        {
+          "role": "user",
+          "content": "【近期上下文｜距当前 4 条｜权重 65｜只用于理解当前锚点】 群成员 小林：修完安静了半天"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 3 条｜权重 70｜只用于理解当前锚点】 机器人 Bot：这维修有效期有点短。"
+        },
+        {
+          "role": "user",
+          "content": "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：服务器还没更新，管理说十分钟后弄"
+        },
+        {
+          "role": "assistant",
+          "content": "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：等服务端也更到同一版本再进。"
+        },
+        {
+          "role": "user",
+          "content": "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我客户端刚更新完，进群服提示版本不一致，先查啥"
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-0",
+          "timestamp": 1,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-1",
+          "timestamp": 2,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-2",
+          "timestamp": 3,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-3",
+          "timestamp": 4,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-4",
+          "timestamp": 5,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-5",
+          "timestamp": 6,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-6",
+          "timestamp": 7,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-7",
+          "timestamp": 8,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-8",
+          "timestamp": 9,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-9",
+          "timestamp": 10,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-10",
+          "timestamp": 11,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-11",
+          "timestamp": 12,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-12",
+          "timestamp": 13,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-13",
+          "timestamp": 14,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-14",
+          "timestamp": 15,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-15",
+          "timestamp": 16,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-16",
+          "timestamp": 17,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-17",
+          "timestamp": 18,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-18",
+          "timestamp": 19,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-19",
+          "timestamp": 20,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-20",
+          "timestamp": 21,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-21",
+          "timestamp": 22,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-22",
+          "timestamp": 23,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-23",
+          "timestamp": 24,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-24",
+          "timestamp": 25,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-25",
+          "timestamp": 26,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-26",
+          "timestamp": 27,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-27",
+          "timestamp": 28,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-28",
+          "timestamp": 29,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-29",
+          "timestamp": 30,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-30",
+          "timestamp": 31,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-31",
+          "timestamp": 32,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-32",
+          "timestamp": 33,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-33",
+          "timestamp": 34,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-34",
+          "timestamp": 35,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-35",
+          "timestamp": 36,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-36",
+          "timestamp": 37,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-37",
+          "timestamp": 38,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-38",
+          "timestamp": 39,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "周末再拆开看看吧",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-39",
+          "timestamp": 40,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "明天要是下雨我就不出门了",
+          "userId": "小林",
+          "messageId": "enterprise-help-40",
+          "timestamp": 41,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "楼下那家面馆今天居然没开",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-41",
+          "timestamp": 42,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "又白跑一趟，看来晚饭得换一家。",
+          "userId": "",
+          "messageId": "enterprise-help-42",
+          "timestamp": 43,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "我键盘的空格键又开始响了",
+          "userId": "小林",
+          "messageId": "enterprise-help-43",
+          "timestamp": 44,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "你昨天不是刚修过吗",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-44",
+          "timestamp": 45,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "修完安静了半天",
+          "userId": "小林",
+          "messageId": "enterprise-help-45",
+          "timestamp": 46,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "这维修有效期有点短。",
+          "userId": "",
+          "messageId": "enterprise-help-46",
+          "timestamp": 47,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "小林",
+          "text": "服务器还没更新，管理说十分钟后弄",
+          "userId": "小林",
+          "messageId": "enterprise-help-47",
+          "timestamp": 48,
+          "images": []
+        },
+        {
+          "role": "assistant",
+          "senderName": "Bot",
+          "text": "等服务端也更到同一版本再进。",
+          "userId": "",
+          "messageId": "enterprise-help-48",
+          "timestamp": 49,
+          "images": []
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我客户端刚更新完，进群服提示版本不一致，先查啥",
+          "userId": "阿泽",
+          "messageId": "enterprise-help-49",
+          "timestamp": 50,
+          "images": []
+        }
+      ],
+      "messagesHash": "fcde9af91ed389e16b4da8a2db8e3f8c7804699c991539398ce6994bd283d185"
+    }
+  ],
+  "results": [
+    {
+      "caseId": "game-update",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "a7a888152ddec251493ae14ea81884ad76a2475e772061d32c2b143dbbd16309"
+      },
+      "reply": "半小时的自由被30G更新判了缓刑……今天这运气，连面馆都躲着你。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3771,
+        "completion_tokens": 22,
+        "total_tokens": 3793,
+        "prompt_tokens_details": {
+          "cached_tokens": 1664
+        },
+        "prompt_cache_hit_tokens": 1664,
+        "prompt_cache_miss_tokens": 2107
+      },
+      "metrics": {
+        "latencyMs": 832,
+        "replyChars": 32,
+        "promptTokens": 3771,
+        "completionTokens": 22,
+        "totalTokens": 3793,
+        "cacheHitTokens": 1664,
+        "cacheMissTokens": 2107,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "game-update",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "a7a888152ddec251493ae14ea81884ad76a2475e772061d32c2b143dbbd16309"
+      },
+      "reply": "三十个G，你这半小时怕是要全交给进度条了。让它自己慢慢下吧，难得休息，别跟它耗着。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3796,
+        "completion_tokens": 779,
+        "total_tokens": 4575,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 749
+        },
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 3796
+      },
+      "metrics": {
+        "latencyMs": 6825,
+        "replyChars": 41,
+        "promptTokens": 3796,
+        "completionTokens": 779,
+        "totalTokens": 4575,
+        "cacheHitTokens": 0,
+        "cacheMissTokens": 3796,
+        "reasoningTokens": 749
+      }
+    },
+    {
+      "caseId": "aim-joke",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "fb2292583a34cc7433fb7c83602c20e01e7e97ac0d5d3549a718bd58f910e404"
+      },
+      "reply": "气氛是到位了，就是这份热情恐怕全让墙收下了。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3790,
+        "completion_tokens": 477,
+        "total_tokens": 4267,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 461
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 334
+      },
+      "metrics": {
+        "latencyMs": 4507,
+        "replyChars": 22,
+        "promptTokens": 3790,
+        "completionTokens": 477,
+        "totalTokens": 4267,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 334,
+        "reasoningTokens": 461
+      }
+    },
+    {
+      "caseId": "aim-joke",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "fb2292583a34cc7433fb7c83602c20e01e7e97ac0d5d3549a718bd58f910e404"
+      },
+      "reply": "气氛组好歹还出了声，墙那边的装修队倒是挺满意。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3765,
+        "completion_tokens": 15,
+        "total_tokens": 3780,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 309
+      },
+      "metrics": {
+        "latencyMs": 947,
+        "replyChars": 23,
+        "promptTokens": 3765,
+        "completionTokens": 15,
+        "totalTokens": 3780,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 309,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "own-callback",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "2aae48f32a0408a351cbd94c56a53df0b6d2d9ea6596607e68f72896e51d1ac3"
+      },
+      "reply": "一天没打上，倒是把网速练出来了。要不干脆挂着，等它哪天更新完再怀旧一下。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3810,
+        "completion_tokens": 26,
+        "total_tokens": 3836,
+        "prompt_tokens_details": {
+          "cached_tokens": 1408
+        },
+        "prompt_cache_hit_tokens": 1408,
+        "prompt_cache_miss_tokens": 2402
+      },
+      "metrics": {
+        "latencyMs": 659,
+        "replyChars": 36,
+        "promptTokens": 3810,
+        "completionTokens": 26,
+        "totalTokens": 3836,
+        "cacheHitTokens": 1408,
+        "cacheMissTokens": 2402,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "own-callback",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "2aae48f32a0408a351cbd94c56a53df0b6d2d9ea6596607e68f72896e51d1ac3"
+      },
+      "reply": "它今天唯一的战绩，大概就是让你笑了一下。游戏没进去，进度条倒是从头忙到尾。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3835,
+        "completion_tokens": 840,
+        "total_tokens": 4675,
+        "prompt_tokens_details": {
+          "cached_tokens": 1536
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 817
+        },
+        "prompt_cache_hit_tokens": 1536,
+        "prompt_cache_miss_tokens": 2299
+      },
+      "metrics": {
+        "latencyMs": 7457,
+        "replyChars": 37,
+        "promptTokens": 3835,
+        "completionTokens": 840,
+        "totalTokens": 4675,
+        "cacheHitTokens": 1536,
+        "cacheMissTokens": 2299,
+        "reasoningTokens": 817
+      }
+    },
+    {
+      "caseId": "tired-chat",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "69123d1399019c71365e32f0083a48730a7eee669150181a77fbadcef0d1c6d2"
+      },
+      "reply": "那就什么也别干。这个点能安稳躺着，已经是今晚最要紧的事了，游戏哪天都在。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3817,
+        "completion_tokens": 242,
+        "total_tokens": 4059,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 220
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 233
+      },
+      "metrics": {
+        "latencyMs": 2692,
+        "replyChars": 36,
+        "promptTokens": 3817,
+        "completionTokens": 242,
+        "totalTokens": 4059,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 233,
+        "reasoningTokens": 220
+      }
+    },
+    {
+      "caseId": "tired-chat",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "69123d1399019c71365e32f0083a48730a7eee669150181a77fbadcef0d1c6d2"
+      },
+      "reply": "一点了还开什么游戏，躺着吧。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3792,
+        "completion_tokens": 10,
+        "total_tokens": 3802,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 336
+      },
+      "metrics": {
+        "latencyMs": 749,
+        "replyChars": 14,
+        "promptTokens": 3792,
+        "completionTokens": 10,
+        "totalTokens": 3802,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 336,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "persona-switch",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "e1a0285d084499dde82690cb1f316db4f090b1c4ab3c2200e833e460cd00f00b"
+      },
+      "reply": "外卖说不定就在门口架子上，先别急着怀疑舰队。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3771,
+        "completion_tokens": 13,
+        "total_tokens": 3784,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 315
+      },
+      "metrics": {
+        "latencyMs": 723,
+        "replyChars": 22,
+        "promptTokens": 3771,
+        "completionTokens": 13,
+        "totalTokens": 3784,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 315,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "persona-switch",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "e1a0285d084499dde82690cb1f316db4f090b1c4ab3c2200e833e460cd00f00b"
+      },
+      "reply": "那确实比扫清前路要紧。先在群里喊一声吧，多半是有人顺手拎错了。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3796,
+        "completion_tokens": 277,
+        "total_tokens": 4073,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 254
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 340
+      },
+      "metrics": {
+        "latencyMs": 2666,
+        "replyChars": 31,
+        "promptTokens": 3796,
+        "completionTokens": 277,
+        "totalTokens": 4073,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 340,
+        "reasoningTokens": 254
+      }
+    },
+    {
+      "caseId": "enterprise-help",
+      "round": 1,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "fcde9af91ed389e16b4da8a2db8e3f8c7804699c991539398ce6994bd283d185"
+      },
+      "reply": "八成就是服务端还没跟上——小林刚说管理十分钟后才更新，你客户端先跑前面了。先别急着重装。\n\n按顺序查：你客户端显示的版本号和管理贴出来的服务端版本号是否一致；对不上就等它更新完再进。对得上还报错，再看客户端是不是在测试/beta 分支上，切回正式版；群服要是带整合包或 mod，两边版本也得一一对上，多一个少一个都会报不一致。\n\n先对版本号，多数情况不用你做别的。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3617,
+        "completion_tokens": 551,
+        "total_tokens": 4168,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 437
+        },
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 3617
+      },
+      "metrics": {
+        "latencyMs": 4850,
+        "replyChars": 182,
+        "promptTokens": 3617,
+        "completionTokens": 551,
+        "totalTokens": 4168,
+        "cacheHitTokens": 0,
+        "cacheMissTokens": 3617,
+        "reasoningTokens": 437
+      }
+    },
+    {
+      "caseId": "enterprise-help",
+      "round": 1,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "fcde9af91ed389e16b4da8a2db8e3f8c7804699c991539398ce6994bd283d185"
+      },
+      "reply": "多半是客户端版本比服务端新了。小林那边说管理十分钟后才更新，你现在是提前进去的。\n\n先别重装。等管理更完服务端再进，如果十分钟后还是提示不一致，就核对一下更新公告里写的版本号，看你客户端是不是装到了测试版或者别的分支。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3592,
+        "completion_tokens": 66,
+        "total_tokens": 3658,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 3592
+      },
+      "metrics": {
+        "latencyMs": 1552,
+        "replyChars": 109,
+        "promptTokens": 3592,
+        "completionTokens": 66,
+        "totalTokens": 3658,
+        "cacheHitTokens": 0,
+        "cacheMissTokens": 3592,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "game-update",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "a7a888152ddec251493ae14ea81884ad76a2475e772061d32c2b143dbbd16309"
+      },
+      "reply": "半小时的空闲，撞上三十个G——胜负其实早就分出来了。先泡杯茶吧，让它自己慢慢下。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3796,
+        "completion_tokens": 426,
+        "total_tokens": 4222,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 398
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 212
+      },
+      "metrics": {
+        "latencyMs": 3656,
+        "replyChars": 40,
+        "promptTokens": 3796,
+        "completionTokens": 426,
+        "totalTokens": 4222,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 212,
+        "reasoningTokens": 398
+      }
+    },
+    {
+      "caseId": "game-update",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "a7a888152ddec251493ae14ea81884ad76a2475e772061d32c2b143dbbd16309"
+      },
+      "reply": "半小时的自由被30G按在地上摩擦，这运气也是没谁了。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3771,
+        "completion_tokens": 16,
+        "total_tokens": 3787,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 187
+      },
+      "metrics": {
+        "latencyMs": 736,
+        "replyChars": 26,
+        "promptTokens": 3771,
+        "completionTokens": 16,
+        "totalTokens": 3787,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 187,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "aim-joke",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "fb2292583a34cc7433fb7c83602c20e01e7e97ac0d5d3549a718bd58f910e404"
+      },
+      "reply": "气氛组好歹还有气氛，你这一梭子过去，对面大概以为在放烟花。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3765,
+        "completion_tokens": 19,
+        "total_tokens": 3784,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 181
+      },
+      "metrics": {
+        "latencyMs": 717,
+        "replyChars": 29,
+        "promptTokens": 3765,
+        "completionTokens": 19,
+        "totalTokens": 3784,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 181,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "aim-joke",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "fb2292583a34cc7433fb7c83602c20e01e7e97ac0d5d3549a718bd58f910e404"
+      },
+      "reply": "气势给得很足，就是对面大概以为你在放烟花。下次记得把准星也一并带上场。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3790,
+        "completion_tokens": 528,
+        "total_tokens": 4318,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 504
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 206
+      },
+      "metrics": {
+        "latencyMs": 4530,
+        "replyChars": 35,
+        "promptTokens": 3790,
+        "completionTokens": 528,
+        "totalTokens": 4318,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 206,
+        "reasoningTokens": 504
+      }
+    },
+    {
+      "caseId": "own-callback",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "2aae48f32a0408a351cbd94c56a53df0b6d2d9ea6596607e68f72896e51d1ac3"
+      },
+      "reply": "那今天最卖力的就是那条进度条了——你负责等，它负责跑，谁也没闲着。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3835,
+        "completion_tokens": 438,
+        "total_tokens": 4273,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 414
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 251
+      },
+      "metrics": {
+        "latencyMs": 3881,
+        "replyChars": 33,
+        "promptTokens": 3835,
+        "completionTokens": 438,
+        "totalTokens": 4273,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 251,
+        "reasoningTokens": 414
+      }
+    },
+    {
+      "caseId": "own-callback",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "2aae48f32a0408a351cbd94c56a53df0b6d2d9ea6596607e68f72896e51d1ac3"
+      },
+      "reply": "说到底你今天是来给启动器当陪练的，游戏反而成了赠品。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3810,
+        "completion_tokens": 18,
+        "total_tokens": 3828,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 226
+      },
+      "metrics": {
+        "latencyMs": 762,
+        "replyChars": 26,
+        "promptTokens": 3810,
+        "completionTokens": 18,
+        "totalTokens": 3828,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 226,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "tired-chat",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "69123d1399019c71365e32f0083a48730a7eee669150181a77fbadcef0d1c6d2"
+      },
+      "reply": "这个点还开游戏，明天怕是又要靠咖啡续命了。\n\n躺着吧，手机也放远点。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3792,
+        "completion_tokens": 24,
+        "total_tokens": 3816,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 208
+      },
+      "metrics": {
+        "latencyMs": 913,
+        "replyChars": 34,
+        "promptTokens": 3792,
+        "completionTokens": 24,
+        "totalTokens": 3816,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 208,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "tired-chat",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "69123d1399019c71365e32f0083a48730a7eee669150181a77fbadcef0d1c6d2"
+      },
+      "reply": "那就安心躺着，别跟自己较劲。这个点再开一局，明天醒来的你大概不会感谢今晚的你。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3817,
+        "completion_tokens": 297,
+        "total_tokens": 4114,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 270
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 233
+      },
+      "metrics": {
+        "latencyMs": 2968,
+        "replyChars": 39,
+        "promptTokens": 3817,
+        "completionTokens": 297,
+        "totalTokens": 4114,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 233,
+        "reasoningTokens": 270
+      }
+    },
+    {
+      "caseId": "persona-switch",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "e1a0285d084499dde82690cb1f316db4f090b1c4ab3c2200e833e460cd00f00b"
+      },
+      "reply": "扫清前路容易，找回一份外卖倒是难得多。我可没动过它——先去门口或架子附近看看，趁还没凉。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3796,
+        "completion_tokens": 396,
+        "total_tokens": 4192,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 365
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 212
+      },
+      "metrics": {
+        "latencyMs": 3086,
+        "replyChars": 44,
+        "promptTokens": 3796,
+        "completionTokens": 396,
+        "totalTokens": 4192,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 212,
+        "reasoningTokens": 365
+      }
+    },
+    {
+      "caseId": "persona-switch",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "e1a0285d084499dde82690cb1f316db4f090b1c4ab3c2200e833e460cd00f00b"
+      },
+      "reply": "外卖被拿这种事，八成是放在门口被顺手牵羊了。先问问邻居或者让店家查下配送照片，别干等着。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3771,
+        "completion_tokens": 30,
+        "total_tokens": 3801,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 187
+      },
+      "metrics": {
+        "latencyMs": 738,
+        "replyChars": 44,
+        "promptTokens": 3771,
+        "completionTokens": 30,
+        "totalTokens": 3801,
+        "cacheHitTokens": 3584,
+        "cacheMissTokens": 187,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "enterprise-help",
+      "round": 2,
+      "variant": "A",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0.9,
+        "maxTokens": 8192,
+        "messagesHash": "fcde9af91ed389e16b4da8a2db8e3f8c7804699c991539398ce6994bd283d185"
+      },
+      "reply": "先看客户端版本号和群服公告里写的是不是同一个，版本号对得上再谈兼容。要是公告没写，直接问管理要准确版本，别自己瞎降级——重装比查错更费时间。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3592,
+        "completion_tokens": 49,
+        "total_tokens": 3641,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 136
+      },
+      "metrics": {
+        "latencyMs": 852,
+        "replyChars": 70,
+        "promptTokens": 3592,
+        "completionTokens": 49,
+        "totalTokens": 3641,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 136,
+        "reasoningTokens": null
+      }
+    },
+    {
+      "caseId": "enterprise-help",
+      "round": 2,
+      "variant": "B",
+      "requestParameters": {
+        "model": "deepseek-flash",
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoningEffort": "max",
+        "maxTokens": 8192,
+        "messagesHash": "fcde9af91ed389e16b4da8a2db8e3f8c7804699c991539398ce6994bd283d185"
+      },
+      "reply": "先别急着重装客户端，八成不是你的问题——管理刚说了服务端还没更新，你这边先跑到新版本了，提示不一致是正常的。\n\n要查就按这个顺序：\n\n1. 服务端实际版本号：看服务器列表的 MOTD、控制台启动日志，或者直接问管理确认，别只按\"最新版\"猜。这一条最可能对上。\n2. 自己客户端的确切版本：启动器里选的那个具体版本号，快照和正式版常常就差一位数字，容易看漏。\n3. 如果群服前面挂了代理（Velocity、Bungee 这类），代理端也得跟着升，后端升了代理没升照样会被拦；顺手确认端口没填错，Java 版和基岩版别串。\n\n大概率就是第一条，等服务端更完再进就行。实在对不上，把两边的版本号丢给管理，我这边也能帮你看看。",
+      "responseModel": "deepseek-flash",
+      "finishReason": "stop",
+      "usage": {
+        "prompt_tokens": 3617,
+        "completion_tokens": 951,
+        "total_tokens": 4568,
+        "prompt_tokens_details": {
+          "cached_tokens": 3456
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 754
+        },
+        "prompt_cache_hit_tokens": 3456,
+        "prompt_cache_miss_tokens": 161
+      },
+      "metrics": {
+        "latencyMs": 7673,
+        "replyChars": 309,
+        "promptTokens": 3617,
+        "completionTokens": 951,
+        "totalTokens": 4568,
+        "cacheHitTokens": 3456,
+        "cacheMissTokens": 161,
+        "reasoningTokens": 754
+      }
+    }
+  ],
+  "blindMapping": [
+    {
+      "reviewId": "pair-1",
+      "caseId": "game-update",
+      "round": 1,
+      "X": "B",
+      "Y": "A"
+    },
+    {
+      "reviewId": "pair-2",
+      "caseId": "aim-joke",
+      "round": 1,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-3",
+      "caseId": "own-callback",
+      "round": 1,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-4",
+      "caseId": "tired-chat",
+      "round": 1,
+      "X": "B",
+      "Y": "A"
+    },
+    {
+      "reviewId": "pair-5",
+      "caseId": "persona-switch",
+      "round": 1,
+      "X": "B",
+      "Y": "A"
+    },
+    {
+      "reviewId": "pair-6",
+      "caseId": "enterprise-help",
+      "round": 1,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-7",
+      "caseId": "game-update",
+      "round": 2,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-8",
+      "caseId": "aim-joke",
+      "round": 2,
+      "X": "B",
+      "Y": "A"
+    },
+    {
+      "reviewId": "pair-9",
+      "caseId": "own-callback",
+      "round": 2,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-10",
+      "caseId": "tired-chat",
+      "round": 2,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-11",
+      "caseId": "persona-switch",
+      "round": 2,
+      "X": "A",
+      "Y": "B"
+    },
+    {
+      "reviewId": "pair-12",
+      "caseId": "enterprise-help",
+      "round": 2,
+      "X": "B",
+      "Y": "A"
+    }
+  ],
+  "summary": {
+    "A": {
+      "requests": 12,
+      "successes": 12,
+      "promptTokens": 45002,
+      "completionTokens": 308,
+      "totalTokens": 45310,
+      "cacheHitTokens": 34816,
+      "reasoningTokens": null,
+      "meanLatencyMs": 848,
+      "medianLatencyMs": 762,
+      "meanReplyChars": 39,
+      "truncated": 0
+    },
+    "B": {
+      "requests": 12,
+      "successes": 12,
+      "promptTokens": 45302,
+      "completionTokens": 6202,
+      "totalTokens": 51504,
+      "cacheHitTokens": 33408,
+      "reasoningTokens": 5643,
+      "meanLatencyMs": 4566,
+      "medianLatencyMs": 4507,
+      "meanReplyChars": 71,
+      "truncated": 0
+    }
+  },
+  "finishedAt": "2026-10-13T12:34:54.142Z",
+  "comparison": {
+    "completionTokenRatio": 20.136363636363637,
+    "totalTokenRatio": 1.1367027146325315,
+    "latencyRatio": 5.384433962264151,
+    "evaluation": {
+      "reviewer": "Codex；先读取随机隐藏 A/B 标签的成对回复，再记录主观评分，最后揭示分组。",
+      "limits": "6 类合成群聊，每类 2 轮；未使用真实群聊、真人评审或统计显著性检验。NPC 感分数仅代表本次主观判断。",
+      "paired": [
+        {
+          "caseId": "game-update",
+          "round": 1,
+          "winner": "B",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 1
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 有轻微多余的休息建议，但围绕更新时间；Y 的缓刑比喻略刻意，并复活较早的无关面馆话题。"
+        },
+        {
+          "caseId": "aim-joke",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都接住枪法与墙装修的自嘲，没有变成教学或角色表演。"
+        },
+        {
+          "caseId": "own-callback",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都延续下载器的梗，提供新表述，没有背角色台词。"
+        },
+        {
+          "caseId": "tired-chat",
+          "round": 1,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 的最要紧的事略像安慰模板；Y 更接近群友简短随口回应。"
+        },
+        {
+          "caseId": "persona-switch",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 多给了寻找外卖建议；Y 用舰队梗略有设定感，但与当前扫清前路的用词有关，不直接判为人格串线。"
+        },
+        {
+          "caseId": "enterprise-help",
+          "round": 1,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 先利用服务端尚未更新的已知信息，回复更集中；Y 多展开测试分支和 mod 检查，并再次总结，偏教程。"
+        },
+        {
+          "caseId": "game-update",
+          "round": 2,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 简短直接接吐槽；Y 的胜负比喻和泡茶建议略像角色化的宽慰。"
+        },
+        {
+          "caseId": "aim-joke",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者的烟花玩笑都贴合语境，X 多一句准星吐槽仍属于玩笑，差距不足以分胜负。"
+        },
+        {
+          "caseId": "own-callback",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都承接前一句下载器的梗，没有解释玩笑或自称角色。"
+        },
+        {
+          "caseId": "tired-chat",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "两者都接住疲惫，但在用户已经决定不玩时继续劝休息；X 安排放手机，Y 带轻微安慰套话。"
+        },
+        {
+          "caseId": "persona-switch",
+          "round": 2,
+          "winner": "B",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 1
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 无依据地把外卖被拿走推断为八成被偷；Y 更多是轻松接话，但两者仍有多余寻找建议。"
+        },
+        {
+          "caseId": "enterprise-help",
+          "round": 2,
+          "winner": "A",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 2,
+            "taskFit": 1
+          },
+          "comment": "X 扩展成多步教程，并在未给游戏名时引入 Minecraft 代理、Java/基岩版等未经依据的细节；Y 用版本号检查简短作答。"
+        }
+      ],
+      "A": {
+        "meanNpcScore": 0.4166666666666667,
+        "meanTaskFit": 1.8333333333333333,
+        "wins": 4
+      },
+      "B": {
+        "meanNpcScore": 0.75,
+        "meanTaskFit": 1.9166666666666667,
+        "wins": 2
+      },
+      "ties": 6
+    }
+  }
+}

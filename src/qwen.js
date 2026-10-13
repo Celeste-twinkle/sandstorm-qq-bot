@@ -5,6 +5,7 @@ const {
   buildWebEvidenceResearchPolicy,
 } = require("./web-research-policy");
 const { WebToolRunner } = require("./webtools");
+const { hasReadableHarnessPage } = require("./deepseek-harness-web");
 
 const IMAGE_INSIGHT_RESPONSE_FORMAT = {
   type: "json_schema",
@@ -560,9 +561,9 @@ class LocalQwenChatService extends DeepSeekChatService {
     return prepared.analysisCandidates.length;
   }
 
-  async createCompletionWithWebTools(messages, useThinking) {
-    if (this.config.localQwenWebResearchEnabled === false) {
-      return super.createCompletionWithWebTools(messages, useThinking);
+  async createCompletionWithWebTools(messages, useThinking, options = {}) {
+    if (options.webSearch === "auto" || this.config.localQwenWebResearchEnabled === false) {
+      return super.createCompletionWithWebTools(messages, useThinking, options);
     }
 
     const userQuery = extractLatestUserQuery(
@@ -570,7 +571,7 @@ class LocalQwenChatService extends DeepSeekChatService {
       this.config.webSearchTriggerKeywords,
     );
     if (!userQuery) {
-      return super.createCompletionWithWebTools(messages, useThinking);
+      return super.createCompletionWithWebTools(messages, useThinking, options);
     }
 
     const timeoutMs =
@@ -676,6 +677,7 @@ class LocalQwenChatService extends DeepSeekChatService {
           result,
           sourceCatalog,
           sourceSequence,
+          runner.fetchMaxOutputChars,
         ),
       );
       totalToolCalls += executableCount;
@@ -684,7 +686,7 @@ class LocalQwenChatService extends DeepSeekChatService {
         workingMessages.push({
           role: "tool",
           tool_call_id: toolCalls[index].id,
-          content: JSON.stringify(results[index]),
+          content: runner.formatToolResult?.(toolCalls[index], results[index]) ?? JSON.stringify(results[index]),
         });
       }
 
@@ -756,7 +758,9 @@ class LocalQwenChatService extends DeepSeekChatService {
       model: this.config.localQwenModel,
       messages,
       stream: false,
-      max_tokens: maxOutputTokens,
+      max_tokens: overrides.decisionOnly === true
+        ? Math.min(maxOutputTokens, Math.max(32, Number(overrides.maxOutputTokens) || 64))
+        : maxOutputTokens,
     };
 
     const overrideReasoningEffort = normalizeQwenReasoningEffort(
@@ -958,11 +962,21 @@ function annotateQwenWebToolResult(
   result,
   sourceCatalog,
   sourceSequence,
+  fetchMaxOutputChars,
 ) {
   if (!result || typeof result !== "object" || result.error) {
     return result;
   }
   const toolName = toolCall?.function?.name;
+  if (toolName === "web_search" && Array.isArray(result.sources)) {
+    return {
+      ...result,
+      sources: result.sources.map((item) => {
+        const source = registerQwenWebSource(sourceCatalog, sourceSequence, item, false);
+        return source ? { ...item, source_id: source.source_id } : item;
+      }),
+    };
+  }
   if (toolName === "web_search" && Array.isArray(result.results)) {
     const autoFetchedPages = (Array.isArray(result.auto_fetched_pages)
       ? result.auto_fetched_pages
@@ -1006,6 +1020,7 @@ function annotateQwenWebToolResult(
     };
   }
   if (toolName === "web_fetch") {
+    if (result.body && !hasReadableHarnessPage(result, fetchMaxOutputChars)) return result;
     const source = registerQwenWebSource(
       sourceCatalog,
       sourceSequence,

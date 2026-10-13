@@ -3,7 +3,10 @@ const {
   DEFAULT_AI_PERSONA_PROMPT,
   DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
   DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
+  DEFAULT_NATURAL_CHAT_PROMPT,
+  DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
 } = require("./persona");
+const { MAX_GROUP_CONTEXT_MESSAGES } = require("./group-context");
 
 dotenv.config();
 
@@ -91,6 +94,11 @@ const config = {
   personaFlexibilityPrompt:
     process.env.PERSONA_FLEXIBILITY_PROMPT ||
     DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
+  naturalChatPrompt: process.env.NATURAL_CHAT_PROMPT || DEFAULT_NATURAL_CHAT_PROMPT,
+  aiPrimaryProvider:
+    String(process.env.AI_PRIMARY_PROVIDER || "").trim().toLowerCase() === "local-qwen"
+      ? "local-qwen"
+      : "deepseek",
   localQwenEnabled: parseBoolean(process.env.LOCAL_QWEN_ENABLED, true),
   localQwenProviderId: process.env.LOCAL_QWEN_PROVIDER_ID || "local-qwen-manual",
   localQwenDisplayName: process.env.LOCAL_QWEN_DISPLAY_NAME || "Local Qwen Manual",
@@ -211,9 +219,9 @@ const config = {
     131072,
   ),
   localQwenMaxHistoryMessages: clampNumber(
-    parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, 100),
+    parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
     2,
-    100,
+    MAX_GROUP_CONTEXT_MESSAGES,
   ),
   localQwenMaxImages: clampNumber(parseInteger(process.env.LOCAL_QWEN_MAX_IMAGES, 10), 0, 10),
   localQwenImageTokenEstimate: clampNumber(
@@ -271,9 +279,9 @@ const config = {
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEKER_API_KEY || "",
   deepseekBaseUrl: (process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/+$/, ""),
   deepseekModel:
-    process.env.DEEPSEEK_MODEL || "deepseek-v4-flash-vision-exp",
+    process.env.DEEPSEEK_MODEL || "deepseek-flash",
   deepseekVisionModel:
-    process.env.DEEPSEEK_VISION_MODEL || "deepseek-v4-flash-vision-exp",
+    process.env.DEEPSEEK_VISION_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-flash",
   deepseekMaxImages: clampNumber(
     parseInteger(process.env.DEEPSEEK_MAX_IMAGES, 10),
     0,
@@ -338,27 +346,39 @@ const config = {
     process.env.RESPONSE_NEUTRALITY_PROMPT ||
     "回复必须避免表现出政治或宗教倾向。不要主动引入政治、宗教、意识形态立场；如果用户内容涉及这些话题，只做中立、克制、事实性或轻轻转移话题的回应，不站队、不宣传、不劝诱、不评价任何政治或宗教群体。",
   deepseekTimeoutMs: parseInteger(process.env.DEEPSEEK_TIMEOUT_MS, 30000),
+  deepseekThinkingEnabled: parseBoolean(process.env.DEEPSEEK_THINKING_ENABLED, false),
   deepseekThinkingTimeoutMs: parseInteger(process.env.DEEPSEEK_THINKING_TIMEOUT_MS, 60000),
   deepseekMaxOutputTokens: parseInteger(process.env.DEEPSEEK_MAX_OUTPUT_TOKENS, 1600),
   deepseekThinkingMaxOutputTokens: parseInteger(process.env.DEEPSEEK_THINKING_MAX_OUTPUT_TOKENS, 3200),
   deepseekTemperature: Number.isFinite(Number.parseFloat(process.env.DEEPSEEK_TEMPERATURE))
     ? Number.parseFloat(process.env.DEEPSEEK_TEMPERATURE)
-    : 0.7,
+    : 0.9,
   deepseekReasoningEffort: process.env.DEEPSEEK_REASONING_EFFORT || "high",
+  webSearchAutoEnabled: parseBoolean(process.env.WEB_SEARCH_AUTO_ENABLED, true),
   webSearchTriggerKeywords: uniqueList([
     ...parseList("联网搜索,联网查询,联网搜搜"),
     ...parseList(process.env.WEB_SEARCH_TRIGGER_KEYWORDS),
     ...parseList(process.env.WEB_SEARCH_TRIGGER_KEYWORD),
   ]),
-  webSearchProvider: process.env.WEB_SEARCH_PROVIDER || "auto",
+  webSearchProvider: process.env.WEB_SEARCH_PROVIDER || "deepseek-official",
+  deepseekSearchBaseUrl: (process.env.DEEPSEEK_SEARCH_BASE_URL || "https://api.deepseek.com/anthropic/v1").trim().replace(/\/+$/, ""),
+  deepseekSearchModel: process.env.DEEPSEEK_SEARCH_MODEL || "deepseek-v4-flash",
+  deepseekSearchApiVersion: process.env.DEEPSEEK_SEARCH_API_VERSION || "2023-06-01",
+  deepseekSearchMaxTokens: clampNumber(parseInteger(process.env.DEEPSEEK_SEARCH_MAX_TOKENS, 4096), 1, 32768),
+  deepseekSearchMaxUses: clampNumber(parseInteger(process.env.DEEPSEEK_SEARCH_MAX_USES, 5), 1, 20),
+  webSearchMaxQueries: clampNumber(parseInteger(process.env.WEB_SEARCH_MAX_QUERIES, 4), 1, 4),
   webSearchFallbackProviders: parseList(
     process.env.WEB_SEARCH_FALLBACK_PROVIDERS || "exa,parallel,bing",
   ),
-  webSearchMaxResults: parseInteger(process.env.WEB_SEARCH_MAX_RESULTS, 3),
+  webSearchMaxResults: parseInteger(process.env.WEB_SEARCH_MAX_RESULTS, 8),
   webSearchCandidateResults: parseInteger(process.env.WEB_SEARCH_CANDIDATE_RESULTS, 8),
   webSearchMaxToolRounds: parseInteger(process.env.WEB_SEARCH_MAX_TOOL_ROUNDS, 2),
   webSearchMaxToolCallsPerRound: parseInteger(process.env.WEB_SEARCH_MAX_TOOL_CALLS_PER_ROUND, 2),
-  webSearchTimeoutMs: parseInteger(process.env.WEB_SEARCH_TIMEOUT_MS, 10000),
+  webSearchTimeoutMs: parseInteger(process.env.WEB_SEARCH_TIMEOUT_MS, 30000),
+  webFetchTimeoutMs: clampNumber(parseInteger(process.env.WEB_FETCH_TIMEOUT_MS, 30000), 1000, 120000),
+  webFetchMaxOutputChars: clampNumber(parseInteger(process.env.WEB_FETCH_MAX_OUTPUT_CHARS, 200000), 500, 200000),
+  webFetchMaxBodyChars: clampNumber(parseInteger(process.env.WEB_FETCH_MAX_BODY_CHARS, 100000), 500, 200000),
+  webFetchMaxResponseBytes: clampNumber(parseInteger(process.env.WEB_FETCH_MAX_RESPONSE_BYTES, 5000000), 1024, 16 * 1024 * 1024),
   webSearchMcpTimeoutMs: parseInteger(process.env.WEB_SEARCH_MCP_TIMEOUT_MS, 25000),
   webSearchAutoFetchMaxPages: parseInteger(
     process.env.WEB_SEARCH_AUTO_FETCH_MAX_PAGES,
@@ -408,18 +428,17 @@ const config = {
   chatRequireAt: parseBoolean(process.env.CHAT_REQUIRE_AT, true),
   chatCooldownSeconds: parseInteger(process.env.CHAT_COOLDOWN_SECONDS, 3),
   ambientChatEnabled: parseBoolean(process.env.AMBIENT_CHAT_ENABLED, true),
-  ambientChatProbability: clampNumber(parseNumber(process.env.AMBIENT_CHAT_PROBABILITY, 0.08), 0, 1),
   ambientChatCooldownSeconds: parseInteger(process.env.AMBIENT_CHAT_COOLDOWN_SECONDS, 60),
   ambientChatIdleSeconds: parseInteger(process.env.AMBIENT_CHAT_IDLE_SECONDS, 60),
   ambientChatInstantMaxMessages: clampNumber(
-    parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, 100),
+    parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
     1,
-    100,
+    MAX_GROUP_CONTEXT_MESSAGES,
   ),
   ambientChatIdleMaxMessages: clampNumber(
-    parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, 100),
+    parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
     1,
-    100,
+    MAX_GROUP_CONTEXT_MESSAGES,
   ),
   ambientChatContextSeconds: clampNumber(
     parseInteger(process.env.AMBIENT_CHAT_CONTEXT_SECONDS, 7200),
@@ -427,12 +446,23 @@ const config = {
     86400,
   ),
   ambientChatTimeoutMs: parseInteger(process.env.AMBIENT_CHAT_TIMEOUT_MS, 30000),
+  ambientChatJudgeTimeoutMs: clampNumber(
+    parseInteger(process.env.AMBIENT_CHAT_JUDGE_TIMEOUT_MS, 10000), 1000, 60000,
+  ),
+  ambientChatJudgeMaxOutputTokens: clampNumber(
+    parseInteger(process.env.AMBIENT_CHAT_JUDGE_MAX_OUTPUT_TOKENS, 64), 32, 512,
+  ),
+  ambientChatJudgePrompt: process.env.AMBIENT_CHAT_JUDGE_PROMPT || DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
   ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 180),
   ambientChatSystemPrompt:
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||
     DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
-  chatMaxHistoryMessages: parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, 16),
-  chatMaxContextChars: parseInteger(process.env.CHAT_MAX_CONTEXT_CHARS, 12000),
+  chatMaxHistoryMessages: clampNumber(
+    parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
+    2,
+    MAX_GROUP_CONTEXT_MESSAGES,
+  ),
+  chatMaxContextChars: parseInteger(process.env.CHAT_MAX_CONTEXT_CHARS, 64000),
   chatSessionTtlMinutes: parseOptionalInteger(process.env.CHAT_SESSION_TTL_MINUTES, 120),
 };
 

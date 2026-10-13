@@ -1,0 +1,38 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "revision": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+    },
+    {
+      "path": "packages/web/web-search-deepseek/src/provider.ts",
+      "sha256": "525e23d15f735c7508d10f29e5ee8c79285ad45eda2499394cdcb2716ea3e86e"
+    },
+    {
+      "path": "packages/web/tool-web/src/search.ts",
+      "sha256": "7fa69d836cf682f0a6a3854f90e91cf4f746d90c91881fe92d11aeed5c66a2ee"
+    },
+    {
+      "path": "packages/web/tool-web/src/fetch.ts",
+      "sha256": "dc192e9b26d4114704be77e3ce1cffd10c8b2cef611ff0f1b7455f4ba84c3ab0"
+    },
+    {
+      "path": "packages/web/tool-web/src/trust.ts",
+      "sha256": "3d35bb98ca3b29a393a733fd19142bf3b4a58cf61e4c70ba475def0203e89061"
+    },
+    {
+      "path": "packages/web/web-fetch-http/src/policy.ts",
+      "sha256": "dd53d2c6d462e53d891da289e5595ebb0563385ec07c6339e6d8ba3a8f38373a"
+    },
+    {
+      "path": "packages/web/web-fetch-http/src/network.ts",
+      "sha256": "e4d2f6091fbda36e19297ee67b45da44d171cf1b2177aef2b1f9175c75e1faf3"
+    },
+    {
+      "path": "packages/web/web-fetch-http/src/provider.ts",
+      "sha256": "f7f291e08f0650b860d23af496327468b2a4f74b4d0c5ecc95741b869d1e970d"
+    }
+  ]
+}

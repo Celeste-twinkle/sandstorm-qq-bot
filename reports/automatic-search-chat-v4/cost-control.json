@@ -1,0 +1,510 @@
+{
+  "model": "deepseek-flash",
+  "temperature": 0.9,
+  "thinking": false,
+  "context": [
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-0",
+      "timestamp": 1,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-1",
+      "timestamp": 2,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-2",
+      "timestamp": 3,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-3",
+      "timestamp": 4,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-4",
+      "timestamp": 5,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-5",
+      "timestamp": 6,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-6",
+      "timestamp": 7,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "周末再拆开看看吧",
+      "userId": "阿泽",
+      "messageId": "game-update-7",
+      "timestamp": 8,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-8",
+      "timestamp": 9,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-9",
+      "timestamp": 10,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-10",
+      "timestamp": 11,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-11",
+      "timestamp": 12,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-12",
+      "timestamp": 13,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-13",
+      "timestamp": 14,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-14",
+      "timestamp": 15,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "周末再拆开看看吧",
+      "userId": "阿泽",
+      "messageId": "game-update-15",
+      "timestamp": 16,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-16",
+      "timestamp": 17,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-17",
+      "timestamp": 18,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-18",
+      "timestamp": 19,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-19",
+      "timestamp": 20,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-20",
+      "timestamp": 21,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-21",
+      "timestamp": 22,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-22",
+      "timestamp": 23,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "周末再拆开看看吧",
+      "userId": "阿泽",
+      "messageId": "game-update-23",
+      "timestamp": 24,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-24",
+      "timestamp": 25,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-25",
+      "timestamp": 26,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-26",
+      "timestamp": 27,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-27",
+      "timestamp": 28,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-28",
+      "timestamp": 29,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-29",
+      "timestamp": 30,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-30",
+      "timestamp": 31,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "周末再拆开看看吧",
+      "userId": "阿泽",
+      "messageId": "game-update-31",
+      "timestamp": 32,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-32",
+      "timestamp": 33,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-33",
+      "timestamp": 34,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-34",
+      "timestamp": 35,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-35",
+      "timestamp": 36,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-36",
+      "timestamp": 37,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-37",
+      "timestamp": 38,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-38",
+      "timestamp": 39,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "周末再拆开看看吧",
+      "userId": "阿泽",
+      "messageId": "game-update-39",
+      "timestamp": 40,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "明天要是下雨我就不出门了",
+      "userId": "小林",
+      "messageId": "game-update-40",
+      "timestamp": 41,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "楼下那家面馆今天居然没开",
+      "userId": "阿泽",
+      "messageId": "game-update-41",
+      "timestamp": 42,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "又白跑一趟，看来晚饭得换一家。",
+      "userId": "",
+      "messageId": "game-update-42",
+      "timestamp": 43,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "我键盘的空格键又开始响了",
+      "userId": "小林",
+      "messageId": "game-update-43",
+      "timestamp": 44,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "你昨天不是刚修过吗",
+      "userId": "阿泽",
+      "messageId": "game-update-44",
+      "timestamp": 45,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "修完安静了半天",
+      "userId": "小林",
+      "messageId": "game-update-45",
+      "timestamp": 46,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "这维修有效期有点短。",
+      "userId": "",
+      "messageId": "game-update-46",
+      "timestamp": 47,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "小林",
+      "text": "好不容易下班了，终于能打一把",
+      "userId": "小林",
+      "messageId": "game-update-47",
+      "timestamp": 48,
+      "images": []
+    },
+    {
+      "role": "assistant",
+      "senderName": "Bot",
+      "text": "结果刚开游戏就被更新挡在门外了。",
+      "userId": "",
+      "messageId": "game-update-48",
+      "timestamp": 49,
+      "images": []
+    },
+    {
+      "role": "user",
+      "senderName": "阿泽",
+      "text": "我就半小时能玩，它给我整了个30G更新",
+      "userId": "阿泽",
+      "messageId": "game-update-49",
+      "timestamp": 50,
+      "images": []
+    }
+  ],
+  "notes": "Same 50-message input and final tone prompt. Two actual requests, one per setting; this isolates input overhead, not subjective quality or average latency.",
+  "variants": [
+    {
+      "webSearch": false,
+      "reply": "半小时全交代在进度条上了，这波血亏。",
+      "captures": [
+        {
+          "usage": {
+            "prompt_tokens": 1645,
+            "completion_tokens": 13,
+            "total_tokens": 1658,
+            "prompt_tokens_details": {
+              "cached_tokens": 1408
+            },
+            "prompt_cache_hit_tokens": 1408,
+            "prompt_cache_miss_tokens": 237
+          },
+          "thinking": "disabled",
+          "tools": false,
+          "latencyMs": 1020,
+          "finishReason": "stop"
+        }
+      ]
+    },
+    {
+      "webSearch": "auto",
+      "reply": "半小时只够看进度条爬一半了。",
+      "captures": [
+        {
+          "usage": {
+            "prompt_tokens": 2325,
+            "completion_tokens": 10,
+            "total_tokens": 2335,
+            "prompt_tokens_details": {
+              "cached_tokens": 1024
+            },
+            "prompt_cache_hit_tokens": 1024,
+            "prompt_cache_miss_tokens": 1301
+          },
+          "thinking": "disabled",
+          "tools": true,
+          "latencyMs": 822,
+          "finishReason": "stop"
+        }
+      ]
+    }
+  ],
+  "firstRequestInputOverhead": {
+    "withoutAuto": 1645,
+    "withAuto": 2325,
+    "extraTokens": 680,
+    "percent": 41.33738601823708
+  }
+}

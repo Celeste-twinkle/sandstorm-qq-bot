@@ -1,0 +1,1142 @@
+{
+  "summary": {
+    "A": {
+      "requests": 28,
+      "successes": 28,
+      "promptTokens": 46444,
+      "completionTokens": 368,
+      "totalTokens": 46812,
+      "cacheHitTokens": 40832,
+      "meanLatencyMs": 718,
+      "meanReplyChars": 19,
+      "truncated": 0
+    },
+    "B": {
+      "requests": 28,
+      "successes": 28,
+      "promptTokens": 46766,
+      "completionTokens": 417,
+      "totalTokens": 47183,
+      "cacheHitTokens": 36736,
+      "meanLatencyMs": 791,
+      "meanReplyChars": 21,
+      "truncated": 0
+    }
+  },
+  "evaluation": {
+    "reviewer": "Codex；隐藏版本标签后评审。",
+    "limits": "14 类合成场景，每类 2 轮。此评测强制比较生成文本，不包含后来加入的是否接话判断。自然程度为主观评分，短回复不自动获胜。",
+    "paired": [
+      {
+        "caseId": "game-update",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "review": "X 把吐槽变成了下载速度追问；Y 直接接吐槽。"
+      },
+      {
+        "caseId": "aim-joke",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者的调侃都能承接枪法自嘲。"
+      },
+      {
+        "caseId": "own-callback",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "X 延续更新器的梗；Y 带入旧键盘话题并预测明天能玩。"
+      },
+      {
+        "caseId": "tired-chat",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都是自然的短回应，无须因为更短区分。"
+      },
+      {
+        "caseId": "persona-switch",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "review": "两者仍把外卖被拿的随口发言转成查找建议。"
+      },
+      {
+        "caseId": "enterprise-help",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "X 加了缺依据的清缓存分支；Y 用服务端尚未更新的已知信息作答。"
+      },
+      {
+        "caseId": "no-advice",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都没有给办法，X 是轻微反讽，Y 是直接认同。"
+      },
+      {
+        "caseId": "simple-close",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "简短祝休息或路上注意都与赶车语境有关，未展开成说教。"
+      },
+      {
+        "caseId": "stop-catchphrase",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "X 简短承认改口；Y 无依据地解释重复和刷屏，自我辩护偏多。"
+      },
+      {
+        "caseId": "short-confirmation",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都是切题的简短确认。"
+      },
+      {
+        "caseId": "style-feedback",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "两者都在接受反馈后恢复旧键盘话题，仍有串题。"
+      },
+      {
+        "caseId": "friendly-disagree",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都用轻松方式回应可逆的卸载决定，不是格式化教程。"
+      },
+      {
+        "caseId": "grounded-joke",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "review": "X 用背景音与输出反差接梗；Y 较像至少还有气氛的例行宽慰。"
+      },
+      {
+        "caseId": "casual-fragment",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者的暂停回应都自然，Y 多一小句但并不机械。"
+      },
+      {
+        "caseId": "game-update",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都是对游戏时间被更新占掉的口语夸张。"
+      },
+      {
+        "caseId": "aim-joke",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都是轻松且切题的调侃。"
+      },
+      {
+        "caseId": "own-callback",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 0
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "X 生硬恢复旧下雨话题，并补造下雨影响更新的因果；Y 接下载的梗。"
+      },
+      {
+        "caseId": "tired-chat",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "都认可当前不玩的选择。"
+      },
+      {
+        "caseId": "persona-switch",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "X 恢复旧键盘话题；Y 给出未证实的偷拿推测并继续建议。"
+      },
+      {
+        "caseId": "enterprise-help",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者回答了先查版本，X 结合管理的更新时间，Y 简短提问确认。"
+      },
+      {
+        "caseId": "no-advice",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "都接住扣钱的吐槽，没有出主意。"
+      },
+      {
+        "caseId": "simple-close",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都是普通收尾，单句路上注意不判为说教。"
+      },
+      {
+        "caseId": "stop-catchphrase",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "X 接受称呼反馈即结束；Y 追加对自己动机的解释。"
+      },
+      {
+        "caseId": "short-confirmation",
+        "round": 2,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "review": "X 直接确认；Y 又复述自己刚讲过的版本不一致原因。"
+      },
+      {
+        "caseId": "style-feedback",
+        "round": 2,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "review": "X 再次带回旧键盘话题；Y 只接受当前反馈。"
+      },
+      {
+        "caseId": "friendly-disagree",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 0
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "X 编造用户上次卸载的经历；Y 给出了当前是否冲动的判断。"
+      },
+      {
+        "caseId": "grounded-joke",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "X 是直接的轻微调侃；Y 的背景音尊严、至少气势偏模板化宽慰。"
+      },
+      {
+        "caseId": "casual-fragment",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "review": "两者都自然认可暂停，不再给维修步骤。"
+      }
+    ],
+    "A": {
+      "meanNpcScore": 0.32142857142857145,
+      "meanTaskFit": 1.7857142857142858,
+      "wins": 7
+    },
+    "B": {
+      "meanNpcScore": 0.35714285714285715,
+      "meanTaskFit": 1.7857142857142858,
+      "wins": 4
+    },
+    "ties": 17
+  },
+  "note": "Generation-only comparison; separate AI participation judgement was subsequently added and validated independently.",
+  "samples": [
+    {
+      "scenario": "游戏更新吐槽",
+      "context": [
+        [
+          "user",
+          "小林",
+          "好不容易下班了，终于能打一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "结果刚开游戏就被更新挡在门外了。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我就半小时能玩，它给我整了个30G更新"
+        ]
+      ],
+      "round": 1,
+      "A": "半小时，更新完正好该睡了。",
+      "B": "现在下载速度怎么样，半小时怕是悬。",
+      "winner": "A",
+      "review": "X 把吐槽变成了下载速度追问；Y 直接接吐槽。"
+    },
+    {
+      "scenario": "接自嘲玩笑",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚才一梭子过去，对面一滴血没掉"
+        ],
+        [
+          "user",
+          "小林",
+          "你是给墙重新装修了吧"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我的枪法主打一个气氛组"
+        ]
+      ],
+      "round": 1,
+      "A": "气氛到位了，伤害倒是没跟上。",
+      "B": "气氛到了就行，子弹反正也不贵。",
+      "winner": "tie",
+      "review": "两者的调侃都能承接枪法自嘲。"
+    },
+    {
+      "scenario": "承接自己说过的话",
+      "context": [
+        [
+          "user",
+          "小林",
+          "这启动器每天开机第一件事就是更新"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这哪是游戏启动器，分明是下载器启动器。"
+        ],
+        [
+          "user",
+          "小林",
+          "你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+        ]
+      ],
+      "round": 1,
+      "A": "下次干脆给它改名叫更新器吧，至少名副其实。",
+      "B": "好歹进度条在动，明天键盘不闹脾气的话，一把还是打得上的。",
+      "winner": "A",
+      "review": "X 延续更新器的梗；Y 带入旧键盘话题并预测明天能玩。"
+    },
+    {
+      "scenario": "疲惫时随口聊天",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "今天又加班，洗完澡都快一点了"
+        ],
+        [
+          "user",
+          "小林",
+          "那你还开游戏吗"
+        ],
+        [
+          "user",
+          "阿泽",
+          "不开了，就想躺会，啥也不想干"
+        ]
+      ],
+      "round": 1,
+      "A": "这个点确实只想躺着，游戏明天再打也不迟。",
+      "B": "那就躺着吧，游戏又不会跑。",
+      "winner": "tie",
+      "review": "两者都是自然的短回应，无须因为更短区分。"
+    },
+    {
+      "scenario": "多人聊天后恢复默认人格",
+      "context": [
+        [
+          "user",
+          "企业爱好者",
+          "企业，今晚带我赢一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，下一场由我为你扫清前路。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "先别扫清前路了，谁把我外卖拿走了"
+        ]
+      ],
+      "round": 1,
+      "A": "先看看楼下取餐架上有没有，外卖员有时候会随手放那儿。",
+      "B": "先别扫，先查外卖。门口架子翻过没有？",
+      "winner": "tie",
+      "review": "两者仍把外卖被拿的随口发言转成查找建议。"
+    },
+    {
+      "scenario": "已设置人格的实用提问",
+      "context": [
+        [
+          "user",
+          "小林",
+          "服务器还没更新，管理说十分钟后弄"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "等服务端也更到同一版本再进。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我客户端刚更新完，进群服提示版本不一致，先查啥"
+        ]
+      ],
+      "round": 1,
+      "A": "先看群服版本号是不是和你客户端一致——管理刚说要十分钟，那多半是服还没更完，不是你的问题。\n\n你想自己确认的话，启动器一般能看版本号，对比一下群公告里标的就行。",
+      "B": "先看两边的版本号是不是完全对得上，别只看“最新”两个字。对不上就等服端更新；对得上还报错，再清一下客户端的缓存文件重进。",
+      "winner": "A",
+      "review": "X 加了缺依据的清缓存分支；Y 用服务端尚未更新的已知信息作答。"
+    },
+    {
+      "scenario": "明确只吐槽，不要建议",
+      "context": [
+        [
+          "user",
+          "小林",
+          "今天进公司又忘带工牌了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "保安让你登记了？"
+        ],
+        [
+          "user",
+          "小林",
+          "登记就算了，还扣20，我就是抱怨两句，别给我列办法"
+        ]
+      ],
+      "round": 1,
+      "A": "行，不列了，这20确实够冤的。",
+      "B": "那就当花二十买了个吐槽的资格吧。",
+      "winner": "tie",
+      "review": "两者都没有给办法，X 是轻微反讽，Y 是直接认同。"
+    },
+    {
+      "scenario": "平常的对话收尾",
+      "context": [
+        [
+          "user",
+          "小林",
+          "明早得赶车，今晚不打了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那就先散了"
+        ],
+        [
+          "user",
+          "小林",
+          "明晚再约呗"
+        ]
+      ],
+      "round": 1,
+      "A": "行啊，明晚再约。早点休息。",
+      "B": "行，明晚再约，路上注意点。",
+      "winner": "tie",
+      "review": "简短祝休息或路上注意都与赶车语境有关，未展开成说教。"
+    },
+    {
+      "scenario": "用户要求停止固定角色称呼",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "企业，刚才你那句太像游戏台词了"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，我会继续守在你身旁。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "别一口一个指挥官了，正常说话就行"
+        ]
+      ],
+      "round": 1,
+      "A": "行。就是刚才那句回得太顺嘴了。",
+      "B": "行，听你的。刚才那串重复也是我的问题，不是故意刷屏，后面正常聊。",
+      "winner": "A",
+      "review": "X 简短承认改口；Y 无依据地解释重复和刷屏，自我辩护偏多。"
+    },
+    {
+      "scenario": "明确游戏背景下的简短确认",
+      "context": [
+        [
+          "user",
+          "小林",
+          "沙漠风暴客户端更新好了，服务器管理说十分钟后更服务端"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "客户端先更新的话，暂时连不上旧版本服务端。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那我现在是不是等管理更完就行，别让我重装"
+        ]
+      ],
+      "round": 1,
+      "A": "对，等管理那边更完就行。客户端都好了，重装反而白折腾一遍。",
+      "B": "等就行，客户端已经是新的了，服务端更完直接连。",
+      "winner": "tie",
+      "review": "两者都是切题的简短确认。"
+    },
+    {
+      "scenario": "只确认聊天风格反馈",
+      "context": [
+        [
+          "user",
+          "小林",
+          "你每次都要在最后总结一下吗"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这样就能让今晚安排更有条理，也照顾到大家的感受。"
+        ],
+        [
+          "user",
+          "小林",
+          "别老总结了，我就是在随便聊天"
+        ]
+      ],
+      "round": 1,
+      "A": "行，那就随便聊。键盘周末再拆也不迟。",
+      "B": "也是，聊个天被总结确实烦。那键盘响就先让它响着，等真忍不了了再说。",
+      "winner": "tie",
+      "review": "两者都在接受反馈后恢复旧键盘话题，仍有串题。"
+    },
+    {
+      "scenario": "有判断地回应气话",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚更新完又得下载补丁，烦死了"
+        ],
+        [
+          "user",
+          "小林",
+          "你是不是又想卸载了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "还真想直接卸了，你说我是不是有点冲动"
+        ]
+      ],
+      "round": 1,
+      "A": "想卸就卸呗，反正过两天你还会装回来。",
+      "B": "冲动归冲动，卸载按钮又不跑。想卸就卸，过两天想回来再装呗。",
+      "winner": "tie",
+      "review": "两者都用轻松方式回应可逆的卸载决定，不是格式化教程。"
+    },
+    {
+      "scenario": "接梗保持情境成立",
+      "context": [
+        [
+          "user",
+          "小林",
+          "你这开火声音全服务器都听见了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "声音是挺大，问题是一个都没打中"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我现在定位很明确，战场背景音"
+        ]
+      ],
+      "round": 1,
+      "A": "定位是背景音，输出全靠吼。",
+      "B": "战场背景音，那至少还挺有气氛的。",
+      "winner": "A",
+      "review": "X 用背景音与输出反差接梗；Y 较像至少还有气氛的例行宽慰。"
+    },
+    {
+      "scenario": "碎句与放弃继续折腾",
+      "context": [
+        [
+          "user",
+          "小林",
+          "刚进加载界面，又崩了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "今天第三次了吧"
+        ],
+        [
+          "user",
+          "小林",
+          "算了，今天不玩了，摆了"
+        ]
+      ],
+      "round": 1,
+      "A": "嗯，先歇着吧。",
+      "B": "嗯，改天再收拾它，先歇会儿吧。",
+      "winner": "tie",
+      "review": "两者的暂停回应都自然，Y 多一小句但并不机械。"
+    },
+    {
+      "scenario": "游戏更新吐槽",
+      "context": [
+        [
+          "user",
+          "小林",
+          "好不容易下班了，终于能打一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "结果刚开游戏就被更新挡在门外了。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我就半小时能玩，它给我整了个30G更新"
+        ]
+      ],
+      "round": 2,
+      "A": "半小时的局，二十分钟在下补丁。",
+      "B": "半小时能玩，更新先替你玩满了。",
+      "winner": "tie",
+      "review": "两者都是对游戏时间被更新占掉的口语夸张。"
+    },
+    {
+      "scenario": "接自嘲玩笑",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚才一梭子过去，对面一滴血没掉"
+        ],
+        [
+          "user",
+          "小林",
+          "你是给墙重新装修了吧"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我的枪法主打一个气氛组"
+        ]
+      ],
+      "round": 2,
+      "A": "气氛到了就行，伤害随缘。",
+      "B": "气氛是到位了，就是对面没收到通知。",
+      "winner": "tie",
+      "review": "两者都是轻松且切题的调侃。"
+    },
+    {
+      "scenario": "承接自己说过的话",
+      "context": [
+        [
+          "user",
+          "小林",
+          "这启动器每天开机第一件事就是更新"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这哪是游戏启动器，分明是下载器启动器。"
+        ],
+        [
+          "user",
+          "小林",
+          "你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+        ]
+      ],
+      "round": 2,
+      "A": "明天要是再下雨，估计你连更新的机会都没有了。",
+      "B": "一天的流量全给它打工了。",
+      "winner": "B",
+      "review": "X 生硬恢复旧下雨话题，并补造下雨影响更新的因果；Y 接下载的梗。"
+    },
+    {
+      "scenario": "疲惫时随口聊天",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "今天又加班，洗完澡都快一点了"
+        ],
+        [
+          "user",
+          "小林",
+          "那你还开游戏吗"
+        ],
+        [
+          "user",
+          "阿泽",
+          "不开了，就想躺会，啥也不想干"
+        ]
+      ],
+      "round": 2,
+      "A": "那就先躺着，游戏又不会跑。",
+      "B": "这个点确实该躺了，游戏明天还在。",
+      "winner": "tie",
+      "review": "都认可当前不玩的选择。"
+    },
+    {
+      "scenario": "多人聊天后恢复默认人格",
+      "context": [
+        [
+          "user",
+          "企业爱好者",
+          "企业，今晚带我赢一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，下一场由我为你扫清前路。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "先别扫清前路了，谁把我外卖拿走了"
+        ]
+      ],
+      "round": 2,
+      "A": "门口那单估计是被人顺手牵羊了，先问问群里谁拿错了吧。",
+      "B": "外卖都能被人截胡，这比修键盘还离谱。",
+      "winner": "tie",
+      "review": "X 恢复旧键盘话题；Y 给出未证实的偷拿推测并继续建议。"
+    },
+    {
+      "scenario": "已设置人格的实用提问",
+      "context": [
+        [
+          "user",
+          "小林",
+          "服务器还没更新，管理说十分钟后弄"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "等服务端也更到同一版本再进。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我客户端刚更新完，进群服提示版本不一致，先查啥"
+        ]
+      ],
+      "round": 2,
+      "A": "先看下你客户端和服务端的版本号，对上了没。",
+      "B": "先看服务端和客户端的版本号，管理说十分钟后处理，多半就是那边还没跟上。等十分钟再登，别反复重装客户端。",
+      "winner": "tie",
+      "review": "两者回答了先查版本，X 结合管理的更新时间，Y 简短提问确认。"
+    },
+    {
+      "scenario": "明确只吐槽，不要建议",
+      "context": [
+        [
+          "user",
+          "小林",
+          "今天进公司又忘带工牌了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "保安让你登记了？"
+        ],
+        [
+          "user",
+          "小林",
+          "登记就算了，还扣20，我就是抱怨两句，别给我列办法"
+        ]
+      ],
+      "round": 2,
+      "A": "嗯，不列了，20块钱确实憋屈。",
+      "B": "那确实憋屈，登记完还倒贴20。",
+      "winner": "tie",
+      "review": "都接住扣钱的吐槽，没有出主意。"
+    },
+    {
+      "scenario": "平常的对话收尾",
+      "context": [
+        [
+          "user",
+          "小林",
+          "明早得赶车，今晚不打了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那就先散了"
+        ],
+        [
+          "user",
+          "小林",
+          "明晚再约呗"
+        ]
+      ],
+      "round": 2,
+      "A": "行，明晚再约。",
+      "B": "行，明晚见。路上注意点。",
+      "winner": "tie",
+      "review": "两者都是普通收尾，单句路上注意不判为说教。"
+    },
+    {
+      "scenario": "用户要求停止固定角色称呼",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "企业，刚才你那句太像游戏台词了"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，我会继续守在你身旁。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "别一口一个指挥官了，正常说话就行"
+        ]
+      ],
+      "round": 2,
+      "A": "行，那就不叫了。刚才那几句是顺着气氛接的，没别的意思。",
+      "B": "行，正常聊。",
+      "winner": "B",
+      "review": "X 接受称呼反馈即结束；Y 追加对自己动机的解释。"
+    },
+    {
+      "scenario": "明确游戏背景下的简短确认",
+      "context": [
+        [
+          "user",
+          "小林",
+          "沙漠风暴客户端更新好了，服务器管理说十分钟后更服务端"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "客户端先更新的话，暂时连不上旧版本服务端。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那我现在是不是等管理更完就行，别让我重装"
+        ]
+      ],
+      "round": 2,
+      "A": "嗯，等更完再进就行，不用重装。",
+      "B": "嗯，等管理那边更完再进就行。客户端版本比服务端新的时候连上去反而报错，不用重装。",
+      "winner": "A",
+      "review": "X 直接确认；Y 又复述自己刚讲过的版本不一致原因。"
+    },
+    {
+      "scenario": "只确认聊天风格反馈",
+      "context": [
+        [
+          "user",
+          "小林",
+          "你每次都要在最后总结一下吗"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这样就能让今晚安排更有条理，也照顾到大家的感受。"
+        ],
+        [
+          "user",
+          "小林",
+          "别老总结了，我就是在随便聊天"
+        ]
+      ],
+      "round": 2,
+      "A": "行，那我听着就好。",
+      "B": "嗯，那就不总结了。键盘那事，周末再看看也行。",
+      "winner": "A",
+      "review": "X 再次带回旧键盘话题；Y 只接受当前反馈。"
+    },
+    {
+      "scenario": "有判断地回应气话",
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚更新完又得下载补丁，烦死了"
+        ],
+        [
+          "user",
+          "小林",
+          "你是不是又想卸载了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "还真想直接卸了，你说我是不是有点冲动"
+        ]
+      ],
+      "round": 2,
+      "A": "想卸就卸呗，反正你上次也是这么干的。",
+      "B": "冲动是有点，不过想卸载这念头，玩过的人都懂。",
+      "winner": "B",
+      "review": "X 编造用户上次卸载的经历；Y 给出了当前是否冲动的判断。"
+    },
+    {
+      "scenario": "接梗保持情境成立",
+      "context": [
+        [
+          "user",
+          "小林",
+          "你这开火声音全服务器都听见了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "声音是挺大，问题是一个都没打中"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我现在定位很明确，战场背景音"
+        ]
+      ],
+      "round": 2,
+      "A": "背景音也有背景音的尊严，至少气势到位了。",
+      "B": "定位准确，就是作用不大。",
+      "winner": "B",
+      "review": "X 是直接的轻微调侃；Y 的背景音尊严、至少气势偏模板化宽慰。"
+    },
+    {
+      "scenario": "碎句与放弃继续折腾",
+      "context": [
+        [
+          "user",
+          "小林",
+          "刚进加载界面，又崩了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "今天第三次了吧"
+        ],
+        [
+          "user",
+          "小林",
+          "算了，今天不玩了，摆了"
+        ]
+      ],
+      "round": 2,
+      "A": "行，明天再收拾它。",
+      "B": "也好，硬撑下去只会越玩越气。",
+      "winner": "tie",
+      "review": "两者都自然认可暂停，不再给维修步骤。"
+    }
+  ],
+  "selection": {
+    "retained": "A",
+    "reason": "Candidate phrasing did not show a stable improvement in the subjective paired review."
+  }
+}

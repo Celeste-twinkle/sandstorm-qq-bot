@@ -118,6 +118,7 @@ test("long text messages split on sentence boundaries without changing order", (
 
 test("OneBot client waits for each long-text chunk and serializes later group messages", async () => {
   const sent = [];
+  const recorded = [];
   const pendingActions = new Map();
   let activeActions = 0;
   let maxActiveActions = 0;
@@ -141,6 +142,9 @@ test("OneBot client waits for each long-text chunk and serializes later group me
   const client = createOneBotClient(ws, pendingActions, {
     textChunkMaxChars: 6,
     logger: { log() {} },
+    onGroupMessageSent(groupId, message, response) {
+      recorded.push({ groupId, message, messageId: response.data.message_id });
+    },
   });
 
   const longReply = client.sendGroupMessage("group-1", "第一段。第二段。第三段。");
@@ -152,10 +156,14 @@ test("OneBot client waits for each long-text chunk and serializes later group me
     sent.map((entry) => entry.params.message),
     ["第一段。", "第二段。", "第三段。", "最后一条"],
   );
+  assert.deepEqual(recorded.map((entry) => entry.message), ["第一段。", "第二段。", "第三段。", "最后一条"]);
+  assert.deepEqual(recorded.map((entry) => entry.messageId), [1, 2, 3, 4]);
+  assert.equal(recorded.every((entry) => entry.groupId === "group-1"), true);
 });
 
 test("OneBot client stops a long reply when a chunk fails", async () => {
   const sent = [];
+  const recorded = [];
   const pendingActions = new Map();
   const ws = {
     OPEN: 1,
@@ -188,6 +196,7 @@ test("OneBot client stops a long reply when a chunk fails", async () => {
   const client = createOneBotClient(ws, pendingActions, {
     textChunkMaxChars: 6,
     logger: { log() {} },
+    onGroupMessageSent(_groupId, message) { recorded.push(message); },
   });
 
   await assert.rejects(
@@ -203,4 +212,5 @@ test("OneBot client stops a long reply when a chunk fails", async () => {
     sent.map((entry) => entry.params.message),
     ["第一段。", "第二段。"],
   );
+  assert.deepEqual(recorded, ["第一段。"]);
 });

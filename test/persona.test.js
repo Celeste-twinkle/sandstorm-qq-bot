@@ -69,7 +69,7 @@ test("every selectable persona has a full Chinese profile and compact English pr
       prompt.includes(persona.maxAffection.promptCode),
       true,
     );
-    assert.equal(prompt.length < DEFAULT_AI_PERSONA_PROMPT.length, true);
+    assert.equal(prompt.length < 2000, true);
   }
 });
 

@@ -1,0 +1,42 @@
+{
+  "researchDate": "2026-10-13",
+  "approach": "阅读开源仓库的实际提示词和模板，借鉴职责划分与表达策略，用本项目自己的措辞实现，再进行真实 API 对照。没有引入第三方运行依赖。",
+  "sources": [
+    {
+      "repository": "Mai-with-u/MaiBot",
+      "commit": "6260d473780afefe58049899cdf051897c3dd06c",
+      "files": [
+        "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/retro_replyer_light.prompt",
+        "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/maisaka_replyer.prompt",
+        "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/learn_style.prompt"
+      ],
+      "observed": "回复模板把身份与表达风格分开，强调日常口语、简短、一次回应一个话题；语言风格学习排除自身发言。",
+      "adopted": "精简默认人格；明确从群成员观察语气，自身回复只承担对话记忆，不作为模仿风格的样本。"
+    },
+    {
+      "repository": "Him666233/astrbot_plugin_group_chat_plus",
+      "commit": "aa97e0e35a18733e73db753238dd2a3021446e42",
+      "files": [
+        "https://github.com/Him666233/astrbot_plugin_group_chat_plus/blob/aa97e0e35a18733e73db753238dd2a3021446e42/web/static/js/prompt-data.js",
+        "https://github.com/Him666233/astrbot_plugin_group_chat_plus/blob/aa97e0e35a18733e73db753238dd2a3021446e42/utils/reply_handler.py"
+      ],
+      "observed": "回复生成与是否回复的判断分开；回复提示突出当前发送者、当前消息与避免重复，不把内部取舍写进发言。",
+      "adopted": "缩短回复任务说明，维持当前消息与发送者归属，把长流程和逐条数字权重改成简短的时间顺序提示。"
+    },
+    {
+      "repository": "KroMiose/nekro-agent",
+      "commit": "ea7b90eb83bd80061b2a177510c27c957f7f980d",
+      "files": [
+        "https://github.com/KroMiose/nekro-agent/blob/ea7b90eb83bd80061b2a177510c27c957f7f980d/nekro_agent/services/agent/templates/j2_zh/persona.j2"
+      ],
+      "observed": "人设主要控制语气、情绪和交互方式，不能覆盖现实事实与证据边界。",
+      "adopted": "让角色感来自态度，避免用角色设定补造线下经历、人物行为、游戏背景和技术细节。"
+    }
+  ],
+  "implementation": [
+    "src/persona.js",
+    "src/ai.js",
+    "src/persona-commands.js"
+  ],
+  "validation": "10 类合成场景各 2 轮，共 40 次真实 DeepSeek 请求；原始群聊、模型、温度、非思考模式和输出上限保持相同，改变人格、表达和上下文提示文本。"
+}

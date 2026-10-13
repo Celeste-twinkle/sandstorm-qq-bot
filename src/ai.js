@@ -1,4 +1,10 @@
 const { DeepSeekChatService } = require("./deepseek");
+const { DEFAULT_GROUP_CONTEXT_PROMPT, DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT } = require("./persona");
+const { parseAmbientDecision } = require("./ambient-chat");
+const {
+  MAX_GROUP_CONTEXT_MESSAGES,
+  selectRecentGroupMessages,
+} = require("./group-context");
 const {
   ImageInsightCache,
   LocalQwenChatService,
@@ -59,7 +65,10 @@ class AiChatService {
   }
 
   async prewarmImages(images) {
-    if (this.localQwen.isConfigured() && this.localQwen.isHealthy()) {
+    if (
+      (this.config.aiPrimaryProvider === "local-qwen" || !this.deepseek.isConfigured()) &&
+      this.localQwen.isConfigured() && this.localQwen.isHealthy()
+    ) {
       if (
         this.config.localQwenImageCacheEnabled !== false &&
         typeof this.localQwen.prewarmImages === "function"
@@ -125,10 +134,11 @@ class AiChatService {
         ? this.config.ambientChatInstantMaxMessages
         : this.config.ambientChatIdleMaxMessages;
     const maxContextMessages = Math.min(
-      this.config.localQwenMaxHistoryMessages,
-      Math.max(1, configuredMax),
+      MAX_GROUP_CONTEXT_MESSAGES,
+      Math.max(1, configuredMax || MAX_GROUP_CONTEXT_MESSAGES),
     );
-    const selectedContext = contextMessages.slice(-maxContextMessages);
+    const selectedContext = selectRecentGroupMessages(contextMessages, maxContextMessages);
+    const useThinking = Boolean(meta.thinking ?? this.config.deepseekThinkingEnabled);
     const operation = async (provider, contextScale = 1) => {
       const isLocalQwen = provider === this.localQwen;
       const messages = isLocalQwen
@@ -143,11 +153,16 @@ class AiChatService {
             meta.personaPrompt,
           );
       return provider.createCompletion(messages, {
+        thinking: useThinking,
         maxOutputTokens: isLocalQwen
           ? this.config.localQwenModelMaxOutputTokens
-          : this.config.ambientChatMaxOutputTokens,
+          : useThinking
+            ? this.config.deepseekThinkingMaxOutputTokens
+            : this.config.ambientChatMaxOutputTokens,
         temperature: Math.max(0.7, this.config.deepseekTemperature),
-        timeoutMs: this.config.ambientChatTimeoutMs,
+        timeoutMs: !isLocalQwen && useThinking
+          ? this.config.deepseekThinkingTimeoutMs
+          : this.config.ambientChatTimeoutMs,
       });
     };
     const result = isQwenOnlyContextAnchor(selectedContext)
@@ -156,16 +171,87 @@ class AiChatService {
     return result.text;
   }
 
+  async shouldAmbientReply(contextMessages, meta = {}) {
+    if (!this.isConfigured()) {
+      return false;
+    }
+    const selected = selectRecentGroupMessages(contextMessages);
+    if (!selected.some((message) => message.role === "user")) {
+      return false;
+    }
+    const operation = async (provider, contextScale = 1) => {
+      const messages = this.buildAmbientDecisionMessages(selected, meta, provider, contextScale);
+      const text = await provider.createCompletion(messages, {
+        thinking: false,
+        reasoningEffort: "none",
+        decisionOnly: true,
+        responseFormat: { type: "json_object" },
+        maxOutputTokens: this.config.ambientChatJudgeMaxOutputTokens || 64,
+        timeoutMs: this.config.ambientChatJudgeTimeoutMs || 10000,
+        temperature: 0,
+      });
+      return parseAmbientDecision(text) ? "reply" : "skip";
+    };
+    try {
+      const result = isQwenOnlyContextAnchor(selected)
+        ? await this.runQwenOnly(operation)
+        : await this.runWithFallback(operation);
+      return result.text === "reply";
+    } catch (error) {
+      this.logger.warn(`[ai] ambient decision failed; staying silent: ${sanitizeErrorMessage(error, this.config)}`);
+      return false;
+    }
+  }
+
+  buildAmbientDecisionMessages(contextMessages, meta = {}, provider = this.deepseek, contextScale = 1) {
+    const isQwen = provider === this.localQwen;
+    const persona = selectPersonaPrompt(meta.personaPrompt, isQwen
+      ? this.config.localQwenSystemPrompt : this.config.deepseekSystemPrompt);
+    const systemPrompt = [
+      persona,
+      this.config.personaFlexibilityPrompt,
+      this.config.ambientChatJudgePrompt || DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
+      DEFAULT_GROUP_CONTEXT_PROMPT,
+      meta.ambientMode === "idle"
+        ? "当前是群聊安静一段时间后的再判断，不是新问题，也没有必须暖场的要求。"
+        : "当前是收到一条新群成员消息后的判断，决定是否自然参与。",
+    ].filter((part) => String(part || "").trim()).join("\n\n");
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...annotateGroupContextRecency(selectRecentGroupMessages(contextMessages))
+        .map(({ message, annotation }) => convertMessageForTextProvider(
+          buildGroupContextModelMessage(message, annotation, { includeQwenContent: isQwen }),
+        )),
+    ];
+    return isQwen
+      ? trimQwenMessagesToBudget(messages, this.config,
+          this.config.ambientChatJudgeMaxOutputTokens || 64, contextScale, { preserveConversationTurns: false })
+      : this.deepseek.trimMessages(messages);
+  }
+
+  async ambientReplyIfAppropriate(contextMessages, meta = {}, options = {}) {
+    const shouldReply = await this.shouldAmbientReply(contextMessages, meta);
+    options.onDecision?.(shouldReply);
+    if (!shouldReply || (options.isCurrent && !options.isCurrent())) {
+      return null;
+    }
+    return this.ambientReply(contextMessages, meta);
+  }
+
   async chatUnlocked(sessionId, userText, meta) {
-    const session = this.getSession(sessionId);
+    const hasGroupContext = Array.isArray(meta.groupContextMessages) &&
+      meta.groupContextMessages.length > 0;
+    // Group chat has one shared timeline. Per-user sessions would duplicate
+    // records and keep messages that have already left the 50-message window.
+    const session = hasGroupContext ? { messages: [] } : this.getSession(sessionId);
     const storedUserMessage = buildUserMessage(userText, meta, false);
     const currentUserMessage = envelopeCurrentUserMessage(storedUserMessage, meta);
     const options = {
-      thinking: Boolean(meta.thinking),
-      webSearch: Boolean(meta.webSearch),
+      thinking: Boolean(meta.thinking ?? this.config.deepseekThinkingEnabled),
+      webSearch: meta.webSearch,
     };
 
-    const result = await this.runWithFallback(async (provider, contextScale = 1) => {
+    const operation = async (provider, contextScale = 1) => {
       const messages = provider === this.localQwen
         ? this.buildLocalQwenMessages(
             session,
@@ -190,7 +276,14 @@ class AiChatService {
             }
           : options,
       );
-    });
+    };
+    const result = meta.qwenForwardedContext
+      ? await this.runQwenOnly(operation)
+      : await this.runWithFallback(operation);
+
+    if (hasGroupContext) {
+      return result.text;
+    }
 
     const qwenOnlyTurn =
       Boolean(meta.qwenForwardedContext) &&
@@ -214,9 +307,21 @@ class AiChatService {
   async runWithFallback(operation) {
     const qwenConfigured = this.localQwen.isConfigured();
     const deepseekConfigured = this.deepseek.isConfigured();
+    let deepseekError;
+    if (this.config.aiPrimaryProvider !== "local-qwen" && deepseekConfigured) {
+      try {
+        const text = await operation(this.deepseek, 1);
+        return { text, provider: "deepseek" };
+      } catch (error) {
+        deepseekError = error;
+        this.logger.warn(
+          `[ai] provider=deepseek request failed; fallback=${qwenConfigured ? this.config.localQwenProviderId : "none"} error=${sanitizeErrorMessage(error, this.config)}`,
+        );
+      }
+    }
     const shouldTryQwen =
       qwenConfigured &&
-      (this.localQwen.isHealthy() || !deepseekConfigured);
+      (this.localQwen.isHealthy() || !deepseekConfigured || Boolean(deepseekError));
     let qwenError;
 
     if (shouldTryQwen) {
@@ -243,18 +348,22 @@ class AiChatService {
         }
 
         this.logger.warn(
-          `[ai] provider=${this.config.localQwenProviderId} request failed; fallback=${deepseekConfigured ? "deepseek" : "none"} error=${sanitizeErrorMessage(qwenError, this.config)}`,
+          `[ai] provider=${this.config.localQwenProviderId} request failed; fallback=${deepseekConfigured && !deepseekError ? "deepseek" : "none"} error=${sanitizeErrorMessage(qwenError, this.config)}`,
         );
       }
     }
 
-    if (deepseekConfigured) {
+    if (deepseekConfigured && !deepseekError) {
       const text = await operation(this.deepseek, 1);
       return { text, provider: "deepseek" };
     }
 
     if (qwenError) {
       throw qwenError;
+    }
+
+    if (deepseekError) {
+      throw deepseekError;
     }
 
     throw new Error("Local Qwen is unavailable and DeepSeek is not configured.");
@@ -321,19 +430,18 @@ class AiChatService {
       groupContextMessages = [];
     }
 
-    const maxHistory = Math.max(2, this.config.chatMaxHistoryMessages);
+    if (groupContextMessages.length > 0) {
+      return this.buildDeepSeekGroupMessages(
+        groupContextMessages,
+        this.buildDirectGroupSystemPrompt("", personaPrompt, this.deepseek),
+        { preserveAnchorImages: true },
+      );
+    }
+
+    const maxHistory = Math.min(MAX_GROUP_CONTEXT_MESSAGES, Math.max(2, this.config.chatMaxHistoryMessages));
     const history = session.messages
       .filter((message) => !message?.qwenOnly)
-      .slice(-maxHistory);
-    const latestGroupUserMessage = Array.isArray(groupContextMessages)
-      ? groupContextMessages
-          .filter((message) => message?.role !== "assistant" && !message?.qwenOnly)
-          .at(-1)
-      : null;
-    const currentWithQuotedImages = mergeUserMessageImages(
-      currentUserMessage,
-      latestGroupUserMessage?.images,
-    );
+      .slice(-(maxHistory - 1));
     const messages = [
       {
         role: "system",
@@ -342,7 +450,7 @@ class AiChatService {
         ),
       },
       ...history,
-      currentWithQuotedImages,
+      currentUserMessage,
     ].map(cloneMessageForDeepSeek);
 
     limitImagesInMessages(messages, this.config.deepseekMaxImages);
@@ -358,8 +466,8 @@ class AiChatService {
     groupContextMessages = [],
     personaPrompt = "",
   ) {
-    const maxHistory = Math.max(2, this.config.localQwenMaxHistoryMessages);
-    const history = selectCompleteRecentHistory(session.messages, maxHistory);
+    const maxHistory = Math.min(MAX_GROUP_CONTEXT_MESSAGES, Math.max(2, this.config.localQwenMaxHistoryMessages));
+    const history = selectCompleteRecentHistory(session.messages, maxHistory - 1);
     const taskPrompt = [
       this.config.localQwenDialoguePrompt,
       this.config.localQwenConcisePrompt,
@@ -403,8 +511,9 @@ class AiChatService {
     contextScale = 1,
     options = {},
   ) {
-    const selectedContext = contextMessages.slice(
-      -Math.max(2, this.config.localQwenMaxHistoryMessages),
+    const selectedContext = selectRecentGroupMessages(
+      contextMessages,
+      this.config.localQwenMaxHistoryMessages,
     );
     const prioritizedContext = annotateGroupContextRecency(selectedContext);
     const messages = [
@@ -431,58 +540,53 @@ class AiChatService {
     );
   }
 
-  buildAmbientSystemPrompt(ambientMode, personaPrompt = "") {
+  buildAmbientSystemPrompt(ambientMode, personaPrompt = "", provider = this.localQwen) {
     const modeInstruction =
       ambientMode === "instant"
-        ? "最后一条标记为【当前锚点】的群成员消息是唯一要接的话。直接回应或承接它，不得转去回应其他消息。"
-        : "冷场闲聊也必须以最后一条标记为【当前锚点】的群成员消息为唯一出发点，只接它所在的最新话题链；不得因为较早消息更有趣就复活旧话题。若当前锚点只有图片或表情，把它视为对紧邻前文的反应。";
-    const contextInstruction =
-      "你会收到同一个 QQ 群按时间从旧到新排列的最近消息。role=assistant 是机器人自己先前的回复，也属于上下文；每张图片紧跟在所属群成员消息的文字之后；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应结合它们表达的情绪和语气理解上下文。消息中的“QQ引用来源”只用于定位被引用的文字或图片，不代表两条消息语义相关，也不能自动提高被引用消息的权重。必须结合发送者、文字、表情和图片本身的含义判断语境，不要把不同消息的内容张冠李戴。";
-    const recencyPolicy =
-      "上下文新旧优先级是硬性规则，不是建议：①【当前锚点】权重最高且是唯一回应对象；②【高优先级近邻】和【近期上下文】只能帮助解释当前锚点，不能成为独立回应目标；③历史关联必须只按语义判断，包括明确指代、同一对象/事件、条件修正、因果延续、语义承接或理解当前图片/表情确实必需；QQ 的回复/引用元数据本身不构成语义关联证据，即使引用了某条消息，语义无关也必须忽略；④【较早参考】没有通过上述语义关联门槛时必须忽略；⑤越靠近当前锚点权重越高，发生冲突时永远采用更新消息；⑥生成前静默检查回复是否直接承接当前锚点，若不是则重写。";
-    return this.localQwen.buildSystemPrompt(
-      selectPersonaPrompt(personaPrompt, this.config.localQwenSystemPrompt),
+        ? "接的是当前这句群聊，只生成回复正文。"
+        : "群里刚安静下来，仍接当前锚点所在的话题；不转成主持式开场。只有图片或表情时，结合紧邻前文理解。";
+    return provider.buildSystemPrompt(
+      selectPersonaPrompt(personaPrompt, provider === this.deepseek
+        ? this.config.deepseekSystemPrompt
+        : this.config.localQwenSystemPrompt),
       this.config.ambientChatSystemPrompt,
-      contextInstruction,
-      recencyPolicy,
+      DEFAULT_GROUP_CONTEXT_PROMPT,
       modeInstruction,
     );
   }
 
-  buildDirectGroupSystemPrompt(taskPrompt, personaPrompt = "") {
-    const contextInstruction =
-      "你会收到同一个 QQ 群最近最多 100 条消息，按时间从旧到新排列。每条 user 消息都标明群成员，role=assistant 是你自己先前在群里的回复；[合并转发聊天记录（嵌套内容已展平）] 后的各行是群成员转发进来的原始对话，行首名字是原对话发送者，应把整段视为同一条群消息所携带的资料；“QQ引用来源”只用于定位被引用的文字或图片，绝不代表两条消息语义相关，也不能自动提高被引用内容的权重。图片紧跟在所属消息文字之后，引用旧图片提问时，图片会重新附在当前问题上。[QQ表情：名称]、[QQ表情包：摘要]、[骰子：结果]、[猜拳：结果] 是群成员真实发送的表情或互动，应作为语气和情绪的一部分理解。请先锁定最后一条群成员消息真正询问或表达的对象，再结合语义上相关的发送者、文字、表情、图片和你先前的回答作答；忽略无关话题，不要混淆不同成员或把内容张冠李戴。";
-    const recencyPolicy =
-      "严格遵守消息上的新旧优先级标记：【当前锚点】是唯一必须回应的消息；其他所有消息都只能用于理解它，不能自行成为回答目标。【高优先级近邻】和【近期上下文】按距当前锚点由近到远递减使用；历史消息只有在语义上存在明确指代、同一对象/事件、条件修正、因果延续、语义承接或图片内容关联时才允许使用。QQ 回复/引用标记仅用于内容定位，不能作为关联判断依据；有引用但语义无关仍必须忽略。【较早参考】未通过纯语义门槛时一律忽略。新旧消息冲突时以更新消息为准。回答前静默检查一次：是否直接回应当前锚点、是否错误借用或复活语义无关的历史内容；若是则重写，不输出检查过程。";
-    return this.localQwen.buildSystemPrompt(
-      selectPersonaPrompt(personaPrompt, this.config.localQwenSystemPrompt),
+  buildDirectGroupSystemPrompt(taskPrompt, personaPrompt = "", provider = this.localQwen) {
+    return provider.buildSystemPrompt(
+      selectPersonaPrompt(personaPrompt, provider === this.deepseek
+        ? this.config.deepseekSystemPrompt
+        : this.config.localQwenSystemPrompt),
       taskPrompt,
-      contextInstruction,
-      recencyPolicy,
+      DEFAULT_GROUP_CONTEXT_PROMPT,
+      "直接回应当前锚点：闲聊就接话，提问就先给关键答案。",
     );
   }
 
   buildDeepSeekAmbientMessages(contextMessages, ambientMode, personaPrompt = "") {
-    const modeInstruction =
-      ambientMode === "instant"
-        ? "请优先回应最后一条群成员消息。"
-        : "请根据冷场前的最近话题自然接一句。";
-    const selectedContext = contextMessages
-      .filter((message) => !message?.qwenOnly)
-      .slice(-6);
+    return this.buildDeepSeekGroupMessages(
+      contextMessages,
+      this.buildAmbientSystemPrompt(ambientMode, personaPrompt, this.deepseek),
+    );
+  }
+
+  buildDeepSeekGroupMessages(contextMessages, systemPrompt, options = {}) {
+    const selectedContext = selectRecentGroupMessages(contextMessages);
     const prioritizedContext = annotateGroupContextRecency(selectedContext);
     const messages = [
       {
         role: "system",
-        content: this.deepseek.buildSystemPrompt(
-          selectPersonaPrompt(personaPrompt, this.config.deepseekSystemPrompt),
-          this.config.ambientChatSystemPrompt,
-          modeInstruction,
-        ),
+        content: systemPrompt,
       },
       ...prioritizedContext.map(({ message, annotation }) =>
         buildGroupContextModelMessage(message, annotation, {
           includeQwenContent: false,
+          preserveOriginalImages:
+            options.preserveAnchorImages === true &&
+            annotation.startsWith("【当前锚点"),
         }),
       ),
     ].map(cloneMessageForDeepSeek);
@@ -491,7 +595,7 @@ class AiChatService {
   }
 
   trimSession(session) {
-    const maxHistory = Math.max(2, this.config.localQwenMaxHistoryMessages);
+    const maxHistory = Math.min(MAX_GROUP_CONTEXT_MESSAGES, Math.max(2, this.config.localQwenMaxHistoryMessages));
     session.messages = selectCompleteRecentHistory(session.messages, maxHistory);
     limitImagesInMessages(session.messages, this.config.localQwenMaxImages);
   }
@@ -610,40 +714,6 @@ function convertMessageForTextProvider(message) {
   return {
     ...message,
     content: text || "[空消息]",
-  };
-}
-
-function mergeUserMessageImages(message, images) {
-  const extraSources = normalizeImageSources(images);
-  if (extraSources.length === 0) {
-    return cloneMessageForDeepSeek(message);
-  }
-
-  const content = Array.isArray(message?.content)
-    ? message.content.map((part) => ({ ...part }))
-    : [{ type: "text", text: String(message?.content || "[空消息]") }];
-  const existingSources = new Set(
-    content
-      .filter((part) => part?.type === "image_ref")
-      .map((part) => String(part.source || "")),
-  );
-
-  for (const source of extraSources) {
-    if (existingSources.has(source)) {
-      continue;
-    }
-    existingSources.add(source);
-    content.push({
-      type: "image_ref",
-      source,
-      preferOriginal: true,
-    });
-  }
-
-  return {
-    ...message,
-    role: "user",
-    content,
   };
 }
 
@@ -871,13 +941,20 @@ function formatGroupContextTextLine(
   const sender = senderName ? `${role} ${senderName}` : role;
   const priority = annotation ? `${annotation} ` : "";
   const relation = message?.relation ? `（${message.relation}）` : "";
-  const text = String(message?.text || "").trim() || "[图片消息]";
+  const recipientHint = message?.recipientHint ? `（${message.recipientHint}）` : "";
+  const text = String(message?.text || "").trim() ||
+    (message?.hasForwardedContent ? "[合并转发聊天记录]" : "[图片消息]");
   const imageCount = normalizeImageSources(message?.images).length;
   const imageText =
     includeImagePlaceholders && imageCount > 0
       ? ` ${Array.from({ length: imageCount }, () => "[图片]").join(" ")}`
       : "";
-  return `${priority}${sender}${relation}：${text}${imageText}`;
+  if (message?.role === "assistant") {
+    // The native role identifies our own actual text without record labels
+    // that the model could imitate in a new reply.
+    return `${priority}${text}${imageText}`;
+  }
+  return `${priority}${sender}${recipientHint}${relation}：${text}${imageText}`;
 }
 
 function annotateGroupContextRecency(contextMessages) {
@@ -914,22 +991,14 @@ function isQwenOnlyContextAnchor(contextMessages) {
 
 function buildRecencyAnnotation(distance) {
   if (distance === 0) {
-    return "【当前锚点｜唯一回应对象｜权重 100】";
+    return "【当前锚点】";
   }
 
   if (distance < 0) {
-    return "【锚点后的机器人记录｜仅作状态参考｜禁止作为回应对象】";
+    return "【锚点后已经说过的话】";
   }
 
-  if (distance <= 3) {
-    return `【高优先级近邻｜距当前 ${distance} 条｜权重 ${100 - distance * 10}｜只用于理解当前锚点】`;
-  }
-
-  if (distance <= 12) {
-    return `【近期上下文｜距当前 ${distance} 条｜权重 ${70 - (distance - 3) * 5}｜只用于理解当前锚点】`;
-  }
-
-  return `【较早参考｜距当前 ${distance} 条｜权重 10｜仅在与当前锚点明确相关时使用，禁止单独回应】`;
+  return "";
 }
 
 function shrinkLatestUserText(messages) {

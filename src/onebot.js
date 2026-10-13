@@ -18,7 +18,7 @@ function normalizePath(path) {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-function createOneBotServer(config, onGroupMessage) {
+function createOneBotServer(config, onGroupMessage, onGroupMessageSent) {
   const server = http.createServer();
   const wsPath = normalizePath(config.wsPath);
   const wss = new WebSocketServer({ noServer: true });
@@ -49,6 +49,7 @@ function createOneBotServer(config, onGroupMessage) {
     const pendingActions = new Map();
     const client = createOneBotClient(ws, pendingActions, {
       textChunkMaxChars: config.oneBotTextChunkMaxChars,
+      onGroupMessageSent,
     });
     console.log(`[onebot] connected from ${remote}`);
 
@@ -72,7 +73,10 @@ function createOneBotServer(config, onGroupMessage) {
         return;
       }
 
-      if (payload.post_type !== "message" || payload.message_type !== "group") {
+      if (
+        !["message", "message_sent"].includes(payload.post_type) ||
+        payload.message_type !== "group"
+      ) {
         return;
       }
 
@@ -132,8 +136,9 @@ function createOneBotClient(ws, pendingActions, options = {}) {
             : [message];
 
         for (let index = 0; index < chunks.length; index += 1) {
+          let response;
           try {
-            await sendAction(
+            response = await sendAction(
               ws,
               "send_group_msg",
               {
@@ -148,6 +153,7 @@ function createOneBotClient(ws, pendingActions, options = {}) {
             error.deliveredChunks = index;
             throw error;
           }
+          await options.onGroupMessageSent?.(groupId, chunks[index], response);
         }
 
         if (chunks.length > 1) {
@@ -158,8 +164,8 @@ function createOneBotClient(ws, pendingActions, options = {}) {
       });
     },
     sendGroupMessageAndWait(groupId, message) {
-      return enqueueGroupSend(groupId, () =>
-        sendAction(
+      return enqueueGroupSend(groupId, async () => {
+        const response = await sendAction(
           ws,
           "send_group_msg",
           {
@@ -167,8 +173,10 @@ function createOneBotClient(ws, pendingActions, options = {}) {
             message,
           },
           pendingActions,
-        ),
-      );
+        );
+        await options.onGroupMessageSent?.(groupId, message, response);
+        return response;
+      });
     },
     async getMessage(messageId) {
       const response = await sendAction(

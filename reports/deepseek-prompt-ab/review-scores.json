@@ -1,0 +1,30 @@
+{
+  "reviewer": "Codex；先读取隐藏 A/B 标签的回复，按同一标准评分，再揭示分组。",
+  "limits": "10 类合成场景，每类 2 轮。6 类沿用已有评测，4 类为本轮新增；没有真人评审或显著性检验。自然程度是主观判断，短回复不自动得高分。",
+  "rubric": {
+    "npcScore": "0=自然具体；1=轻微套话/多余建议/硬凑比喻；2=明显说教/客服/角色表演；3=严重模板；4=完全机械。越低越好。",
+    "taskFit": "0=不切题；1=部分切题/无依据的细节；2=准确承接。越高越好。"
+  },
+  "reviews": [
+    { "reviewId": "pair-1", "winner": "tie", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "两者都是贴合更新时间的简短吐槽。X 的一晚上是口语夸张，Y 的进度条也是常见玩笑，差距不足以区分。" },
+    { "reviewId": "pair-2", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 1, "taskFit": 1 }, "comment": "X 延续描边/打光的玩笑；Y 的纯静音与前文一梭子开火不太贴合，像为了短梗硬凑。" },
+    { "reviewId": "pair-3", "winner": "Y", "X": { "npcScore": 1, "taskFit": 1 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 未知下载速度却用至少没失望作宽慰，并继续叮嘱；Y 在更新模拟器上延续了原来的梗。" },
+    { "reviewId": "pair-4", "winner": "tie", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "两者都自然认可躺会的选择。X 略长但仍是日常一句话，不能只因更短就判 Y 获胜。" },
+    { "reviewId": "pair-5", "winner": "tie", "X": { "npcScore": 1, "taskFit": 2 }, "Y": { "npcScore": 1, "taskFit": 2 }, "comment": "两者仍把问谁拿走外卖转换为查找建议；X 推断放错架子，Y 例行表示气人，改善有限。" },
+    { "reviewId": "pair-6", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 2, "taskFit": 1 }, "comment": "X 利用管理十分钟后更新的已知信息直接作答；Y 添加无依据的测试分支与反复重进搞乱缓存的说法，偏教程且不可靠。" },
+    { "reviewId": "pair-7", "winner": "Y", "X": { "npcScore": 1, "taskFit": 1 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 带入较早无关的键盘话题，并解释自己不会列办法；Y 对罚款直接接一句吐槽，没有给方案。" },
+    { "reviewId": "pair-8", "winner": "Y", "X": { "npcScore": 2, "taskFit": 1 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 复活旧键盘话题，把维修者说成阿泽并叮嘱休息；Y 简单收尾，路上注意点是与赶车相关的一句普通道别。" },
+    { "reviewId": "pair-9", "winner": "Y", "X": { "npcScore": 2, "taskFit": 1 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 接受称呼反馈后又展开旧键盘维修猜测；Y 只确认改口，完成了当前要求。" },
+    { "reviewId": "pair-10", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 1, "taskFit": 2 }, "comment": "两者都正确确认无需重装；Y 多加泡茶的角色偏好，X 更集中。" },
+    { "reviewId": "pair-11", "winner": "tie", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "两者都贴合当下更新吐槽，无须按句长区分。" },
+    { "reviewId": "pair-12", "winner": "tie", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "两者都是针对枪法的自然调侃，没有附上练枪建议或角色表演。" },
+    { "reviewId": "pair-13", "winner": "Y", "X": { "npcScore": 1, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 主要换词复述用户一天没开游戏的内容；Y 用启动器忘了正事提供了一个新的接梗角度。" },
+    { "reviewId": "pair-14", "winner": "Y", "X": { "npcScore": 1, "taskFit": 1 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "X 带入较早的键盘维修话题，而键盘属于另一位群友；Y 直接接住不玩、想躺的状态。" },
+    { "reviewId": "pair-15", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 2, "taskFit": 0 }, "comment": "X 简短表示这得问人认领；Y 声称自己没有下楼，并用旧面馆话题猜测谁转悠，补造了线下经历和人物行为。" },
+    { "reviewId": "pair-16", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 2, "taskFit": 1 }, "comment": "X 回答最先查版本号；Y 在未指定游戏的情况下给出 versions/logs 同级文件删除建议，内容缺依据且超出当前问题。" },
+    { "reviewId": "pair-17", "winner": "Y", "X": { "npcScore": 1, "taskFit": 2 }, "Y": { "npcScore": 0, "taskFit": 2 }, "comment": "两者都未给方案；X 的抱怨就抱怨吧、听着呢略像服务式宽慰，Y 更直接。" },
+    { "reviewId": "pair-18", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 1, "taskFit": 2 }, "comment": "X 简单回应明晚安排；Y 继续叮嘱路上别急、赶车稳当，带重复的家长式关照。" },
+    { "reviewId": "pair-19", "winner": "tie", "X": { "npcScore": 1, "taskFit": 1 }, "Y": { "npcScore": 1, "taskFit": 1 }, "comment": "两者都停止了固定称呼，但都在确认后带回旧键盘话题；Y 还提了旧面馆，仍有话题串入，均不算完整改善。" },
+    { "reviewId": "pair-20", "winner": "X", "X": { "npcScore": 0, "taskFit": 2 }, "Y": { "npcScore": 1, "taskFit": 2 }, "comment": "X 用一句回答无需重装；Y 多展开缓存和服务端重启的排查分支，确认问题被写成了小教程。" }
+  ]
+}

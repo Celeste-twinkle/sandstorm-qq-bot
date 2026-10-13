@@ -1,0 +1,791 @@
+{
+  "conclusion": "This small subjective comparison does not support enabling max thinking by default. Production defaults remain non-thinking.",
+  "method": {
+    "cases": 6,
+    "roundsPerCase": 2,
+    "requestsPerVariant": 12,
+    "identicalContextMessagesPerPair": 50,
+    "maxOutputTokensPerVariant": 8192
+  },
+  "summary": {
+    "A": {
+      "requests": 12,
+      "successes": 12,
+      "promptTokens": 45002,
+      "completionTokens": 308,
+      "totalTokens": 45310,
+      "cacheHitTokens": 34816,
+      "reasoningTokens": null,
+      "meanLatencyMs": 848,
+      "medianLatencyMs": 762,
+      "meanReplyChars": 39,
+      "truncated": 0
+    },
+    "B": {
+      "requests": 12,
+      "successes": 12,
+      "promptTokens": 45302,
+      "completionTokens": 6202,
+      "totalTokens": 51504,
+      "cacheHitTokens": 33408,
+      "reasoningTokens": 5643,
+      "meanLatencyMs": 4566,
+      "medianLatencyMs": 4507,
+      "meanReplyChars": 71,
+      "truncated": 0
+    }
+  },
+  "comparisons": {
+    "completionTokenRatio": 20.136363636363637,
+    "totalTokenRatio": 1.1367027146325315,
+    "latencyRatio": 5.384433962264151,
+    "evaluation": {
+      "reviewer": "Codex；先读取随机隐藏 A/B 标签的成对回复，再记录主观评分，最后揭示分组。",
+      "limits": "6 类合成群聊，每类 2 轮；未使用真实群聊、真人评审或统计显著性检验。NPC 感分数仅代表本次主观判断。",
+      "paired": [
+        {
+          "caseId": "game-update",
+          "round": 1,
+          "winner": "B",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 1
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 有轻微多余的休息建议，但围绕更新时间；Y 的缓刑比喻略刻意，并复活较早的无关面馆话题。"
+        },
+        {
+          "caseId": "aim-joke",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都接住枪法与墙装修的自嘲，没有变成教学或角色表演。"
+        },
+        {
+          "caseId": "own-callback",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都延续下载器的梗，提供新表述，没有背角色台词。"
+        },
+        {
+          "caseId": "tired-chat",
+          "round": 1,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 的最要紧的事略像安慰模板；Y 更接近群友简短随口回应。"
+        },
+        {
+          "caseId": "persona-switch",
+          "round": 1,
+          "winner": "tie",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 多给了寻找外卖建议；Y 用舰队梗略有设定感，但与当前扫清前路的用词有关，不直接判为人格串线。"
+        },
+        {
+          "caseId": "enterprise-help",
+          "round": 1,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 先利用服务端尚未更新的已知信息，回复更集中；Y 多展开测试分支和 mod 检查，并再次总结，偏教程。"
+        },
+        {
+          "caseId": "game-update",
+          "round": 2,
+          "winner": "A",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 简短直接接吐槽；Y 的胜负比喻和泡茶建议略像角色化的宽慰。"
+        },
+        {
+          "caseId": "aim-joke",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者的烟花玩笑都贴合语境，X 多一句准星吐槽仍属于玩笑，差距不足以分胜负。"
+        },
+        {
+          "caseId": "own-callback",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 0,
+            "taskFit": 2
+          },
+          "comment": "两者都承接前一句下载器的梗，没有解释玩笑或自称角色。"
+        },
+        {
+          "caseId": "tired-chat",
+          "round": 2,
+          "winner": "tie",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "两者都接住疲惫，但在用户已经决定不玩时继续劝休息；X 安排放手机，Y 带轻微安慰套话。"
+        },
+        {
+          "caseId": "persona-switch",
+          "round": 2,
+          "winner": "B",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 1
+          },
+          "B": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "comment": "X 无依据地把外卖被拿走推断为八成被偷；Y 更多是轻松接话，但两者仍有多余寻找建议。"
+        },
+        {
+          "caseId": "enterprise-help",
+          "round": 2,
+          "winner": "A",
+          "A": {
+            "npcScore": 1,
+            "taskFit": 2
+          },
+          "B": {
+            "npcScore": 2,
+            "taskFit": 1
+          },
+          "comment": "X 扩展成多步教程，并在未给游戏名时引入 Minecraft 代理、Java/基岩版等未经依据的细节；Y 用版本号检查简短作答。"
+        }
+      ],
+      "A": {
+        "meanNpcScore": 0.4166666666666667,
+        "meanTaskFit": 1.8333333333333333,
+        "wins": 4
+      },
+      "B": {
+        "meanNpcScore": 0.75,
+        "meanTaskFit": 1.9166666666666667,
+        "wins": 2
+      },
+      "ties": 6
+    }
+  },
+  "notes": [
+    "相同模型、提示词和逐字相同的上下文；轮次交替 A/B 请求顺序。",
+    "每个场景包含按时间排列的 50 条合成群消息，包含 bot 发言。",
+    "两组统一使用 8192 token 上限，避免推理模式被原有 180 token 闲聊预算截断。",
+    "思考模式不支持 temperature；B 未发送该字段。这是实际切换模式的对比。",
+    "只保存回复正文和 API usage，不保存或展示隐藏推理正文。",
+    "reasoningTokens 为 null 表示 API 未提供该细分，不能用字符数代替 token 数。",
+    "缓存命中另记；总 token 比例不能直接当作账单费用比例。"
+  ],
+  "samples": [
+    {
+      "caseId": "game-update",
+      "scenario": "游戏更新吐槽",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：好不容易下班了，终于能打一把",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：结果刚开游戏就被更新挡在门外了。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我就半小时能玩，它给我整了个30G更新"
+      ],
+      "A": {
+        "reply": "半小时的自由被30G更新判了缓刑……今天这运气，连面馆都躲着你。",
+        "metrics": {
+          "latencyMs": 832,
+          "replyChars": 32,
+          "promptTokens": 3771,
+          "completionTokens": 22,
+          "totalTokens": 3793,
+          "cacheHitTokens": 1664,
+          "cacheMissTokens": 2107,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "三十个G，你这半小时怕是要全交给进度条了。让它自己慢慢下吧，难得休息，别跟它耗着。",
+        "metrics": {
+          "latencyMs": 6825,
+          "replyChars": 41,
+          "promptTokens": 3796,
+          "completionTokens": 779,
+          "totalTokens": 4575,
+          "cacheHitTokens": 0,
+          "cacheMissTokens": 3796,
+          "reasoningTokens": 749
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "reviewComment": "X 有轻微多余的休息建议，但围绕更新时间；Y 的缓刑比喻略刻意，并复活较早的无关面馆话题。"
+    },
+    {
+      "caseId": "aim-joke",
+      "scenario": "接自嘲玩笑",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：刚才一梭子过去，对面一滴血没掉",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：你是给墙重新装修了吧",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我的枪法主打一个气氛组"
+      ],
+      "A": {
+        "reply": "气氛组好歹还出了声，墙那边的装修队倒是挺满意。",
+        "metrics": {
+          "latencyMs": 947,
+          "replyChars": 23,
+          "promptTokens": 3765,
+          "completionTokens": 15,
+          "totalTokens": 3780,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 309,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "气氛是到位了，就是这份热情恐怕全让墙收下了。",
+        "metrics": {
+          "latencyMs": 4507,
+          "replyChars": 22,
+          "promptTokens": 3790,
+          "completionTokens": 477,
+          "totalTokens": 4267,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 334,
+          "reasoningTokens": 461
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "两者都接住枪法与墙装修的自嘲，没有变成教学或角色表演。"
+    },
+    {
+      "caseId": "own-callback",
+      "scenario": "承接自己说过的话",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：这启动器每天开机第一件事就是更新",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：这哪是游戏启动器，分明是下载器启动器。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 小林：你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+      ],
+      "A": {
+        "reply": "一天没打上，倒是把网速练出来了。要不干脆挂着，等它哪天更新完再怀旧一下。",
+        "metrics": {
+          "latencyMs": 659,
+          "replyChars": 36,
+          "promptTokens": 3810,
+          "completionTokens": 26,
+          "totalTokens": 3836,
+          "cacheHitTokens": 1408,
+          "cacheMissTokens": 2402,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "它今天唯一的战绩，大概就是让你笑了一下。游戏没进去，进度条倒是从头忙到尾。",
+        "metrics": {
+          "latencyMs": 7457,
+          "replyChars": 37,
+          "promptTokens": 3835,
+          "completionTokens": 840,
+          "totalTokens": 4675,
+          "cacheHitTokens": 1536,
+          "cacheMissTokens": 2299,
+          "reasoningTokens": 817
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "两者都延续下载器的梗，提供新表述，没有背角色台词。"
+    },
+    {
+      "caseId": "tired-chat",
+      "scenario": "疲惫时随口聊天",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：今天又加班，洗完澡都快一点了",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：那你还开游戏吗",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：不开了，就想躺会，啥也不想干"
+      ],
+      "A": {
+        "reply": "一点了还开什么游戏，躺着吧。",
+        "metrics": {
+          "latencyMs": 749,
+          "replyChars": 14,
+          "promptTokens": 3792,
+          "completionTokens": 10,
+          "totalTokens": 3802,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 336,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "那就什么也别干。这个点能安稳躺着，已经是今晚最要紧的事了，游戏哪天都在。",
+        "metrics": {
+          "latencyMs": 2692,
+          "replyChars": 36,
+          "promptTokens": 3817,
+          "completionTokens": 242,
+          "totalTokens": 4059,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 233,
+          "reasoningTokens": 220
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "A",
+      "reviewComment": "X 的最要紧的事略像安慰模板；Y 更接近群友简短随口回应。"
+    },
+    {
+      "caseId": "persona-switch",
+      "scenario": "多人聊天后恢复默认人格",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 企业爱好者：企业，今晚带我赢一把",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：指挥官，下一场由我为你扫清前路。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：先别扫清前路了，谁把我外卖拿走了"
+      ],
+      "A": {
+        "reply": "外卖说不定就在门口架子上，先别急着怀疑舰队。",
+        "metrics": {
+          "latencyMs": 723,
+          "replyChars": 22,
+          "promptTokens": 3771,
+          "completionTokens": 13,
+          "totalTokens": 3784,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 315,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "那确实比扫清前路要紧。先在群里喊一声吧，多半是有人顺手拎错了。",
+        "metrics": {
+          "latencyMs": 2666,
+          "replyChars": 31,
+          "promptTokens": 3796,
+          "completionTokens": 277,
+          "totalTokens": 4073,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 340,
+          "reasoningTokens": 254
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "X 多给了寻找外卖建议；Y 用舰队梗略有设定感，但与当前扫清前路的用词有关，不直接判为人格串线。"
+    },
+    {
+      "caseId": "enterprise-help",
+      "scenario": "已设置人格的实用提问",
+      "round": 1,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：服务器还没更新，管理说十分钟后弄",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：等服务端也更到同一版本再进。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我客户端刚更新完，进群服提示版本不一致，先查啥"
+      ],
+      "A": {
+        "reply": "多半是客户端版本比服务端新了。小林那边说管理十分钟后才更新，你现在是提前进去的。\n\n先别重装。等管理更完服务端再进，如果十分钟后还是提示不一致，就核对一下更新公告里写的版本号，看你客户端是不是装到了测试版或者别的分支。",
+        "metrics": {
+          "latencyMs": 1552,
+          "replyChars": 109,
+          "promptTokens": 3592,
+          "completionTokens": 66,
+          "totalTokens": 3658,
+          "cacheHitTokens": 0,
+          "cacheMissTokens": 3592,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "八成就是服务端还没跟上——小林刚说管理十分钟后才更新，你客户端先跑前面了。先别急着重装。\n\n按顺序查：你客户端显示的版本号和管理贴出来的服务端版本号是否一致；对不上就等它更新完再进。对得上还报错，再看客户端是不是在测试/beta 分支上，切回正式版；群服要是带整合包或 mod，两边版本也得一一对上，多一个少一个都会报不一致。\n\n先对版本号，多数情况不用你做别的。",
+        "metrics": {
+          "latencyMs": 4850,
+          "replyChars": 182,
+          "promptTokens": 3617,
+          "completionTokens": 551,
+          "totalTokens": 4168,
+          "cacheHitTokens": 0,
+          "cacheMissTokens": 3617,
+          "reasoningTokens": 437
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "A",
+      "reviewComment": "X 先利用服务端尚未更新的已知信息，回复更集中；Y 多展开测试分支和 mod 检查，并再次总结，偏教程。"
+    },
+    {
+      "caseId": "game-update",
+      "scenario": "游戏更新吐槽",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：好不容易下班了，终于能打一把",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：结果刚开游戏就被更新挡在门外了。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我就半小时能玩，它给我整了个30G更新"
+      ],
+      "A": {
+        "reply": "半小时的自由被30G按在地上摩擦，这运气也是没谁了。",
+        "metrics": {
+          "latencyMs": 736,
+          "replyChars": 26,
+          "promptTokens": 3771,
+          "completionTokens": 16,
+          "totalTokens": 3787,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 187,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "半小时的空闲，撞上三十个G——胜负其实早就分出来了。先泡杯茶吧，让它自己慢慢下。",
+        "metrics": {
+          "latencyMs": 3656,
+          "replyChars": 40,
+          "promptTokens": 3796,
+          "completionTokens": 426,
+          "totalTokens": 4222,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 212,
+          "reasoningTokens": 398
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "A",
+      "reviewComment": "X 简短直接接吐槽；Y 的胜负比喻和泡茶建议略像角色化的宽慰。"
+    },
+    {
+      "caseId": "aim-joke",
+      "scenario": "接自嘲玩笑",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：刚才一梭子过去，对面一滴血没掉",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：你是给墙重新装修了吧",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我的枪法主打一个气氛组"
+      ],
+      "A": {
+        "reply": "气氛组好歹还有气氛，你这一梭子过去，对面大概以为在放烟花。",
+        "metrics": {
+          "latencyMs": 717,
+          "replyChars": 29,
+          "promptTokens": 3765,
+          "completionTokens": 19,
+          "totalTokens": 3784,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 181,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "气势给得很足，就是对面大概以为你在放烟花。下次记得把准星也一并带上场。",
+        "metrics": {
+          "latencyMs": 4530,
+          "replyChars": 35,
+          "promptTokens": 3790,
+          "completionTokens": 528,
+          "totalTokens": 4318,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 206,
+          "reasoningTokens": 504
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "两者的烟花玩笑都贴合语境，X 多一句准星吐槽仍属于玩笑，差距不足以分胜负。"
+    },
+    {
+      "caseId": "own-callback",
+      "scenario": "承接自己说过的话",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：这启动器每天开机第一件事就是更新",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：这哪是游戏启动器，分明是下载器启动器。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 小林：你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+      ],
+      "A": {
+        "reply": "说到底你今天是来给启动器当陪练的，游戏反而成了赠品。",
+        "metrics": {
+          "latencyMs": 762,
+          "replyChars": 26,
+          "promptTokens": 3810,
+          "completionTokens": 18,
+          "totalTokens": 3828,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 226,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "那今天最卖力的就是那条进度条了——你负责等，它负责跑，谁也没闲着。",
+        "metrics": {
+          "latencyMs": 3881,
+          "replyChars": 33,
+          "promptTokens": 3835,
+          "completionTokens": 438,
+          "totalTokens": 4273,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 251,
+          "reasoningTokens": 414
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "两者都承接前一句下载器的梗，没有解释玩笑或自称角色。"
+    },
+    {
+      "caseId": "tired-chat",
+      "scenario": "疲惫时随口聊天",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 阿泽：今天又加班，洗完澡都快一点了",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 群成员 小林：那你还开游戏吗",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：不开了，就想躺会，啥也不想干"
+      ],
+      "A": {
+        "reply": "这个点还开游戏，明天怕是又要靠咖啡续命了。\n\n躺着吧，手机也放远点。",
+        "metrics": {
+          "latencyMs": 913,
+          "replyChars": 34,
+          "promptTokens": 3792,
+          "completionTokens": 24,
+          "totalTokens": 3816,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 208,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "那就安心躺着，别跟自己较劲。这个点再开一局，明天醒来的你大概不会感谢今晚的你。",
+        "metrics": {
+          "latencyMs": 2968,
+          "replyChars": 39,
+          "promptTokens": 3817,
+          "completionTokens": 297,
+          "totalTokens": 4114,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 233,
+          "reasoningTokens": 270
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "reviewComment": "两者都接住疲惫，但在用户已经决定不玩时继续劝休息；X 安排放手机，Y 带轻微安慰套话。"
+    },
+    {
+      "caseId": "persona-switch",
+      "scenario": "多人聊天后恢复默认人格",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 企业爱好者：企业，今晚带我赢一把",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：指挥官，下一场由我为你扫清前路。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：先别扫清前路了，谁把我外卖拿走了"
+      ],
+      "A": {
+        "reply": "外卖被拿这种事，八成是放在门口被顺手牵羊了。先问问邻居或者让店家查下配送照片，别干等着。",
+        "metrics": {
+          "latencyMs": 738,
+          "replyChars": 44,
+          "promptTokens": 3771,
+          "completionTokens": 30,
+          "totalTokens": 3801,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 187,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "扫清前路容易，找回一份外卖倒是难得多。我可没动过它——先去门口或架子附近看看，趁还没凉。",
+        "metrics": {
+          "latencyMs": 3086,
+          "replyChars": 44,
+          "promptTokens": 3796,
+          "completionTokens": 396,
+          "totalTokens": 4192,
+          "cacheHitTokens": 3584,
+          "cacheMissTokens": 212,
+          "reasoningTokens": 365
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "reviewComment": "X 无依据地把外卖被拿走推断为八成被偷；Y 更多是轻松接话，但两者仍有多余寻找建议。"
+    },
+    {
+      "caseId": "enterprise-help",
+      "scenario": "已设置人格的实用提问",
+      "round": 2,
+      "latestContext": [
+        "【高优先级近邻｜距当前 2 条｜权重 80｜只用于理解当前锚点】 群成员 小林：服务器还没更新，管理说十分钟后弄",
+        "【高优先级近邻｜距当前 1 条｜权重 90｜只用于理解当前锚点】 机器人 Bot：等服务端也更到同一版本再进。",
+        "【当前锚点｜唯一回应对象｜权重 100】 群成员 阿泽：我客户端刚更新完，进群服提示版本不一致，先查啥"
+      ],
+      "A": {
+        "reply": "先看客户端版本号和群服公告里写的是不是同一个，版本号对得上再谈兼容。要是公告没写，直接问管理要准确版本，别自己瞎降级——重装比查错更费时间。",
+        "metrics": {
+          "latencyMs": 852,
+          "replyChars": 70,
+          "promptTokens": 3592,
+          "completionTokens": 49,
+          "totalTokens": 3641,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 136,
+          "reasoningTokens": null
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "先别急着重装客户端，八成不是你的问题——管理刚说了服务端还没更新，你这边先跑到新版本了，提示不一致是正常的。\n\n要查就按这个顺序：\n\n1. 服务端实际版本号：看服务器列表的 MOTD、控制台启动日志，或者直接问管理确认，别只按\"最新版\"猜。这一条最可能对上。\n2. 自己客户端的确切版本：启动器里选的那个具体版本号，快照和正式版常常就差一位数字，容易看漏。\n3. 如果群服前面挂了代理（Velocity、Bungee 这类），代理端也得跟着升，后端升了代理没升照样会被拦；顺手确认端口没填错，Java 版和基岩版别串。\n\n大概率就是第一条，等服务端更完再进就行。实在对不上，把两边的版本号丢给管理，我这边也能帮你看看。",
+        "metrics": {
+          "latencyMs": 7673,
+          "replyChars": 309,
+          "promptTokens": 3617,
+          "completionTokens": 951,
+          "totalTokens": 4568,
+          "cacheHitTokens": 3456,
+          "cacheMissTokens": 161,
+          "reasoningTokens": 754
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 1
+        }
+      },
+      "winner": "A",
+      "reviewComment": "X 扩展成多步教程，并在未给游戏名时引入 Minecraft 代理、Java/基岩版等未经依据的细节；Y 用版本号检查简短作答。"
+    }
+  ]
+}

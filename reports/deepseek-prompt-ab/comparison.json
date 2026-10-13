@@ -1,0 +1,1464 @@
+{
+  "conclusion": "The candidate prompt reduced NPC-style filler in this small subjective comparison. It is retained; default thinking remains disabled.",
+  "method": {
+    "scenarios": 10,
+    "rounds": 2,
+    "requestsPerVersion": 20,
+    "contextMessagesPerPair": 50,
+    "model": "deepseek-flash",
+    "temperature": 0.9,
+    "thinking": "disabled",
+    "outputLimitPerVersion": 1600
+  },
+  "summary": {
+    "A": {
+      "requests": 20,
+      "successes": 20,
+      "promptTokens": 74816,
+      "completionTokens": 564,
+      "totalTokens": 75380,
+      "cacheHitTokens": 68348,
+      "meanLatencyMs": 930,
+      "meanReplyChars": 43,
+      "truncated": 0
+    },
+    "B": {
+      "requests": 20,
+      "successes": 20,
+      "promptTokens": 33694,
+      "completionTokens": 267,
+      "totalTokens": 33961,
+      "cacheHitTokens": 25344,
+      "meanLatencyMs": 779,
+      "meanReplyChars": 19,
+      "truncated": 0
+    }
+  },
+  "comparison": {
+    "inputTokenReduction": 0.5496417878528657,
+    "outputTokenReduction": 0.5265957446808511,
+    "totalTokenReduction": 0.549469355266649,
+    "latencyRatio": 0.8376344086021505
+  },
+  "evaluation": {
+    "reviewer": "Codex；先读取隐藏 A/B 标签的回复，按同一标准评分，再揭示分组。",
+    "limits": "10 类合成场景，每类 2 轮。6 类沿用已有评测，4 类为本轮新增；没有真人评审或显著性检验。自然程度是主观判断，短回复不自动得高分。",
+    "paired": [
+      {
+        "caseId": "game-update",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都是贴合更新时间的简短吐槽。X 的一晚上是口语夸张，Y 的进度条也是常见玩笑，差距不足以区分。"
+      },
+      {
+        "caseId": "aim-joke",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "comment": "X 延续描边/打光的玩笑；Y 的纯静音与前文一梭子开火不太贴合，像为了短梗硬凑。"
+      },
+      {
+        "caseId": "own-callback",
+        "round": 1,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "comment": "X 未知下载速度却用至少没失望作宽慰，并继续叮嘱；Y 在更新模拟器上延续了原来的梗。"
+      },
+      {
+        "caseId": "tired-chat",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都自然认可躺会的选择。X 略长但仍是日常一句话，不能只因更短就判 Y 获胜。"
+      },
+      {
+        "caseId": "persona-switch",
+        "round": 1,
+        "winner": "tie",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "comment": "两者仍把问谁拿走外卖转换为查找建议；X 推断放错架子，Y 例行表示气人，改善有限。"
+      },
+      {
+        "caseId": "enterprise-help",
+        "round": 1,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 利用管理十分钟后更新的已知信息直接作答；Y 添加无依据的测试分支与反复重进搞乱缓存的说法，偏教程且不可靠。"
+      },
+      {
+        "caseId": "no-advice",
+        "round": 1,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 带入较早无关的键盘话题，并解释自己不会列办法；Y 对罚款直接接一句吐槽，没有给方案。"
+      },
+      {
+        "caseId": "simple-close",
+        "round": 1,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 复活旧键盘话题，把维修者说成阿泽并叮嘱休息；Y 简单收尾，路上注意点是与赶车相关的一句普通道别。"
+      },
+      {
+        "caseId": "stop-catchphrase",
+        "round": 1,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 接受称呼反馈后又展开旧键盘维修猜测；Y 只确认改口，完成了当前要求。"
+      },
+      {
+        "caseId": "short-confirmation",
+        "round": 1,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都正确确认无需重装；Y 多加泡茶的角色偏好，X 更集中。"
+      },
+      {
+        "caseId": "game-update",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都贴合当下更新吐槽，无须按句长区分。"
+      },
+      {
+        "caseId": "aim-joke",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都是针对枪法的自然调侃，没有附上练枪建议或角色表演。"
+      },
+      {
+        "caseId": "own-callback",
+        "round": 2,
+        "winner": "A",
+        "A": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "comment": "X 主要换词复述用户一天没开游戏的内容；Y 用启动器忘了正事提供了一个新的接梗角度。"
+      },
+      {
+        "caseId": "tired-chat",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 带入较早的键盘维修话题，而键盘属于另一位群友；Y 直接接住不玩、想躺的状态。"
+      },
+      {
+        "caseId": "persona-switch",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 0
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 简短表示这得问人认领；Y 声称自己没有下楼，并用旧面馆话题猜测谁转悠，补造了线下经历和人物行为。"
+      },
+      {
+        "caseId": "enterprise-help",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 2,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 回答最先查版本号；Y 在未指定游戏的情况下给出 versions/logs 同级文件删除建议，内容缺依据且超出当前问题。"
+      },
+      {
+        "caseId": "no-advice",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "两者都未给方案；X 的抱怨就抱怨吧、听着呢略像服务式宽慰，Y 更直接。"
+      },
+      {
+        "caseId": "simple-close",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 简单回应明晚安排；Y 继续叮嘱路上别急、赶车稳当，带重复的家长式关照。"
+      },
+      {
+        "caseId": "stop-catchphrase",
+        "round": 2,
+        "winner": "tie",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "B": {
+          "npcScore": 1,
+          "taskFit": 1
+        },
+        "comment": "两者都停止了固定称呼，但都在确认后带回旧键盘话题；Y 还提了旧面馆，仍有话题串入，均不算完整改善。"
+      },
+      {
+        "caseId": "short-confirmation",
+        "round": 2,
+        "winner": "B",
+        "A": {
+          "npcScore": 1,
+          "taskFit": 2
+        },
+        "B": {
+          "npcScore": 0,
+          "taskFit": 2
+        },
+        "comment": "X 用一句回答无需重装；Y 多展开缓存和服务端重启的排查分支，确认问题被写成了小教程。"
+      }
+    ],
+    "A": {
+      "meanNpcScore": 0.9,
+      "meanTaskFit": 1.55,
+      "wins": 3
+    },
+    "B": {
+      "meanNpcScore": 0.25,
+      "meanTaskFit": 1.85,
+      "wins": 11
+    },
+    "ties": 6
+  },
+  "research": {
+    "researchDate": "2026-10-13",
+    "approach": "阅读开源仓库的实际提示词和模板，借鉴职责划分与表达策略，用本项目自己的措辞实现，再进行真实 API 对照。没有引入第三方运行依赖。",
+    "sources": [
+      {
+        "repository": "Mai-with-u/MaiBot",
+        "commit": "6260d473780afefe58049899cdf051897c3dd06c",
+        "files": [
+          "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/retro_replyer_light.prompt",
+          "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/maisaka_replyer.prompt",
+          "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/learn_style.prompt"
+        ],
+        "observed": "回复模板把身份与表达风格分开，强调日常口语、简短、一次回应一个话题；语言风格学习排除自身发言。",
+        "adopted": "精简默认人格；明确从群成员观察语气，自身回复只承担对话记忆，不作为模仿风格的样本。"
+      },
+      {
+        "repository": "Him666233/astrbot_plugin_group_chat_plus",
+        "commit": "aa97e0e35a18733e73db753238dd2a3021446e42",
+        "files": [
+          "https://github.com/Him666233/astrbot_plugin_group_chat_plus/blob/aa97e0e35a18733e73db753238dd2a3021446e42/web/static/js/prompt-data.js",
+          "https://github.com/Him666233/astrbot_plugin_group_chat_plus/blob/aa97e0e35a18733e73db753238dd2a3021446e42/utils/reply_handler.py"
+        ],
+        "observed": "回复生成与是否回复的判断分开；回复提示突出当前发送者、当前消息与避免重复，不把内部取舍写进发言。",
+        "adopted": "缩短回复任务说明，维持当前消息与发送者归属，把长流程和逐条数字权重改成简短的时间顺序提示。"
+      },
+      {
+        "repository": "KroMiose/nekro-agent",
+        "commit": "ea7b90eb83bd80061b2a177510c27c957f7f980d",
+        "files": [
+          "https://github.com/KroMiose/nekro-agent/blob/ea7b90eb83bd80061b2a177510c27c957f7f980d/nekro_agent/services/agent/templates/j2_zh/persona.j2"
+        ],
+        "observed": "人设主要控制语气、情绪和交互方式，不能覆盖现实事实与证据边界。",
+        "adopted": "让角色感来自态度，避免用角色设定补造线下经历、人物行为、游戏背景和技术细节。"
+      }
+    ],
+    "implementation": [
+      "src/persona.js",
+      "src/ai.js",
+      "src/persona-commands.js"
+    ],
+    "validation": "10 类合成场景各 2 轮，共 40 次真实 DeepSeek 请求；原始群聊、模型、温度、非思考模式和输出上限保持相同，改变人格、表达和上下文提示文本。"
+  },
+  "samples": [
+    {
+      "caseId": "game-update",
+      "scenario": "游戏更新吐槽",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "好不容易下班了，终于能打一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "结果刚开游戏就被更新挡在门外了。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我就半小时能玩，它给我整了个30G更新"
+        ]
+      ],
+      "A": {
+        "reply": "半小时的局，光更新就得先搭进去一晚上。",
+        "metrics": {
+          "latencyMs": 888,
+          "replyChars": 19,
+          "promptTokens": 3771,
+          "completionTokens": 13,
+          "totalTokens": 3784,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "30G怕是连进度条都看不完，半小时直接交代在这了。",
+        "metrics": {
+          "latencyMs": 918,
+          "replyChars": 25,
+          "promptTokens": 1602,
+          "completionTokens": 16,
+          "totalTokens": 1618,
+          "cacheHitTokens": 0
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "review": "两者都是贴合更新时间的简短吐槽。X 的一晚上是口语夸张，Y 的进度条也是常见玩笑，差距不足以区分。"
+    },
+    {
+      "caseId": "aim-joke",
+      "scenario": "接自嘲玩笑",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚才一梭子过去，对面一滴血没掉"
+        ],
+        [
+          "user",
+          "小林",
+          "你是给墙重新装修了吧"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我的枪法主打一个气氛组"
+        ]
+      ],
+      "A": {
+        "reply": "气氛组也得有个准头，不然对面还以为你在给他们描边打光。",
+        "metrics": {
+          "latencyMs": 835,
+          "replyChars": 27,
+          "promptTokens": 3765,
+          "completionTokens": 17,
+          "totalTokens": 3782,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "气氛组也得有个气氛，你那是纯静音。",
+        "metrics": {
+          "latencyMs": 847,
+          "replyChars": 17,
+          "promptTokens": 1599,
+          "completionTokens": 12,
+          "totalTokens": 1611,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "winner": "A",
+      "review": "X 延续描边/打光的玩笑；Y 的纯静音与前文一梭子开火不太贴合，像为了短梗硬凑。"
+    },
+    {
+      "caseId": "own-callback",
+      "scenario": "承接自己说过的话",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "这启动器每天开机第一件事就是更新"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这哪是游戏启动器，分明是下载器启动器。"
+        ],
+        [
+          "user",
+          "小林",
+          "你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+        ]
+      ],
+      "A": {
+        "reply": "这游戏本体怕不是叫更新模拟器，打一把的功夫够它下完一个资料片。",
+        "metrics": {
+          "latencyMs": 1044,
+          "replyChars": 31,
+          "promptTokens": 3810,
+          "completionTokens": 22,
+          "totalTokens": 3832,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "至少下载速度没让你失望，战绩先放一边吧。",
+        "metrics": {
+          "latencyMs": 855,
+          "replyChars": 20,
+          "promptTokens": 1635,
+          "completionTokens": 13,
+          "totalTokens": 1648,
+          "cacheHitTokens": 768
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "winner": "A",
+      "review": "X 未知下载速度却用至少没失望作宽慰，并继续叮嘱；Y 在更新模拟器上延续了原来的梗。"
+    },
+    {
+      "caseId": "tired-chat",
+      "scenario": "疲惫时随口聊天",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "今天又加班，洗完澡都快一点了"
+        ],
+        [
+          "user",
+          "小林",
+          "那你还开游戏吗"
+        ],
+        [
+          "user",
+          "阿泽",
+          "不开了，就想躺会，啥也不想干"
+        ]
+      ],
+      "A": {
+        "reply": "这个点确实只适合瘫着，游戏明天再打也不迟。",
+        "metrics": {
+          "latencyMs": 890,
+          "replyChars": 21,
+          "promptTokens": 3792,
+          "completionTokens": 15,
+          "totalTokens": 3807,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "那就不开，躺着最实在。",
+        "metrics": {
+          "latencyMs": 682,
+          "replyChars": 11,
+          "promptTokens": 1620,
+          "completionTokens": 8,
+          "totalTokens": 1628,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "review": "两者都自然认可躺会的选择。X 略长但仍是日常一句话，不能只因更短就判 Y 获胜。"
+    },
+    {
+      "caseId": "persona-switch",
+      "scenario": "多人聊天后恢复默认人格",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "企业爱好者",
+          "企业，今晚带我赢一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，下一场由我为你扫清前路。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "先别扫清前路了，谁把我外卖拿走了"
+        ]
+      ],
+      "A": {
+        "reply": "外卖被拿走这种事真挺气人，先问问前台或者邻居有没有误拿吧。",
+        "metrics": {
+          "latencyMs": 577,
+          "replyChars": 29,
+          "promptTokens": 3771,
+          "completionTokens": 19,
+          "totalTokens": 3790,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "先查查是不是放错架子了，这种事比偷吃常见。",
+        "metrics": {
+          "latencyMs": 619,
+          "replyChars": 21,
+          "promptTokens": 1602,
+          "completionTokens": 15,
+          "totalTokens": 1617,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "review": "两者仍把问谁拿走外卖转换为查找建议；X 推断放错架子，Y 例行表示气人，改善有限。"
+    },
+    {
+      "caseId": "enterprise-help",
+      "scenario": "已设置人格的实用提问",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "服务器还没更新，管理说十分钟后弄"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "等服务端也更到同一版本再进。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我客户端刚更新完，进群服提示版本不一致，先查啥"
+        ]
+      ],
+      "A": {
+        "reply": "先看客户端版本号和群服公告里写的那串对不对上。管理说十分钟后更新，那大概率是服务端还没更完，不是你的问题。\n\n顺手确认两件事：一是你更新完有没有重启客户端，二是公告里是不是写了需要额外切测试分支。都没问题就等着，别急着反复重进，容易把缓存搞乱。",
+        "metrics": {
+          "latencyMs": 1505,
+          "replyChars": 122,
+          "promptTokens": 3592,
+          "completionTokens": 75,
+          "totalTokens": 3667,
+          "cacheHitTokens": 3456
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "先看两边版本号是不是完全一致，别只看大版本。你客户端刚更新，大概率是群服还没更到同一个版本，管理说了十分钟后弄，先等这个。",
+        "metrics": {
+          "latencyMs": 1060,
+          "replyChars": 61,
+          "promptTokens": 2006,
+          "completionTokens": 39,
+          "totalTokens": 2045,
+          "cacheHitTokens": 384
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 利用管理十分钟后更新的已知信息直接作答；Y 添加无依据的测试分支与反复重进搞乱缓存的说法，偏教程且不可靠。"
+    },
+    {
+      "caseId": "no-advice",
+      "scenario": "明确只吐槽，不要建议",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "今天进公司又忘带工牌了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "保安让你登记了？"
+        ],
+        [
+          "user",
+          "小林",
+          "登记就算了，还扣20，我就是抱怨两句，别给我列办法"
+        ]
+      ],
+      "A": {
+        "reply": "登记也扣钱，这比键盘响还闹心。那我不列办法了，就陪你念叨两句。",
+        "metrics": {
+          "latencyMs": 938,
+          "replyChars": 31,
+          "promptTokens": 3768,
+          "completionTokens": 24,
+          "totalTokens": 3792,
+          "cacheHitTokens": 3456
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "那确实该抱怨，20块够加个卤蛋了。",
+        "metrics": {
+          "latencyMs": 425,
+          "replyChars": 17,
+          "promptTokens": 1602,
+          "completionTokens": 14,
+          "totalTokens": 1616,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 带入较早无关的键盘话题，并解释自己不会列办法；Y 对罚款直接接一句吐槽，没有给方案。"
+    },
+    {
+      "caseId": "simple-close",
+      "scenario": "平常的对话收尾",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "明早得赶车，今晚不打了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那就先散了"
+        ],
+        [
+          "user",
+          "小林",
+          "明晚再约呗"
+        ]
+      ],
+      "A": {
+        "reply": "明晚你可别又手滑把空格键按响了，不然阿泽还得再拆一次。早点休息吧。",
+        "metrics": {
+          "latencyMs": 960,
+          "replyChars": 33,
+          "promptTokens": 3784,
+          "completionTokens": 25,
+          "totalTokens": 3809,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "行，明晚见，路上注意点。",
+        "metrics": {
+          "latencyMs": 724,
+          "replyChars": 12,
+          "promptTokens": 1612,
+          "completionTokens": 10,
+          "totalTokens": 1622,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 复活旧键盘话题，把维修者说成阿泽并叮嘱休息；Y 简单收尾，路上注意点是与赶车相关的一句普通道别。"
+    },
+    {
+      "caseId": "stop-catchphrase",
+      "scenario": "用户要求停止固定角色称呼",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "企业，刚才你那句太像游戏台词了"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，我会继续守在你身旁。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "别一口一个指挥官了，正常说话就行"
+        ]
+      ],
+      "A": {
+        "reply": "行，那就正常说。刚才那句话确实有点端着了，改过来。键盘的事周末拆开看看，多半是轴底或者键帽卡了东西，清一下能撑一阵。",
+        "metrics": {
+          "latencyMs": 957,
+          "replyChars": 58,
+          "promptTokens": 3586,
+          "completionTokens": 40,
+          "totalTokens": 3626,
+          "cacheHitTokens": 3328
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "行，那我改。",
+        "metrics": {
+          "latencyMs": 393,
+          "replyChars": 6,
+          "promptTokens": 2000,
+          "completionTokens": 5,
+          "totalTokens": 2005,
+          "cacheHitTokens": 1792
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 接受称呼反馈后又展开旧键盘维修猜测；Y 只确认改口，完成了当前要求。"
+    },
+    {
+      "caseId": "short-confirmation",
+      "scenario": "明确游戏背景下的简短确认",
+      "round": 1,
+      "context": [
+        [
+          "user",
+          "小林",
+          "沙漠风暴客户端更新好了，服务器管理说十分钟后更服务端"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "客户端先更新的话，暂时连不上旧版本服务端。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那我现在是不是等管理更完就行，别让我重装"
+        ]
+      ],
+      "A": {
+        "reply": "不用重装。客户端版本对上了，等服务端更新完直接连就行，这段时间可以先去泡杯茶等着。",
+        "metrics": {
+          "latencyMs": 917,
+          "replyChars": 41,
+          "promptTokens": 3769,
+          "completionTokens": 25,
+          "totalTokens": 3794,
+          "cacheHitTokens": 1024
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "嗯，等就行。管理更完服务端再连，不用重装。",
+        "metrics": {
+          "latencyMs": 795,
+          "replyChars": 21,
+          "promptTokens": 1569,
+          "completionTokens": 17,
+          "totalTokens": 1586,
+          "cacheHitTokens": 512
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "两者都正确确认无需重装；Y 多加泡茶的角色偏好，X 更集中。"
+    },
+    {
+      "caseId": "game-update",
+      "scenario": "游戏更新吐槽",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "好不容易下班了，终于能打一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "结果刚开游戏就被更新挡在门外了。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我就半小时能玩，它给我整了个30G更新"
+        ]
+      ],
+      "A": {
+        "reply": "半小时能玩的人碰上30G更新，这半小时大概就贡献给进度条了。",
+        "metrics": {
+          "latencyMs": 856,
+          "replyChars": 30,
+          "promptTokens": 3771,
+          "completionTokens": 19,
+          "totalTokens": 3790,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "这更新时间比你能玩的时间还长。",
+        "metrics": {
+          "latencyMs": 946,
+          "replyChars": 15,
+          "promptTokens": 1602,
+          "completionTokens": 9,
+          "totalTokens": 1611,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "review": "两者都贴合当下更新吐槽，无须按句长区分。"
+    },
+    {
+      "caseId": "aim-joke",
+      "scenario": "接自嘲玩笑",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "刚才一梭子过去，对面一滴血没掉"
+        ],
+        [
+          "user",
+          "小林",
+          "你是给墙重新装修了吧"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我的枪法主打一个气氛组"
+        ]
+      ],
+      "A": {
+        "reply": "气氛组也得有个下限吧，墙都被你刷出新漆了。",
+        "metrics": {
+          "latencyMs": 758,
+          "replyChars": 21,
+          "promptTokens": 3765,
+          "completionTokens": 15,
+          "totalTokens": 3780,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "气氛是够了，对面估计都没感觉到压力。",
+        "metrics": {
+          "latencyMs": 511,
+          "replyChars": 18,
+          "promptTokens": 1599,
+          "completionTokens": 10,
+          "totalTokens": 1609,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "tie",
+      "review": "两者都是针对枪法的自然调侃，没有附上练枪建议或角色表演。"
+    },
+    {
+      "caseId": "own-callback",
+      "scenario": "承接自己说过的话",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "这启动器每天开机第一件事就是更新"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "这哪是游戏启动器，分明是下载器启动器。"
+        ],
+        [
+          "user",
+          "小林",
+          "你刚说那个下载器启动器笑死，我今天一把没打，下载倒是没停过"
+        ]
+      ],
+      "A": {
+        "reply": "更新比游戏本体还勤快，这启动器是不是把正事忘了。",
+        "metrics": {
+          "latencyMs": 821,
+          "replyChars": 24,
+          "promptTokens": 3810,
+          "completionTokens": 17,
+          "totalTokens": 3827,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "一天下来游戏没开成，下载量倒是刷够了。",
+        "metrics": {
+          "latencyMs": 963,
+          "replyChars": 19,
+          "promptTokens": 1635,
+          "completionTokens": 13,
+          "totalTokens": 1648,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "winner": "A",
+      "review": "X 主要换词复述用户一天没开游戏的内容；Y 用启动器忘了正事提供了一个新的接梗角度。"
+    },
+    {
+      "caseId": "tired-chat",
+      "scenario": "疲惫时随口聊天",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "今天又加班，洗完澡都快一点了"
+        ],
+        [
+          "user",
+          "小林",
+          "那你还开游戏吗"
+        ],
+        [
+          "user",
+          "阿泽",
+          "不开了，就想躺会，啥也不想干"
+        ]
+      ],
+      "A": {
+        "reply": "一点多还开游戏，明天怕是连空格键响了都懒得修。躺吧，这种时候确实什么都不想碰。",
+        "metrics": {
+          "latencyMs": 833,
+          "replyChars": 39,
+          "promptTokens": 3792,
+          "completionTokens": 26,
+          "totalTokens": 3818,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "那就先躺着，游戏明天还在。",
+        "metrics": {
+          "latencyMs": 517,
+          "replyChars": 13,
+          "promptTokens": 1620,
+          "completionTokens": 8,
+          "totalTokens": 1628,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 带入较早的键盘维修话题，而键盘属于另一位群友；Y 直接接住不玩、想躺的状态。"
+    },
+    {
+      "caseId": "persona-switch",
+      "scenario": "多人聊天后恢复默认人格",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "企业爱好者",
+          "企业，今晚带我赢一把"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，下一场由我为你扫清前路。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "先别扫清前路了，谁把我外卖拿走了"
+        ]
+      ],
+      "A": {
+        "reply": "外卖这事我可没插手，我连楼都没下。倒是面馆没开那会儿，谁最后在楼下转悠来着？",
+        "metrics": {
+          "latencyMs": 844,
+          "replyChars": 38,
+          "promptTokens": 3771,
+          "completionTokens": 28,
+          "totalTokens": 3799,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 0
+        }
+      },
+      "B": {
+        "reply": "这话得问楼里有没有人认领。",
+        "metrics": {
+          "latencyMs": 1085,
+          "replyChars": 13,
+          "promptTokens": 1602,
+          "completionTokens": 10,
+          "totalTokens": 1612,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 简短表示这得问人认领；Y 声称自己没有下楼，并用旧面馆话题猜测谁转悠，补造了线下经历和人物行为。"
+    },
+    {
+      "caseId": "enterprise-help",
+      "scenario": "已设置人格的实用提问",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "服务器还没更新，管理说十分钟后弄"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "等服务端也更到同一版本再进。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "我客户端刚更新完，进群服提示版本不一致，先查啥"
+        ]
+      ],
+      "A": {
+        "reply": "先看两边版本号是不是完全一致，客户端更新了、服务端还没更，这种情况最常见。\n\n如果版本号对得上还报错，就删掉客户端缓存里的版本校验文件（一般在 `versions` 或 `logs` 同级目录），再重启一次。还不行把完整报错贴出来，我帮你看具体卡在哪一步。",
+        "metrics": {
+          "latencyMs": 1266,
+          "replyChars": 128,
+          "promptTokens": 3592,
+          "completionTokens": 74,
+          "totalTokens": 3666,
+          "cacheHitTokens": 3456
+        },
+        "score": {
+          "npcScore": 2,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "先看客户端版本号和群服公告写的是不是同一个，不一致就是服还没更完。",
+        "metrics": {
+          "latencyMs": 855,
+          "replyChars": 33,
+          "promptTokens": 2006,
+          "completionTokens": 20,
+          "totalTokens": 2026,
+          "cacheHitTokens": 1792
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 回答最先查版本号；Y 在未指定游戏的情况下给出 versions/logs 同级文件删除建议，内容缺依据且超出当前问题。"
+    },
+    {
+      "caseId": "no-advice",
+      "scenario": "明确只吐槽，不要建议",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "今天进公司又忘带工牌了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "保安让你登记了？"
+        ],
+        [
+          "user",
+          "小林",
+          "登记就算了，还扣20，我就是抱怨两句，别给我列办法"
+        ]
+      ],
+      "A": {
+        "reply": "二十块买个进门资格，确实有点冤。抱怨就抱怨吧，听着呢。",
+        "metrics": {
+          "latencyMs": 645,
+          "replyChars": 27,
+          "promptTokens": 3768,
+          "completionTokens": 18,
+          "totalTokens": 3786,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "行，那就不给办法了。20块确实冤。",
+        "metrics": {
+          "latencyMs": 1135,
+          "replyChars": 17,
+          "promptTokens": 1602,
+          "completionTokens": 13,
+          "totalTokens": 1615,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "两者都未给方案；X 的抱怨就抱怨吧、听着呢略像服务式宽慰，Y 更直接。"
+    },
+    {
+      "caseId": "simple-close",
+      "scenario": "平常的对话收尾",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "明早得赶车，今晚不打了"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那就先散了"
+        ],
+        [
+          "user",
+          "小林",
+          "明晚再约呗"
+        ]
+      ],
+      "A": {
+        "reply": "行，明晚等你。路上别急，赶车稳当点。",
+        "metrics": {
+          "latencyMs": 1035,
+          "replyChars": 18,
+          "promptTokens": 3784,
+          "completionTokens": 16,
+          "totalTokens": 3800,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "行，明晚早点开。",
+        "metrics": {
+          "latencyMs": 658,
+          "replyChars": 8,
+          "promptTokens": 1612,
+          "completionTokens": 7,
+          "totalTokens": 1619,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 简单回应明晚安排；Y 继续叮嘱路上别急、赶车稳当，带重复的家长式关照。"
+    },
+    {
+      "caseId": "stop-catchphrase",
+      "scenario": "用户要求停止固定角色称呼",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "阿泽",
+          "企业，刚才你那句太像游戏台词了"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "指挥官，我会继续守在你身旁。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "别一口一个指挥官了，正常说话就行"
+        ]
+      ],
+      "A": {
+        "reply": "行，那就正常说。键盘那事我确实插不上手，周末拆的时候记得断电再动。",
+        "metrics": {
+          "latencyMs": 752,
+          "replyChars": 33,
+          "promptTokens": 3586,
+          "completionTokens": 23,
+          "totalTokens": 3609,
+          "cacheHitTokens": 3452
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "B": {
+        "reply": "行，那就不整这套。键盘和面馆的事你们继续聊。",
+        "metrics": {
+          "latencyMs": 677,
+          "replyChars": 22,
+          "promptTokens": 2000,
+          "completionTokens": 16,
+          "totalTokens": 2016,
+          "cacheHitTokens": 1792
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 1
+        }
+      },
+      "winner": "tie",
+      "review": "两者都停止了固定称呼，但都在确认后带回旧键盘话题；Y 还提了旧面馆，仍有话题串入，均不算完整改善。"
+    },
+    {
+      "caseId": "short-confirmation",
+      "scenario": "明确游戏背景下的简短确认",
+      "round": 2,
+      "context": [
+        [
+          "user",
+          "小林",
+          "沙漠风暴客户端更新好了，服务器管理说十分钟后更服务端"
+        ],
+        [
+          "assistant",
+          "Bot",
+          "客户端先更新的话，暂时连不上旧版本服务端。"
+        ],
+        [
+          "user",
+          "阿泽",
+          "那我现在是不是等管理更完就行，别让我重装"
+        ]
+      ],
+      "A": {
+        "reply": "客户端已经更完的话，等管理那边服务端更新好就行，不用重装。重装反而容易把配置弄乱。\n\n不过要是等会儿连上去报版本不匹配，先别急着删文件，多半是服务端还没重启到位。",
+        "metrics": {
+          "latencyMs": 1285,
+          "replyChars": 81,
+          "promptTokens": 3769,
+          "completionTokens": 53,
+          "totalTokens": 3822,
+          "cacheHitTokens": 3584
+        },
+        "score": {
+          "npcScore": 1,
+          "taskFit": 2
+        }
+      },
+      "B": {
+        "reply": "不用重装，服务端更完直接进就行。",
+        "metrics": {
+          "latencyMs": 919,
+          "replyChars": 16,
+          "promptTokens": 1569,
+          "completionTokens": 12,
+          "totalTokens": 1581,
+          "cacheHitTokens": 1408
+        },
+        "score": {
+          "npcScore": 0,
+          "taskFit": 2
+        }
+      },
+      "winner": "B",
+      "review": "X 用一句回答无需重装；Y 多展开缓存和服务端重启的排查分支，确认问题被写成了小教程。"
+    }
+  ]
+}

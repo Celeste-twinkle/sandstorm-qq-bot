@@ -1,6 +1,11 @@
 const { WebToolRunner } = require("./webtools");
+const { usesDeepSeekHarness } = require("./deepseek-harness-web");
+const { DEFAULT_NATURAL_CHAT_PROMPT } = require("./persona");
+const { MAX_GROUP_CONTEXT_MESSAGES } = require("./group-context");
 const {
   buildNoWebEvidenceReply,
+  buildAutomaticWebSearchPolicy,
+  buildHarnessWebSearchPolicy,
   buildWebEvidenceResearchPolicy,
 } = require("./web-research-policy");
 
@@ -62,6 +67,7 @@ class DeepSeekChatService {
       return "DeepSeek API Key 还没有配置，请在 .env 中设置 DEEPSEEK_API_KEY。";
     }
 
+    const useThinking = this.resolveThinkingMode(meta.thinking);
     const messages = this.trimMessages([
       {
         role: "system",
@@ -76,16 +82,17 @@ class DeepSeekChatService {
       },
     ]);
 
-    const payload = await this.requestCompletion(
-      this.buildCompletionBody(messages, false, {
-        maxOutputTokens: this.config.ambientChatMaxOutputTokens,
-        temperature: Math.max(0.7, this.config.deepseekTemperature),
-      }),
-      {
-        timeoutMs: this.config.ambientChatTimeoutMs,
-      },
-    );
-    return extractAssistantContent(payload);
+    return this.createCompletion(messages, {
+      thinking: useThinking,
+      webSearch: meta.webSearch,
+      maxOutputTokens: useThinking
+        ? this.config.deepseekThinkingMaxOutputTokens
+        : this.config.ambientChatMaxOutputTokens,
+      temperature: Math.max(0.7, this.config.deepseekTemperature),
+      timeoutMs: useThinking
+        ? this.config.deepseekThinkingTimeoutMs
+        : this.config.ambientChatTimeoutMs,
+    });
   }
 
   async chatUnlocked(sessionId, userText, meta) {
@@ -97,8 +104,8 @@ class DeepSeekChatService {
 
     const messages = this.buildMessages(session, userMessage, meta.personaPrompt);
     const assistantText = await this.createCompletion(messages, {
-      thinking: Boolean(meta.thinking),
-      webSearch: Boolean(meta.webSearch),
+      thinking: meta.thinking,
+      webSearch: meta.webSearch,
     });
 
     session.messages.push({ role: "user", content: userText });
@@ -130,12 +137,16 @@ class DeepSeekChatService {
   }
 
   buildMessages(session, userMessage, personaPrompt = "") {
+    const maxMessages = Math.min(
+      MAX_GROUP_CONTEXT_MESSAGES,
+      Math.max(2, this.config.chatMaxHistoryMessages || MAX_GROUP_CONTEXT_MESSAGES),
+    );
     return this.trimMessages([
       {
         role: "system",
         content: this.buildSystemPrompt(this.resolvePersonaPrompt(personaPrompt)),
       },
-      ...session.messages,
+      ...session.messages.slice(-(maxMessages - 1)),
       userMessage,
     ]);
   }
@@ -154,6 +165,7 @@ class DeepSeekChatService {
       personaPrompt,
       this.config.personaFlexibilityPrompt,
       this.config.responseNeutralityPrompt,
+      this.config.naturalChatPrompt || DEFAULT_NATURAL_CHAT_PROMPT,
       ...taskPrompts,
     ]
       .filter((part) => String(part || "").trim())
@@ -161,7 +173,7 @@ class DeepSeekChatService {
   }
 
   trimSession(session) {
-    const maxHistory = Math.max(2, this.config.chatMaxHistoryMessages);
+    const maxHistory = Math.min(MAX_GROUP_CONTEXT_MESSAGES, Math.max(2, this.config.chatMaxHistoryMessages));
     if (session.messages.length > maxHistory) {
       session.messages = session.messages.slice(-maxHistory);
     }
@@ -174,6 +186,9 @@ class DeepSeekChatService {
     const trimmed = messages.slice();
 
     while (trimmed.length > 1 && countChars(trimmed) > maxChars) {
+      if (trimmed[0]?.role === "system" && trimmed.length === 2) {
+        break;
+      }
       const removeIndex = trimmed[0]?.role === "system" && trimmed.length > 2 ? 1 : 0;
       trimmed.splice(removeIndex, 1);
     }
@@ -213,25 +228,38 @@ class DeepSeekChatService {
 
   async createCompletion(messages, options = {}) {
     const normalizedOptions = typeof options === "boolean" ? { thinking: options } : options;
-    const useThinking = Boolean(normalizedOptions.thinking);
-    const useWebSearch = Boolean(normalizedOptions.webSearch);
+    const useThinking = this.resolveThinkingMode(normalizedOptions.thinking);
+    const webSearchMode = normalizedOptions.webSearch ?? (this.config.webSearchAutoEnabled ? "auto" : false);
     const preparedMessages = await this.prepareMessagesForVision(messages);
 
-    if (useWebSearch) {
-      return this.createCompletionWithWebTools(preparedMessages, useThinking);
+    // Participation decisions and other structured background jobs never browse.
+    if (webSearchMode && !normalizedOptions.decisionOnly && !normalizedOptions.responseFormat) {
+      return this.createCompletionWithWebTools(preparedMessages, useThinking, {
+        ...normalizedOptions,
+        webSearch: webSearchMode,
+      });
     }
 
+    const body = this.buildCompletionBody(preparedMessages, useThinking, {
+      maxOutputTokens: normalizedOptions.maxOutputTokens,
+      temperature: normalizedOptions.temperature,
+      reasoningEffort: normalizedOptions.reasoningEffort,
+      decisionOnly: normalizedOptions.decisionOnly,
+    });
+    if (normalizedOptions.responseFormat) {
+      body.response_format = normalizedOptions.responseFormat;
+    }
     const payload = await this.requestCompletion(
-      this.buildCompletionBody(preparedMessages, useThinking, {
-        maxOutputTokens: normalizedOptions.maxOutputTokens,
-        temperature: normalizedOptions.temperature,
-        reasoningEffort: normalizedOptions.reasoningEffort,
-      }),
+      body,
       {
         timeoutMs: normalizedOptions.timeoutMs,
       },
     );
     return extractAssistantContent(payload);
+  }
+
+  resolveThinkingMode(requestedMode) {
+    return Boolean(requestedMode ?? this.config.deepseekThinkingEnabled);
   }
 
   ensureVisionRuntime() {
@@ -357,28 +385,36 @@ class DeepSeekChatService {
     return this.imageInsightCache.waitForIdle();
   }
 
-  async createCompletionWithWebTools(messages, useThinking) {
+  async createCompletionWithWebTools(messages, useThinking, options = {}) {
+    const automatic = options.webSearch === "auto";
     const runner = this.webToolRunnerFactory(this.config);
     runner.setUserQuery(extractLatestUserText(messages));
-    const workingMessages = this.buildWebSearchMessages(messages);
+    const workingMessages = this.buildWebSearchMessages(messages, { automatic });
     const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds);
     const maxCallsPerRound = Math.max(1, this.config.webSearchMaxToolCallsPerRound);
     let fetchedEvidenceCount = 0;
+    const noEvidenceReply = () => buildNoWebEvidenceReply({ casual: automatic });
+    const completionOptions = () => ({
+      ...options,
+      // Leave room for a source link after browsing, including in ambient replies.
+      ...(automatic && fetchedEvidenceCount > 0 && options.maxOutputTokens
+        ? { maxOutputTokens: Math.max(512, options.maxOutputTokens) } : {}),
+    });
 
     for (let round = 1; round <= maxRounds; round += 1) {
       const payload = await this.requestCompletion({
-        ...this.buildCompletionBody(workingMessages, useThinking),
+        ...this.buildCompletionBody(workingMessages, useThinking, completionOptions()),
         tools: runner.getToolDefinitions(),
-        tool_choice: round === 1 ? "required" : "auto",
-      });
+        tool_choice: round === 1 && !automatic ? "required" : "auto",
+      }, { timeoutMs: options.timeoutMs });
 
       const message = payload?.choices?.[0]?.message || {};
       const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
 
       if (toolCalls.length === 0) {
-        return fetchedEvidenceCount > 0
+        return (automatic && round === 1) || fetchedEvidenceCount > 0
           ? extractAssistantContent(payload)
-          : buildNoWebEvidenceReply();
+          : noEvidenceReply();
       }
 
       workingMessages.push(buildAssistantToolMessage(message));
@@ -405,20 +441,22 @@ class DeepSeekChatService {
           }
         }
 
-        if (isUsableFetchedWebEvidence(toolCall, result)) {
+        if (typeof runner.hasUsableEvidence === "function"
+          ? runner.hasUsableEvidence(toolCall, result)
+          : isUsableFetchedWebEvidence(toolCall, result)) {
           fetchedEvidenceCount += 1;
         }
 
         workingMessages.push({
           role: "tool",
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result),
+          content: runner.formatToolResult?.(toolCall, result) ?? JSON.stringify(result),
         });
       }
     }
 
     if (fetchedEvidenceCount === 0) {
-      return buildNoWebEvidenceReply();
+      return noEvidenceReply();
     }
 
     workingMessages.push({
@@ -428,16 +466,16 @@ class DeepSeekChatService {
     });
 
     const payload = await this.requestCompletion({
-      ...this.buildCompletionBody(workingMessages, useThinking),
-    });
+      ...this.buildCompletionBody(workingMessages, useThinking, completionOptions()),
+    }, { timeoutMs: options.timeoutMs });
     return extractAssistantContent(payload);
   }
 
   buildCompletionBody(messages, useThinking, overrides = {}) {
     const body = {
       model: hasImageInput(messages)
-        ? this.config.deepseekVisionModel || "deepseek-v4-flash-vision-exp"
-        : this.config.deepseekModel,
+        ? this.config.deepseekVisionModel || this.config.deepseekModel || "deepseek-flash"
+        : this.config.deepseekModel || "deepseek-flash",
       messages,
       stream: false,
       max_tokens:
@@ -449,7 +487,7 @@ class DeepSeekChatService {
     };
 
     if (useThinking) {
-      body.reasoning_effort = this.config.deepseekReasoningEffort;
+      body.reasoning_effort = overrides.reasoningEffort || this.config.deepseekReasoningEffort || "high";
     } else {
       body.temperature = overrides.temperature ?? this.config.deepseekTemperature;
     }
@@ -457,9 +495,16 @@ class DeepSeekChatService {
     return body;
   }
 
-  buildWebSearchMessages(messages) {
+  buildWebSearchMessages(messages, options = {}) {
     const now = new Date();
     const currentTime = formatCurrentTime(now);
+    if (options.automatic) {
+      const policy = buildAutomaticWebSearchPolicy({ currentTime, harnessSearch: usesDeepSeekHarness(this.config) });
+      if (messages[0]?.role === "system") {
+        return [{ ...messages[0], content: `${messages[0].content}\n\n${policy}` }, ...messages.slice(1)];
+      }
+      return [{ role: "system", content: policy }, ...messages];
+    }
     const maxCallsPerRound = Math.max(
       1,
       this.config.webSearchMaxToolCallsPerRound,
@@ -467,7 +512,7 @@ class DeepSeekChatService {
     const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds);
     const webSearchSystemMessage = {
       role: "system",
-      content: [
+      content: usesDeepSeekHarness(this.config) ? buildHarnessWebSearchPolicy({ currentTime }) : [
         "联网搜索开启。必须先调用 web_search，再按证据需要调用 web_fetch；最终只能依据本轮工具取得的内容回答。",
         buildWebEvidenceResearchPolicy({
           currentTime,

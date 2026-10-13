@@ -5,6 +5,12 @@ const {
   extractSemanticMessageText,
 } = require("./ai");
 const { config } = require("./config");
+const { AmbientReplyGuard, getAmbientRecipientHint } = require("./ambient-chat");
+const {
+  GroupConversationContext,
+  getGroupMessageTimestamp,
+  getGroupReplyMeta,
+} = require("./group-context");
 const {
   downloadBilibiliVideo,
   extractBilibiliUrls,
@@ -42,7 +48,8 @@ const groupCooldowns = new Map();
 const chatCooldowns = new Map();
 const ambientChatCooldowns = new Map();
 const ambientChatBuffers = new Map();
-const groupConversationContexts = new Map();
+const ambientReplyGuard = new AmbientReplyGuard();
+const groupConversationContext = new GroupConversationContext();
 const bilibiliCooldowns = new Map();
 const chatService = new AiChatService(config);
 const groupMessageCache = new GroupMessageCache(config);
@@ -133,22 +140,6 @@ function shouldChat(message) {
   return getCleanMessageText(message).length > 0 || hasImageMessage(message);
 }
 
-function shouldAmbientChat(message, text) {
-  if (!config.chatEnabled || !config.ambientChatEnabled) {
-    return false;
-  }
-
-  if (isMentioned(message)) {
-    return false;
-  }
-
-  if (!text || isLikelyNonChatText(text)) {
-    return false;
-  }
-
-  return Math.random() < config.ambientChatProbability;
-}
-
 function shouldCollectAmbientChat(message, text, hasQwenForwardedContent = false) {
   if (!config.chatEnabled || !config.ambientChatEnabled) {
     return false;
@@ -161,7 +152,7 @@ function shouldCollectAmbientChat(message, text, hasQwenForwardedContent = false
   return (
     hasQwenForwardedContent ||
     hasImageMessage(message) ||
-    (Boolean(text) && !isLikelyNonChatText(text))
+    Boolean(text)
   );
 }
 
@@ -316,10 +307,13 @@ function isResetCommand(text) {
 }
 
 function shouldUseThinking(text) {
-  return String(text || "").includes("深度思考");
+  return config.deepseekThinkingEnabled || String(text || "").includes("深度思考");
 }
 
 function shouldUseWebSearch(text) {
+  if (config.webSearchAutoEnabled) {
+    return "auto";
+  }
   const normalized = String(text || "");
   return config.webSearchTriggerKeywords.some((keyword) => normalized.includes(keyword));
 }
@@ -339,16 +333,6 @@ function hasImageMessage(message) {
       ? message.message
       : "";
   return /\[CQ:image\b/i.test(rawText);
-}
-
-function isLikelyNonChatText(text) {
-  return (
-    text.length < 2 ||
-    text.length > 240 ||
-    /^https?:\/\//i.test(text) ||
-    /^[/!！.。#＃]/.test(text) ||
-    /^\d+$/.test(text)
-  );
 }
 
 function clearAmbientChatBuffer(groupId) {
@@ -377,12 +361,14 @@ function recordIncomingGroupMessage(message, text, forwarded = null) {
   }
 
   const entry = {
-    role: "user",
+    role: isSelfGroupMessage(message) ? "assistant" : "user",
     messageId:
       getMessageId(message) ||
       `incoming-${groupId}-${message.user_id || "unknown"}-${Date.now()}`,
     userId: String(message.user_id || ""),
-    senderName: getSenderName(message) || String(message.user_id || "unknown"),
+    senderName: isSelfGroupMessage(message)
+      ? config.botName
+      : getSenderName(message) || String(message.user_id || "unknown"),
     text,
     images,
     qwenText: cached?.qwenText || "",
@@ -393,7 +379,8 @@ function recordIncomingGroupMessage(message, text, forwarded = null) {
       ? "QQ引用来源未解析（仅用于定位，不代表语义相关）"
       : "",
     qwenRelation: "",
-    timestamp: Date.now(),
+    recipientHint: getAmbientRecipientHint(message),
+    timestamp: getGroupMessageTimestamp(message),
   };
   appendGroupConversationContext(groupId, entry);
   return entry;
@@ -426,7 +413,7 @@ async function linkRepliedMessage(message, client) {
 
   const groupId = String(message.group_id);
   const currentMessageId = getMessageId(message);
-  const context = groupConversationContexts.get(groupId) || [];
+  const context = groupConversationContext.get(groupId);
   const current = [...context]
     .reverse()
     .find((entry) => !currentMessageId || entry.messageId === currentMessageId);
@@ -505,142 +492,99 @@ async function handleAmbientChatIdle(groupId, generation, client) {
   }
 
   ambientChatBuffers.delete(groupId);
+  await tryAmbientReply(groupId, "idle", client);
+}
+
+async function tryAmbientReply(groupId, mode, client) {
   const messages = getGroupConversationContext(
     groupId,
-    config.ambientChatIdleMaxMessages,
+    mode === "idle" ? config.ambientChatIdleMaxMessages : config.ambientChatInstantMaxMessages,
   );
   if (messages.length === 0) {
     return;
   }
 
-  const text = formatAmbientChatMessages(messages);
-  console.log(`[bot] ambient idle chat hit in group ${groupId}, messages=${messages.length}: ${text}`);
-  const anchor = getLatestGroupMemberMessage(messages);
-  const reply = await chatService.ambientReply(messages, {
-    ambientMode: "idle",
-    ...getSelectedPersonaMeta(groupId, anchor?.userId),
-  });
-  await sendBotReply(client, groupId, reply, {
-    qwenOnly: isQwenOnlyContextAnchor(messages),
-  });
+  if (isCoolingDown(groupId, config.ambientChatCooldownSeconds, ambientChatCooldowns)) {
+    return;
+  }
+  const ticket = ambientReplyGuard.begin(groupId, messages);
+  if (!ticket) {
+    return;
+  }
+  try {
+    const reply = await chatService.ambientReplyIfAppropriate(messages, {
+      ambientMode: mode,
+      ...getGroupReplyMeta(groupId, messages, getSelectedPersonaMeta),
+    }, {
+      isCurrent: () => ambientReplyGuard.canSend(ticket, getGroupConversationContext(groupId)),
+      onDecision: (shouldReply) => {
+        console.log(`[bot] ambient decision group=${groupId} mode=${mode} reply=${shouldReply}`);
+      },
+    });
+    if (reply === null) {
+      return;
+    }
+    if (ambientReplyGuard.canSend(ticket, getGroupConversationContext(groupId))) {
+      clearAmbientChatBuffer(groupId);
+      await sendBotReply(client, groupId, reply);
+      markCooldown(groupId, ambientChatCooldowns);
+    } else {
+      console.log(`[bot] ambient reply skipped after conversation changed in group ${groupId}`);
+    }
+  } finally {
+    ambientReplyGuard.finish(ticket);
+  }
 }
 
 function appendGroupConversationContext(groupId, message) {
-  const key = String(groupId);
-  const existing = groupConversationContexts.get(key) || [];
-  const deduped = message.messageId
-    ? existing.filter((entry) => entry.messageId !== message.messageId)
-    : existing;
-  deduped.push(message);
-  groupConversationContexts.set(
-    key,
-    trimGroupConversationContext(deduped, Date.now()),
-  );
+  groupConversationContext.append(groupId, message);
 }
 
 function getGroupConversationContext(
   groupId,
-  maxMessages = config.localQwenMaxHistoryMessages,
+  maxMessages = config.chatMaxHistoryMessages,
 ) {
-  const key = String(groupId);
-  const messages = trimGroupConversationContext(
-    groupConversationContexts.get(key) || [],
-    Date.now(),
-  );
-  groupConversationContexts.set(key, messages);
-  return messages.slice(-Math.max(1, maxMessages));
-}
-
-function trimGroupConversationContext(messages, now) {
-  const contextMs = Math.max(1, config.ambientChatContextSeconds) * 1000;
-  const maxMessagesToKeep = Math.max(
-    1,
-    config.localQwenMaxHistoryMessages,
-    config.ambientChatIdleMaxMessages,
-    config.ambientChatInstantMaxMessages,
-  );
-  return messages
-    .filter((message) => now - message.timestamp <= contextMs)
-    .slice(-maxMessagesToKeep);
+  return groupConversationContext.get(groupId, maxMessages);
 }
 
 function clearGroupConversationContext(groupId) {
-  groupConversationContexts.delete(String(groupId));
+  groupConversationContext.clear(groupId);
 }
 
-async function sendBotReply(client, groupId, reply, options = {}) {
-  const text = typeof reply === "string" ? reply.trim() : "";
-  await client.sendGroupMessage(groupId, reply);
+function recordOutgoingGroupMessage(groupId, message, response) {
+  const text = extractSemanticMessageText({ message });
   if (!text) {
     return;
   }
-
+  const messageId = String(response?.data?.message_id ?? `bot-${groupId}-${randomUUID()}`);
+  groupMessageCache.add({
+    group_id: groupId,
+    message_id: messageId,
+    sender: { nickname: config.botName },
+    message,
+  }, text);
   appendGroupConversationContext(groupId, {
     role: "assistant",
-    messageId: `bot-${groupId}-${Date.now()}-${randomUUID()}`,
+    messageId,
     senderName: config.botName,
     text,
     images: [],
-    qwenOnly: options.qwenOnly === true,
     relation: "",
     timestamp: Date.now(),
   });
 }
 
-function formatAmbientChatMessages(messages, mode = "idle") {
-  if (messages.length === 0) {
-    return "";
-  }
-
-  if (messages.length === 1 && mode !== "instant") {
-    return formatAmbientContextLine(messages[0]);
-  }
-
-  const lines = messages.map((message, index) => {
-    const relation = message.relation || (mode === "instant" && index === messages.length - 1 ? "当前消息" : "");
-    const relationText = relation ? `（${relation}）` : "";
-    return `${relationText}${formatAmbientContextLine(message)}`;
-  });
-
-  if (mode === "instant") {
-    return `以下是群聊刚刚的一段上下文，按从旧到新排列；“当前消息”是你要接的话。请优先回应当前消息，并参考上下文接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
-  }
-
-  return `以下是群聊里刚刚冷场前的一段上下文，按从旧到新排列。请接一句自然的闲聊吐槽：\n${lines.join("\n")}`;
+async function sendBotReply(client, groupId, reply) {
+  await client.sendGroupMessage(groupId, reply);
 }
 
-function formatAmbientContextLine(message) {
-  const sender =
-    message.role === "assistant"
-      ? `机器人 ${message.senderName || config.botName}`
-      : message.senderName || "群成员";
-  const text = String(message.text || "").trim() || "[图片消息]";
-  const imageCount = Array.isArray(message.images) ? message.images.length : 0;
-  const imageText = imageCount > 0 ? ` [图片×${imageCount}]` : "";
-  return `${sender}：${text}${imageText}`;
+function isSelfGroupMessage(message) {
+  return message.post_type === "message_sent" ||
+    (Boolean(message.self_id) && String(message.user_id) === String(message.self_id));
 }
 
 function dedupeStrings(values) {
   return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
-}
-
-function isQwenOnlyContextAnchor(messages) {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message?.role !== "assistant") {
-      return message?.qwenOnly === true;
-    }
-  }
-  return false;
-}
-
-function getLatestGroupMemberMessage(messages) {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === "user") {
-      return messages[index];
-    }
-  }
-  return null;
 }
 
 async function onGroupMessage(message, client) {
@@ -652,12 +596,17 @@ async function onGroupMessage(message, client) {
 
   const sessionId = getSessionId(message);
   const text = getCleanMessageText(message);
+  let incomingEntry = recordIncomingGroupMessage(message, text);
+  if (isSelfGroupMessage(message)) {
+    return;
+  }
   const botMentioned = isMentioned(message);
   const {
     command: personaCommand,
     blockedByMissingMention,
   } = resolvePersonaCommandRequest(text, botMentioned);
   if (blockedByMissingMention) {
+    clearAmbientChatBuffer(groupId);
     return;
   }
   if (personaCommand) {
@@ -675,6 +624,7 @@ async function onGroupMessage(message, client) {
   }
   if (isHelpCommand(text)) {
     if (!botMentioned) {
+      clearAmbientChatBuffer(groupId);
       return;
     }
     clearAmbientChatBuffer(groupId);
@@ -690,14 +640,14 @@ async function onGroupMessage(message, client) {
     client,
   );
   const hasQwenForwardedContent = Boolean(forwarded);
-  const ambientDecisionText =
-    text || (hasQwenForwardedContent ? "[合并转发聊天记录]" : "");
   const canCollectAmbientChat = shouldCollectAmbientChat(
     message,
     text,
     hasQwenForwardedContent,
   );
-  const incomingEntry = recordIncomingGroupMessage(message, text, forwarded);
+  if (forwarded) {
+    incomingEntry = recordIncomingGroupMessage(message, text, forwarded);
+  }
   const incomingImagePrewarm = prewarmImageInsights(
     incomingEntry?.hasForwardedContent
       ? incomingEntry.qwenImages
@@ -735,39 +685,14 @@ async function onGroupMessage(message, client) {
 
   if (canCollectAmbientChat) {
     await collectAmbientChat(message, client);
-  } else {
-    clearAmbientChatBuffer(groupId);
-  }
-
-  if (shouldAmbientChat(message, ambientDecisionText)) {
-    if (isCoolingDown(groupId, config.ambientChatCooldownSeconds, ambientChatCooldowns)) {
-      return;
-    }
-
-    clearAmbientChatBuffer(groupId);
-    markCooldown(groupId, ambientChatCooldowns);
     try {
-      const contextualText = formatAmbientChatMessages(
-        getGroupConversationContext(groupId, config.ambientChatInstantMaxMessages),
-        "instant",
-      );
-      console.log(`[bot] ambient chat hit in group ${groupId}, user ${message.user_id}: ${contextualText}`);
-      const reply = await chatService.ambientReply(
-        getGroupConversationContext(groupId, config.ambientChatInstantMaxMessages),
-        {
-          ambientMode: "instant",
-          senderName: getSenderName(message),
-          ...getSelectedPersonaMeta(groupId, message.user_id),
-        },
-      );
-      await sendBotReply(client, groupId, reply, {
-        qwenOnly: incomingEntry?.qwenOnly === true,
-      });
+      await tryAmbientReply(groupId, "instant", client);
     } catch (error) {
       console.error("[ai] ambient chat failed:", error.message);
     }
     return;
   }
+  clearAmbientChatBuffer(groupId);
 
   if (!shouldChat(message)) {
     return;
@@ -800,22 +725,17 @@ async function onGroupMessage(message, client) {
     console.log(
       `[bot] chat hit in group ${groupId}, user ${message.user_id}, webSearch=${webSearch}, thinking=${thinking}: ${text}`,
     );
+    const contextMessages = getGroupConversationContext(groupId);
     const reply = await chatService.chat(sessionId, text, {
-      senderName: getSenderName(message),
       thinking,
       webSearch,
       images: extractImageSources(message),
       qwenForwardedContext: incomingEntry?.hasForwardedContent === true,
-      groupContextMessages: getGroupConversationContext(
-        groupId,
-        config.localQwenMaxHistoryMessages,
-      ),
-      ...getSelectedPersonaMeta(groupId, message.user_id),
+      groupContextMessages: contextMessages,
+      ...getGroupReplyMeta(groupId, contextMessages, getSelectedPersonaMeta),
     });
     try {
-      await sendBotReply(client, groupId, reply, {
-        qwenOnly: incomingEntry?.hasForwardedContent === true,
-      });
+      await sendBotReply(client, groupId, reply);
     } catch (error) {
       const chunk =
         Number.isInteger(error.chunkIndex) && Number.isInteger(error.chunkCount)
@@ -1203,7 +1123,7 @@ function truncateText(value, maxLength) {
   return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
 }
 
-const server = createOneBotServer(config, onGroupMessage);
+const server = createOneBotServer(config, onGroupMessage, recordOutgoingGroupMessage);
 chatService
   .start()
   .catch((error) => {

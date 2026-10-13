@@ -2,6 +2,7 @@ const dns = require("dns").promises;
 const crypto = require("crypto");
 const net = require("net");
 const path = require("path");
+const { DeepSeekHarnessWebToolRunner, usesDeepSeekHarness } = require("./deepseek-harness-web");
 
 const USER_AGENT = "sandstorm-qq-bot/1.0 web-search";
 const OPEN_WEBSEARCH_RUNTIME_BUNDLE = path.join(__dirname, "vendor", "open-websearch-runtime.cjs");
@@ -13,6 +14,9 @@ const MAX_HTTP_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 class WebToolRunner {
   constructor(config, options = {}) {
+    if (usesDeepSeekHarness(config)) {
+      return new DeepSeekHarnessWebToolRunner(config, options);
+    }
     this.config = config;
     this.fetch = options.fetch || globalThis.fetch;
     this.logger = options.logger || console;
