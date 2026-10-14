@@ -1,0 +1,32 @@
+{
+  "input": [
+    {
+      "role": "user",
+      "senderName": "小远",
+      "text": "盆栽叶子掉了，原因还没弄清。",
+      "userId": "小远",
+      "messageId": "no-guessed-blame-0",
+      "timestamp": 1
+    }
+  ],
+  "decision": false,
+  "reply": null,
+  "calls": [
+    {
+      "thinking": {
+        "type": "disabled"
+      },
+      "usage": {
+        "prompt_tokens": 1264,
+        "completion_tokens": 7,
+        "total_tokens": 1271,
+        "prompt_tokens_details": {
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 240
+      },
+      "answer": "{\"should_reply\":false}"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "status": "aborted",
+  "reason": "Missing JSON word in the newly introduced self-repeat prompt caused HTTP 400 responses. Process stopped after confirming protocol failure. Not evidence of successful duplicate prevention or naturalness.",
+  "correctedIn": "round-05-self-repeat"
+}

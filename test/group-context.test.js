@@ -58,27 +58,20 @@ test("messages with the same timestamp retain their arrival order", () => {
   assert.deepEqual(context.get("group-1").map((message) => message.messageId), ["a", "b", "c"]);
 });
 
-test("each reply uses the latest member's own persona or defaults, ignoring bot speech", () => {
+test("reply metadata follows the latest member without selecting a persona", () => {
   const context = new GroupConversationContext();
-  const selections = new Map([
-    ["group-1:alice", "Enterprise"],
-    ["group-1:carol", "Custom persona"],
-  ]);
-  const resolvePersona = (groupId, userId) => ({
-    personaPrompt: selections.get(`${groupId}:${userId}`) || "",
-  });
-  const meta = () => getGroupReplyMeta("group-1", context.get("group-1"), resolvePersona);
+  const meta = () => getGroupReplyMeta(context.get("group-1"));
 
   context.append("group-1", { messageId: "a", role: "user", userId: "alice", senderName: "Alice", timestamp: 10 });
-  assert.equal(meta().personaPrompt, "Enterprise");
+  assert.deepEqual(meta(), { senderName: "Alice" });
   context.append("group-1", { messageId: "b", role: "user", userId: "bob", senderName: "Bob", timestamp: 20 });
   context.append("group-1", { messageId: "bot", role: "assistant", text: "Enterprise reply", timestamp: 30 });
-  assert.deepEqual(meta(), { senderName: "Bob", personaPrompt: "" });
+  assert.deepEqual(meta(), { senderName: "Bob" });
   context.append("group-1", { messageId: "late", role: "user", userId: "alice", senderName: "Alice", timestamp: 15 });
-  assert.equal(meta().personaPrompt, "");
+  assert.deepEqual(meta(), { senderName: "Bob" });
   context.append("group-1", { messageId: "c", role: "user", userId: "carol", senderName: "Carol", timestamp: 40 });
-  assert.equal(meta().personaPrompt, "Custom persona");
-  assert.equal(getGroupReplyMeta("group-2", context.get("group-1"), resolvePersona).personaPrompt, "");
+  assert.deepEqual(meta(), { senderName: "Carol" });
+  assert.deepEqual(getGroupReplyMeta([]), { senderName: "" });
 });
 
 test("OneBot timestamps determine order and missing event time uses receive time", () => {

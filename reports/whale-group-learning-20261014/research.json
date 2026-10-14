@@ -1,0 +1,103 @@
+{
+  "reviewedOn": "2026-10-14",
+  "selectionMethod": "Read the actual persona and runtime prompts. Evaluate QQ group fit, natural character consistency, factual accuracy, practical question handling, and compatibility with learning human feedback. Stars are supplementary context, not a ranking metric.",
+  "selected": [
+    {
+      "repository": "https://github.com/K0nd1us/QQ-agent",
+      "persona": "https://github.com/K0nd1us/QQ-agent/blob/main/src/personas.js",
+      "groupRules": "https://github.com/K0nd1us/QQ-agent/blob/main/src/prompt.js",
+      "purpose": "A native QQ group member, with the original whale group card adapted to a QQ event-driven runtime.",
+      "strengths": [
+        "Addresses multiple speakers and quotations",
+        "Own opinions without constant agreement",
+        "Learns the current group's phrasing",
+        "Separates participation from reply phrasing",
+        "Explicit search and reading of sources"
+      ],
+      "problemsToCorrect": [
+        "Encourages useless or deliberately wrong answers in the name of naturalness",
+        "Repeated 1-10-character constraints",
+        "Examples invent real-life attendance and consumption",
+        "Tool names and message protocol differ from this bot",
+        "Some current runtime image/forwarding capabilities conflict with the persona text"
+      ],
+      "use": "Primary character and group-conversation reference; rewritten for this bot, retaining complete serious answers and verified capabilities."
+    },
+    {
+      "repository": "https://github.com/mtshang/make-your-qq-ai-group-member",
+      "persona": "https://github.com/mtshang/make-your-qq-ai-group-member/blob/main/templates/persona_dafeiyu.md",
+      "purpose": "Explicit DeepSeek whale QQ group-member card for AstrBot + Group Chat Plus.",
+      "strengths": [
+        "Specifically written for QQ groups",
+        "Minimal stage directions",
+        "Speaker and quote awareness",
+        "Group culture adaptation",
+        "Search answers can be longer than casual reactions"
+      ],
+      "problemsToCorrect": [
+        "Same hard brevity and deliberate nonsense-answer instructions",
+        "Claims of physical activity",
+        "Some conflicting emoji and participation requirements"
+      ],
+      "use": "Secondary QQ-specific reference; the two selected cards share the same lineage and are not independent evidence of effectiveness."
+    }
+  ],
+  "otherCandidates": [
+    {
+      "repository": "https://github.com/linsport/dsh-whale-persona",
+      "persona": "https://github.com/linsport/dsh-whale-persona/blob/main/人设原文.md",
+      "quality": "Good character motivations, error correction with evidence, and voice continuity during practical work. Full original read.",
+      "limits": "Designed for one-to-one coding companionship, with master relationship and rich action descriptions, rather than native group conversation.",
+      "use": "Supporting principle of consistent voice plus honest evidence; not the primary group prompt."
+    },
+    {
+      "repository": "https://github.com/huaizhuanghub/dsh-persona-dafeiyu",
+      "persona": "https://github.com/huaizhuanghub/dsh-persona-dafeiyu/blob/main/lib/index.js",
+      "quality": "Concise identity and an explicit accuracy boundary.",
+      "limits": "Singing, token-stealing jokes and deliberate small mistakes are prominent. Weak QQ group direction despite a higher star count than some candidates.",
+      "use": "Not selected."
+    },
+    {
+      "repository": "https://github.com/ERUIHNIYHBKBNF/dafeiyu-persona",
+      "persona": "https://github.com/ERUIHNIYHBKBNF/dafeiyu-persona/blob/main/dafeiyu/SKILL.md",
+      "quality": "Explicit correct-answer priority and serious-context exceptions.",
+      "limits": "Fixed brevity, scripted inner monologues and cute wrappers around serious answers may recreate the reported performance and narration problems.",
+      "use": "Not selected."
+    },
+    {
+      "repository": "https://github.com/Kaalia0912/dsh-whale-musume-persona",
+      "persona": "https://github.com/Kaalia0912/dsh-whale-musume-persona/blob/main/cordis.patch.yml",
+      "limits": "Every-sentence voice requirements, default master relationship, actions and reasoning-style instructions; designed for a coding assistant.",
+      "use": "Not selected."
+    },
+    {
+      "repository": "https://github.com/RelyLinYu/Xiaojingyu-QQbot",
+      "limits": "README confirms native QQ usage and two prompt sizes, but the implementation prompt could not be retrieved; not treated as an evaluated prompt.",
+      "use": "Discovery only."
+    },
+    {
+      "repository": "https://github.com/nanbengxian-cyber/dafeiyu-qq-bot",
+      "limits": "A substantial group-bot pipeline rather than one verified standalone persona card. README's performance figures have not been independently reproduced.",
+      "use": "Discovery only."
+    }
+  ],
+  "implementation": {
+    "defaultPrompt": "src/persona.js:DEFAULT_AI_PERSONA_PROMPT",
+    "learningPrompt": "src/group-chat-learning-prompt.js",
+    "learningInput": "Current learning_module with p IDs plus up to 50 chronological human/bot records with m IDs.",
+    "learningMode": "Always thinking enabled, high by default, no web tools or image reads.",
+    "learningRetention": "Unchanged prior rules can cite p IDs even without recent repetition. New or materially changed rules require current human m evidence.",
+    "teachingExample": "Understand and restate search results naturally while preserving necessary source citations and uncertainty; reject fabrication or blanket deletion of sources.",
+    "scope": "Default fixed persona for all members; no catalog, custom persona commands or selection cache. Existing group learning files retain their schema."
+  },
+  "evidenceLimit": "This source review is an engineering judgment, not human community ratings or a statistical prompt benchmark. Runtime validation is recorded separately.",
+  "followupChanges": {
+    "preferences": "User prioritizes lively QQ conversation, including playful nonsense; human echoes and all lengths allowed; own replies must not repeat. Prefers short and generally lazy typing as a non-mandatory tendency.",
+    "adaptation": "Condensed native QQ whale card; removed duplicate persona and broad expression/factual restrictions; broad draft review off. Local exact own-reply guard remains enabled; semantic review is disabled by default after repeatedly rejecting a legitimate follow-up. Prompt guidance discourages repeating one's own meaning or joke without suppressing normal follow-ups.",
+    "learning": "Existing module + chronological records; thinking high and 8192 budget; explicit reasonable teaching can be learned once. No blanket prohibition of human echoes or long sentences.",
+    "evaluation": "Full continuous 100-message simulations and frozen-history A/B, with subjective Codex review. Earlier accuracy-oriented ratings are archived and not used as the final casual-chat criterion.",
+    "reports": "reports/whale-group-learning-20261014/npc/",
+    "participation": "Explicit active interest in whole public discussion, including 2-3 humans talking without bot intent. Reply-method learning no longer gates interest. Serial accumulation retains later messages, and continuous traffic cannot indefinitely postpone judging.",
+    "finalReview": "reports/whale-group-learning-20261014/npc/review.json"
+  }
+}

@@ -1,0 +1,25 @@
+{
+    "checkedAt":  "2026-10-14T09:22:59.7668627Z",
+    "targets":  [
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\release",
+                        "noReparsePoint":  true,
+                        "noLiveState":  true
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\dist\\sandstorm-qq-bot.exe",
+                        "noReparsePoint":  true,
+                        "noLiveState":  true
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy",
+                        "noReparsePoint":  true,
+                        "noLiveState":  true
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy.zip",
+                        "noReparsePoint":  true,
+                        "noLiveState":  true
+                    }
+                ]
+}

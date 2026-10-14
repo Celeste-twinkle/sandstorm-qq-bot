@@ -54,11 +54,10 @@ function getLatestGroupMemberMessage(messages) {
     .findLast((message) => message?.role === "user") || null;
 }
 
-function getGroupReplyMeta(groupId, messages, resolvePersona) {
+function getGroupReplyMeta(messages) {
   const anchor = getLatestGroupMemberMessage(messages);
   return {
     senderName: anchor?.senderName || "",
-    ...resolvePersona(groupId, anchor?.userId || ""),
   };
 }
 

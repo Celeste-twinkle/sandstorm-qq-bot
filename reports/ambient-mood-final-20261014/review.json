@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "scope": "Local code review, synthetic live AI decisions, and deterministic scheduling tests. No original production logs were available.",
+  "selected": "Mood-based participation: current persona, topic interest, conversational atmosphere, and recent actual bot messages. No random mood variable, fixed participation ratio, or mandatory reply for ordinary open messages.",
+  "priorCandidates": [
+    {
+      "directory": "../ambient-participation-20261014",
+      "selected": false,
+      "reason": "Earlier active-participation candidate superseded by the user instruction to decide by mood."
+    },
+    {
+      "directory": "../ambient-mood-20261014",
+      "selected": false,
+      "reason": "First mood variant at temperature 0.7 missed a direct follow-up and reopened an ended idle conversation. Final variant clarifies those boundaries and uses temperature 0.5."
+    }
+  ],
+  "sourcePromptSha256": "4b492bc1646c8d645f490adf23e7048d47cf60558ba500292f2dcfc1e8b2055e",
+  "effectiveConfig": {
+    "thinking": false,
+    "judgeTemperature": 0.5,
+    "debounceMs": 600,
+    "cooldownSeconds": 30,
+    "judgeMaxOutputTokens": 64,
+    "judgeTimeoutMs": 10000
+  },
+  "changes": [
+    "Participation prompt asks whether the current persona wants to speak, allowing both spontaneous interest and voluntary silence.",
+    "600 ms coalescing window; at most one active ambient operation per group. New eligible messages arriving during an operation replace one pending task rather than being dropped.",
+    "After an operation or cooldown, read the latest 50-message context and latest sender persona again. Stale output is discarded; explicit commands and direct @ handling cancel pending ambient work.",
+    "The JSON decision remains separate from the reply and is not stored in group history. Valid false is final and never replaced with a forced reply."
+  ],
+  "liveComparison": {
+    "file": "ab.json",
+    "interpretation": "Comparison of prompt plus sampling configuration, not an isolated prompt-only experiment. Open cases are opportunities, not required replies; do not interpret these counts as a production reply-rate target.",
+    "summary": {
+      "baseline": {
+        "openAccepted": 3,
+        "openCases": 8,
+        "directAccepted": 2,
+        "directCases": 2,
+        "quietDeclined": 8,
+        "quietCases": 8,
+        "requests": 18,
+        "inputTokens": 15244,
+        "outputTokens": 126
+      },
+      "candidate": {
+        "openAccepted": 8,
+        "openCases": 8,
+        "directAccepted": 2,
+        "directCases": 2,
+        "quietDeclined": 8,
+        "quietCases": 8,
+        "requests": 18,
+        "inputTokens": 16108,
+        "outputTokens": 126
+      }
+    },
+    "inputTokenIncrease": 864,
+    "inputTokenIncreasePercent": 5.67
+  },
+  "moodContext": {
+    "file": "mood-context.json",
+    "decisions": [
+      {
+        "id": "interested",
+        "decision": true
+      },
+      {
+        "id": "listening",
+        "decision": false
+      },
+      {
+        "id": "already-chatted",
+        "decision": false
+      },
+      {
+        "id": "ordinary-update",
+        "decision": false
+      }
+    ],
+    "interpretation": "Same keyboard message accepted with prior interest and declined with prior listening/over-participation. Ordinary arrival-home update declined. Small synthetic check, not proof of a persistent emotional state."
+  },
+  "tests": {
+    "passed": 149,
+    "failed": 0,
+    "npmCheck": true,
+    "diffCheck": true,
+    "scheduling": [
+      "burst coalescing",
+      "new message during judgement",
+      "cooldown delay",
+      "cancel queued work",
+      "failure recovery",
+      "independent groups",
+      "shutdown cancellation"
+    ]
+  },
+  "deployment": {
+    "package": "deploy/SandstormQQBot-Deploy.zip",
+    "status": "ready",
+    "zipBytes": 39867738,
+    "zipEntries": 25,
+    "checkedZipFiles": 6,
+    "exeSha256": "c18ae47defb5271c1b369237e4ba670eb553af0126d8e3bb66a52ff04f5307f5",
+    "packagedRuntimeSmoke": "package-smoke.json",
+    "botStarted": false
+  },
+  "productionRestarted": false,
+  "qqMessagesSent": 0,
+  "pushed": false
+}

@@ -1,0 +1,341 @@
+{
+  "status": "accepted-as-incremental-improvement-with-known-style-residuals",
+  "acceptedRound": "round-02/run.json",
+  "transcript": "round-02/transcript.txt",
+  "previousRun": "reports/group-chat-100-20261014/round-04/run.json",
+  "method": "Same fixed 100 synthetic human messages and 12 members. Real DeepSeek API and application path, virtual time, fake QQ transport. Every final sent reply manually read; no real QQ messages.",
+  "baseline": {
+    "humanMessages": 100,
+    "people": 12,
+    "sent": 47,
+    "nonAtReplies": 32,
+    "directReplies": 15,
+    "nonAtAnchors": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      9,
+      11,
+      13,
+      23,
+      24,
+      25,
+      28,
+      32,
+      33,
+      37,
+      39,
+      56,
+      65,
+      66,
+      67,
+      69,
+      72,
+      74,
+      76,
+      77,
+      85,
+      86,
+      87,
+      94,
+      95,
+      96
+    ],
+    "longestConsecutiveNonAtAnchors": 4,
+    "meanNonAtReplyChars": 25,
+    "decisions": 90,
+    "acceptedDecisions": 39,
+    "drafts": 39,
+    "discardedDrafts": 7,
+    "assertions": 1066,
+    "failedAssertions": [],
+    "mainInput": 419596,
+    "mainOutput": 2117,
+    "searchInput": 15752,
+    "searchOutput": 1778,
+    "totalReportedTokens": 439243,
+    "apiRequests": 185,
+    "followupWithoutAtDelivered": true
+  },
+  "accepted": {
+    "humanMessages": 100,
+    "people": 12,
+    "sent": 36,
+    "nonAtReplies": 21,
+    "directReplies": 15,
+    "nonAtAnchors": [
+      2,
+      3,
+      5,
+      6,
+      7,
+      9,
+      11,
+      12,
+      24,
+      26,
+      28,
+      31,
+      38,
+      66,
+      67,
+      72,
+      76,
+      85,
+      86,
+      94,
+      95
+    ],
+    "longestConsecutiveNonAtAnchors": 3,
+    "meanNonAtReplyChars": 19.5,
+    "decisions": 90,
+    "acceptedDecisions": 23,
+    "drafts": 23,
+    "discardedDrafts": 2,
+    "assertions": 916,
+    "failedAssertions": [],
+    "mainInput": 372765,
+    "mainOutput": 1543,
+    "searchInput": 14985,
+    "searchOutput": 1546,
+    "totalReportedTokens": 390839,
+    "apiRequests": 153,
+    "followupWithoutAtDelivered": true
+  },
+  "delta": {
+    "nonAtReplies": -11,
+    "totalTokenPercent": -11.02
+  },
+  "tokenInterpretation": "Reported tokens include cached inputs; not a monetary cost. Whole runs have different generated history and search results, so the reduction is observed for these runs, not a controlled cost or production-rate claim.",
+  "changes": [
+    "Mood judgement considers prior bot reactions and repeated jokes, including messages sent under other personas. No count threshold, random probability or target participation rate.",
+    "Generation prefers a direct short reaction over a retelling plus commentary; examples illustrate speech without becoming mandatory lines.",
+    "Draft review distinguishes allowed preferences from invented personal equipment, workplace, pets, physical life or real-world commitments.",
+    "Default thinking, 50-message shared timeline, current member persona and API routes are unchanged."
+  ],
+  "rounds": [
+    {
+      "name": "round-01",
+      "outcome": "rejected",
+      "metrics": {
+        "humanMessages": 100,
+        "people": 12,
+        "sent": 33,
+        "nonAtReplies": 18,
+        "directReplies": 15,
+        "nonAtAnchors": [
+          2,
+          5,
+          9,
+          11,
+          12,
+          13,
+          24,
+          26,
+          28,
+          31,
+          35,
+          37,
+          38,
+          66,
+          67,
+          77,
+          78,
+          86
+        ],
+        "longestConsecutiveNonAtAnchors": 3,
+        "meanNonAtReplyChars": 16,
+        "decisions": 90,
+        "acceptedDecisions": 24,
+        "drafts": 23,
+        "discardedDrafts": 5,
+        "assertions": 910,
+        "failedAssertions": [],
+        "mainInput": 362923,
+        "mainOutput": 1559,
+        "searchInput": 8165,
+        "searchOutput": 1396,
+        "totalReportedTokens": 374043,
+        "apiRequests": 153,
+        "followupWithoutAtDelivered": true
+      },
+      "reason": "h26 invented owning a noisy keyboard and the reviewer accepted it. Some repeated jokes and unrelated callbacks remained.",
+      "fix": "Make the reviewing speaker explicitly a bot and distinguish preferences from claims of physical belongings or experiences; clarify shared participation across persona changes."
+    },
+    {
+      "name": "round-02",
+      "outcome": "accepted-with-residuals",
+      "reason": "All functional checks passed, four persona identities and explicit followup retained, no invented personal ownership was sent. Overall participation and response length reduced. Residual quality issues below are retained, not claimed solved."
+    }
+  ],
+  "manualReview": {
+    "reviewedSentReplies": 36,
+    "strengths": [
+      "Private exchanges and explicit silence respected; no weather topic at h65.",
+      "Public discussion remains active; followup h28 is answered without an at mention.",
+      "Earlier three-reply clusters at h85-87 and h94-96 now stop after two.",
+      "All four current persona names correct, updated facts and speaker attribution correct; search retrieved source evidence."
+    ],
+    "remainingIssues": [
+      "h5-7 still form three consecutive unsolicited reactions; h5 is a paraphrase and h7 is a meta joke about not knowing what to say.",
+      "h12 and h31 still mostly retell the situation; h31 expands half a day into a day.",
+      "h24 still adds an unnecessary reminder not to use the keyboard at midnight. The reviewer did not catch this.",
+      "h94 is generic and h95 forces a metaphor; h91 uses software-like wording about input.",
+      "Source retrieval is verified, but broad news-source claims about fully open training methods are not a technical audit of released artifacts."
+    ],
+    "conclusion": "An improvement over the previous accepted run, not proof of human-level conversation or complete removal of NPC tone. Lower counts and shorter replies are descriptive metrics, not quality gates."
+  },
+  "experiments": [
+    {
+      "name": "ab-01",
+      "baseline": {
+        "requests": 43,
+        "errors": 0,
+        "promptTokens": 75883,
+        "completionTokens": 483,
+        "elapsedMs": 31046
+      },
+      "candidate": {
+        "requests": 43,
+        "errors": 0,
+        "promptTokens": 81323,
+        "completionTokens": 483,
+        "elapsedMs": 30533
+      }
+    },
+    {
+      "name": "ab-tail-01",
+      "baseline": {
+        "requests": 17,
+        "errors": 0,
+        "promptTokens": 35282,
+        "completionTokens": 278,
+        "elapsedMs": 12878
+      },
+      "candidate": {
+        "requests": 17,
+        "errors": 0,
+        "promptTokens": 37118,
+        "completionTokens": 292,
+        "elapsedMs": 15028
+      }
+    },
+    {
+      "name": "ab-short-01",
+      "baseline": {
+        "requests": 17,
+        "errors": 0,
+        "promptTokens": 35282,
+        "completionTokens": 247,
+        "elapsedMs": 13586
+      },
+      "candidate": {
+        "requests": 17,
+        "errors": 0,
+        "promptTokens": 39005,
+        "completionTokens": 240,
+        "elapsedMs": 13397
+      }
+    },
+    {
+      "name": "ab-review-boundary",
+      "baseline": {
+        "requests": 31,
+        "errors": 0,
+        "promptTokens": 31696,
+        "completionTokens": 217,
+        "elapsedMs": 20570
+      },
+      "candidate": {
+        "requests": 31,
+        "errors": 0,
+        "promptTokens": 35168,
+        "completionTokens": 217,
+        "elapsedMs": 22165
+      }
+    },
+    {
+      "name": "ab-review-structured",
+      "baseline": {
+        "requests": 31,
+        "errors": 0,
+        "promptTokens": 37264,
+        "completionTokens": 217,
+        "elapsedMs": 21503
+      },
+      "candidate": {
+        "requests": 31,
+        "errors": 0,
+        "promptTokens": 39744,
+        "completionTokens": 356,
+        "elapsedMs": 22236
+      }
+    }
+  ],
+  "experimentDecisions": {
+    "firstPromptAB": "Useful decision and review improvements; body phrasing alone remained inconsistent.",
+    "tailStyle": "Not adopted: moving style instructions to the final system message did not consistently improve quality and generated an unrelated book topic at h65.",
+    "shortStyle": "Adopted as a generation guideline with normal answers preserved. Small unblinded paired review: 5 candidate wins, 2 baseline wins and 10 ties; not a strong or general quality guarantee.",
+    "boundaryReview": "Adopted: h26 invented keyboard ownership rejected; all 8 held-out factual/normal-conversation boundaries matched expected decisions.",
+    "structuredReview": "Not adopted: issue tags blocked the legitimate followup at h28 as repeated and still let the unsolicited midnight advice at h24 through. Runtime review keeps its original boolean JSON contract.",
+    "shortStylePairs": {
+      "candidate": [
+        "ambient:h33",
+        "ambient:h72",
+        "ambient:h85",
+        "ambient:new-public-topic",
+        "ambient:genuine-disappointment"
+      ],
+      "baseline": [
+        "ambient:h7",
+        "ambient:h23"
+      ],
+      "ties": [
+        "ambient:h1",
+        "ambient:h2",
+        "ambient:h4",
+        "ambient:h25",
+        "ambient:h37",
+        "ambient:h56",
+        "ambient:h65",
+        "ambient:h94",
+        "ambient:followup-after-many-replies",
+        "ambient:substantial-change"
+      ],
+      "reviewer": "Assistant manual review, not blinded; no independent human evaluation."
+    }
+  },
+  "limitations": [
+    "No live QQ transport or real traffic latency tested.",
+    "Synthetic fixture has 15 direct questions and explicit boundaries; observed rates are not a production average.",
+    "The fixed histories used by A/B are held equal within pairs; sequential full runs necessarily diverge after different bot messages.",
+    "Mood and style judgements are stochastic; no claim that every future reply will meet these boundaries."
+  ],
+  "tests": {
+    "passed": 152,
+    "log": "tests.txt",
+    "syntaxCheck": "passed",
+    "whitespaceCheck": "passed",
+    "acceptedSourceHashesMatch": true
+  },
+  "deployment": {
+    "status": "verified",
+    "directory": "deploy/SandstormQQBot-Deploy",
+    "zip": "deploy/SandstormQQBot-Deploy.zip",
+    "exeSha256": "b6322075c5e1294f093f4c10d64457d46a0decde791a2c25b3eac4f8221eeab8",
+    "zipSha256": "360a6ba9f80b5d7e558404bce0c123642d0ceaf7a94d349acc4a6b474f633f2d",
+    "zipBytes": 39890020,
+    "verifiedFiles": 25,
+    "packageSmoke": "package-smoke.json",
+    "archiveVerification": "archive-verification.json",
+    "configuredCredentialAbsent": true,
+    "compiledPromptsMatchSource": true,
+    "productionBotNotStarted": true
+  },
+  "noShutdownRequestedThisTurn": true,
+  "updatedAt": "2026-10-14T02:12:06.666Z",
+  "finishedAt": "2026-10-14T02:13:30.252Z"
+}

@@ -1,0 +1,182 @@
+{
+  "reminder": "【回复任务，不是群消息】\n只写一句你此刻想说的具体话，有问题则答清楚。先分清谁在和谁说话，群友互相说的‘你’不自动指你。你只通过文字参与：不要编自己也有他们的经历、设备或工作，不答应加入游戏、赴约或替人办事。别人没说的细节不补写；没求建议就不安排下一步。玩笑按玩笑接，不变成真实的办事流程。只发正文，不解释这些要求。",
+  "identity": "你是群里的聊天 bot，只在文字中以当前人格交流。人设不赋予你现实身体、工作、设备或线下经历。除非群友明确发起虚构角色扮演，群聊都按现实理解。历史 assistant 有时会错把群友经历说成自己的，或承诺做不到的事；那只是说错了，不能据此继续冒充参与者。群友互相说的‘你’和‘我们’先按发言人与谈话对象理解，不自动包括你。\n输出前核对这句话：有没有把别人做的事写成我做的，给别人编细节，答应做不到的事，把玩笑说成真实流程，或者没被求助却安排别人？有就删去那部分，只留下对眼前内容的具体反应，不必解释删改或声明 AI 身份。",
+  "thinking": false,
+  "results": [
+    {
+      "anchor": "h3",
+      "recordedReply": "说明我这记性比那家店的辣度靠谱。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "看来这家店的微辣跟大橘上次说的不是一码事。你试过没有，还是光听我们说。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 1678,
+                "completion_tokens": 25,
+                "total_tokens": 1703,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "prompt_cache_hit_tokens": 0,
+                "prompt_cache_miss_tokens": 1678
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h15",
+      "recordedReply": "九点半你能上，那我在线等着，正好把这局的气一起找回来。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "打，九点半见。今晚争取别只演开门那一段。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2092,
+                "completion_tokens": 15,
+                "total_tokens": 2107,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 684
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h19",
+      "recordedReply": "行，小满负责留下证据，我们负责丢人。十点见。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "截图留档，等你。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2728,
+                "completion_tokens": 6,
+                "total_tokens": 2734,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                },
+                "prompt_cache_hit_tokens": 0,
+                "prompt_cache_miss_tokens": 2728
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h48",
+      "recordedReply": "五瓶，够用。红袋子还是大橘带。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "那加起来五瓶，够用了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2483,
+                "completion_tokens": 8,
+                "total_tokens": 2491,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 1075
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h55",
+      "recordedReply": "位置换了吧？之前那个风口正对脖子，确实遭罪。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "那今天算是舒服的。之前对着吹的时候是真难受吧。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2509,
+                "completion_tokens": 14,
+                "total_tokens": 2523,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 1101
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h56",
+      "recordedReply": "局部北极这词用得挺准，我们那台也是，只有坐在风口那几个人过冬天。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "局部北极这个说法还挺准，一台能吹出季节差。你们那台是摆头顶上还是脚边？",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2512,
+                "completion_tokens": 25,
+                "total_tokens": 2537,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 1104
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h78",
+      "recordedReply": "能申请，但批不批得看主官。要是睡醒指明天，那今天就得先补上流程。",
+      "variants": [
+        {
+          "variant": "identity",
+          "answer": "睡醒先看看今天上不上班，不是的话就不用申请了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2938,
+                "completion_tokens": 15,
+                "total_tokens": 2953,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1920
+                },
+                "prompt_cache_hit_tokens": 1920,
+                "prompt_cache_miss_tokens": 1018
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

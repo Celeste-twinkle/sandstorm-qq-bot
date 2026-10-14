@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "runtime": "v22.22.3",
+  "modelRequests": 4,
+  "executedTools": [
+    "web_search",
+    "web_fetch"
+  ],
+  "noNetwork": true,
+  "noQQConnection": true,
+  "exeSha256": "fb8ccd1b26390a3bf9e725e41abd001db209cedff421ea88ce1023b5ec764b5f",
+  "date": "2026-10-13T16:47:51.869Z"
+}

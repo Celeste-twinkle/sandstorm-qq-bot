@@ -14,13 +14,14 @@ if (-not (Test-Path $napcatRuntime)) {
 }
 
 npm run release
+if ($LASTEXITCODE -ne 0) { throw "Release build failed; deploy package was not replaced" }
 
 if (Test-Path $packageDir) {
-  Remove-Item $packageDir -Recurse -Force
+  Remove-Item -LiteralPath $packageDir -Recurse -Force
 }
 
 if (Test-Path $packageZip) {
-  Remove-Item $packageZip -Force
+  Remove-Item -LiteralPath $packageZip -Force
 }
 
 New-Item -ItemType Directory -Path $packageDir -Force | Out-Null

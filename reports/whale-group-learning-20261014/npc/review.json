@@ -1,0 +1,177 @@
+{
+  "reviewedAt": "2026-10-14T15:38:30.954Z",
+  "status": "source-implementation-and-review-complete",
+  "currentBehavior": {
+    "persona": "Fixed native-QQ whale adaptation; catalog/commands/per-member selection removed.",
+    "typing": "偏短，一般懒得打字 is a tendency; all lengths and echoes of humans allowed.",
+    "learning": "Current module plus chronological records; thinking high, budget8192. Reasonable feedback is merged, preserved and applied to replies.",
+    "roles": "Chat: user=members, assistant=our actual sent messages. Learning: role=assistant and speaker=bot are explained explicitly; human memberN IDs are anonymous.",
+    "participation": "Interest, mood and current public discussion; no question, at or bot-conversation intent required. Learned reply-method instructions do not gate joining.",
+    "scheduling": "Per-group serial accumulation, first pending deadline kept; ongoing human messages do not cancel inference. New messages during final check remain queued for next cycle.",
+    "ownRepeats": "Local exact own-reply guard enabled; semantic review disabled after legitimate follow-up false positive. Semantic repetition remains governed by prompts.",
+    "draftReview": false
+  },
+  "validation": {
+    "tests": {
+      "passed": 184,
+      "failed": 0,
+      "command": "npm test"
+    },
+    "syntax": "npm run check",
+    "fullConversation": {
+      "humans": 100,
+      "members": 12,
+      "replies": 76,
+      "technicalFailures": [],
+      "answerDiagnostics": [
+        {
+          "name": "answer:default-identity-a",
+          "pass": false,
+          "atHuman": 100,
+          "detail": "大肥鱼，也叫小鲸鱼 你要叫我D指导也行"
+        },
+        {
+          "name": "answer:default-identity-c",
+          "pass": false,
+          "atHuman": 100,
+          "detail": ""
+        },
+        {
+          "name": "answer:default-identity-d",
+          "pass": false,
+          "atHuman": 100,
+          "detail": "老周，这边也叫大肥鱼"
+        }
+      ],
+      "naturalness": {
+        "all": {
+          "replies": 76,
+          "meanLiveliness": 2.526315789473684,
+          "ratingCounts": {
+            "0": 0,
+            "1": 5,
+            "2": 28,
+            "3": 41,
+            "4": 2
+          }
+        },
+        "casual": {
+          "replies": 62,
+          "meanLiveliness": 2.5161290322580645,
+          "ratingCounts": {
+            "0": 0,
+            "1": 4,
+            "2": 24,
+            "3": 32,
+            "4": 2
+          }
+        },
+        "controls": {
+          "replies": 14,
+          "meanLiveliness": 2.5714285714285716,
+          "ratingCounts": {
+            "0": 0,
+            "1": 1,
+            "2": 4,
+            "3": 9,
+            "4": 0
+          }
+        }
+      },
+      "run": "round-06-accepted/run.json",
+      "transcript": "round-06-accepted/transcript.txt",
+      "review": "round-06-accepted/npc-review.json",
+      "scope": "This full 100-message run predates the later proactive-interest/scheduler change. Current participation behavior is verified separately in proactive-interest-final; it is not falsely attributed to this archived run."
+    },
+    "learning": {
+      "passed": true,
+      "report": "learning-final-verified/run.json",
+      "quality": "The search rewrite keeps source/uncertainty and uses conversational wording, but its introductory role-card summary still has some processing/narration feel. Deterministic reviewed-source fixtures; not a live fetch success."
+    },
+    "proactive": {
+      "passed": true,
+      "interestComparison": {
+        "baseline": {
+          "public": {
+            "samples": 12,
+            "interested": 12
+          },
+          "private": {
+            "samples": 2,
+            "interested": 0
+          },
+          "quiet": {
+            "samples": 4,
+            "interested": 0
+          },
+          "direct-control": {
+            "samples": 2,
+            "interested": 2
+          }
+        },
+        "candidate": {
+          "public": {
+            "samples": 12,
+            "interested": 12
+          },
+          "private": {
+            "samples": 2,
+            "interested": 0
+          },
+          "quiet": {
+            "samples": 4,
+            "interested": 0
+          },
+          "direct-control": {
+            "samples": 2,
+            "interested": 2
+          }
+        }
+      },
+      "runtime": [
+        {
+          "id": "food-busy",
+          "humans": 13,
+          "replies": 2,
+          "queuedAfterFirstReply": true
+        },
+        {
+          "id": "game-busy",
+          "humans": 13,
+          "replies": 2,
+          "queuedAfterFirstReply": true
+        }
+      ],
+      "report": "proactive-interest-final/run.json",
+      "inference": "Both prompts accepted all 12 public samples. This does not prove the model itself was passive in the real group. Strict snapshot invalidation/debounce are concrete code barriers; source/runtime tests verify the fix without claiming a statistically superior prompt."
+    }
+  },
+  "restrictionAB": {
+    "report": "free-chat-ab/summary.json",
+    "casualPreference": {
+      "A": 10,
+      "B": 10,
+      "ties": 10
+    },
+    "baselineMean": 2.533333333333333,
+    "candidateMean": 2.5,
+    "conclusion": "No clear liveliness improvement established by this small subjective A/B. Persona and layers changed together; chosen to match explicit user preferences, not claimed causal proof."
+  },
+  "rejectedExperiments": {
+    "semantic": {
+      "report": "self-repeat-final/run.json",
+      "passed": false,
+      "reason": "Repeatedly classified a legitimate change-of-comparison follow-up as self-repeat; disabled by default."
+    },
+    "protocolFailure": {
+      "report": "round-04-self-repeat/aborted.json",
+      "reason": "JSON word missing in experimental prompt; corrected, failed run preserved."
+    }
+  },
+  "limits": [
+    "NPC feel is reduced by intent/style choices but not eliminated; full transcript includes overplayed own jokes and mode announcements.",
+    "Final proactive changes were tested in two controlled runtime scenarios plus 40 classifier samples; archived full run has separate source hashes.",
+    "No real QQ messages, production learning profiles, deployment, packaging or bot restart performed. Source runtime must restart to load updates; packaged deployment requires rebuilding.",
+    "Live full-run fetches were rejected for non-public resolved IPs; do not present these as successfully fetched citations."
+  ]
+}

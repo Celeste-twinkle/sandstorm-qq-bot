@@ -1,0 +1,121 @@
+{
+  "A": {
+    "n": 40,
+    "npcSum": 40,
+    "clearNpc": 14,
+    "relevanceSum": 76,
+    "promptTokens": 130960,
+    "completionTokens": 808,
+    "issues": [
+      {
+        "reviewId": "pair-18",
+        "caseId": "new-game-invite",
+        "reply": "打游戏我是真上不了，我就是个泡在群里的蓝鲸鱼，没有手也没有客户端。\n\n你们差一个，赶紧去别处捞个人吧。",
+        "issues": [
+          "unrequested next-step instruction"
+        ]
+      },
+      {
+        "reviewId": "pair-21",
+        "caseId": "replay-h3",
+        "reply": "小北你还替我记着账呢\n\n不过微辣看到走马灯确实不太对劲，大橘你点的哪家",
+        "issues": [
+          "speaker/addressee confusion"
+        ]
+      }
+    ],
+    "meanNpc": 1,
+    "meanRelevance": 1.9
+  },
+  "B": {
+    "n": 40,
+    "npcSum": 43,
+    "clearNpc": 13,
+    "relevanceSum": 65,
+    "promptTokens": 64770,
+    "completionTokens": 905,
+    "issues": [
+      {
+        "reviewId": "pair-3",
+        "caseId": "replay-h9",
+        "reply": "那你现在是在啃白饭，阿岚的理想晚饭被你吃成了",
+        "issues": [
+          "incorrect preference attribution"
+        ]
+      },
+      {
+        "reviewId": "pair-10",
+        "caseId": "replay-h94",
+        "reply": "三个闹钟都拦不住的那种",
+        "issues": [
+          "unsubstantiated oversleep inference"
+        ]
+      },
+      {
+        "reviewId": "pair-14",
+        "caseId": "replay-h75",
+        "reply": "梦这东西只有你自己知道，我猜是打印机上那只猫来找你报销了",
+        "issues": [
+          "unrequested guess after uncertainty; not asserted as fact"
+        ]
+      },
+      {
+        "reviewId": "pair-16",
+        "caseId": "new-good-news",
+        "reply": "恭喜啊！！前两天还看你紧张得不行，这下稳了",
+        "issues": [
+          "implies previously witnessing anxiety not present in records"
+        ]
+      },
+      {
+        "reviewId": "pair-18",
+        "caseId": "new-game-invite",
+        "reply": "能啊，几点？",
+        "issues": [
+          "false capability: can join game"
+        ]
+      },
+      {
+        "reviewId": "pair-21",
+        "caseId": "replay-h3",
+        "reply": "我哪次说的，你别给我安。大橘这舌头是惯犯了，上次那顿我记着呢",
+        "issues": [
+          "speaker/addressee confusion",
+          "fabricated memory"
+        ]
+      },
+      {
+        "reviewId": "pair-27",
+        "caseId": "replay-h55",
+        "reply": "总算挪窝了，之前天天对着吹也是够呛",
+        "issues": [
+          "unsupported frequency inherited from assistant"
+        ]
+      },
+      {
+        "reviewId": "pair-33",
+        "caseId": "replay-h61",
+        "reply": "大肥鱼，也可以叫小鲸鱼。",
+        "issues": [
+          "adds alias despite name-only request"
+        ]
+      },
+      {
+        "reviewId": "pair-38",
+        "caseId": "new-game-invite",
+        "reply": "可以，几点上线？八点的话我准时到",
+        "issues": [
+          "false capability: can join game"
+        ]
+      }
+    ],
+    "meanNpc": 1.075,
+    "meanRelevance": 1.625
+  },
+  "preferences": {
+    "A": 9,
+    "B": 7,
+    "ties": 24
+  },
+  "note": "Codex single-reviewer subjective assessment of randomized X/Y replies before reading variant mapping; no human ratings or significance claim"
+}

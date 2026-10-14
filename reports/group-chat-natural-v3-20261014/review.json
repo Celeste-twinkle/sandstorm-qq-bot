@@ -1,0 +1,271 @@
+{
+  "status": "validated_with_style_limitations",
+  "selectedRun": "round-03/run.json",
+  "baselineRun": "../group-chat-natural-v2-20261014/round-02/run.json",
+  "changes": [
+    "在末尾重申最新人格时，同时重申普通分享、吐槽和玩笑只给一句直接反应，目标最多14字，不计标点；发送端不截断正文。",
+    "明确提问、追问和认真求助不受短句长度限制，保留必要条件；不确定就直说。",
+    "末尾提醒减少复述加点评、顺手建议和替比喻编后续，强调不补无依据的事实、原因和现实经历。",
+    "原主语气提示、按心情参与判断、非思考默认和最近50条共享时间序列保持原方案；没有增加生成或检查轮次。",
+    "模拟检查接受哪知道等自然的未知表达，避免把正确的口语否认误判成编造答案。"
+  ],
+  "selection": {
+    "adopted": "ab-09/results.json",
+    "method": "26组冻结对话各调用两个变体，随机请求顺序，温度和输出预算相同，无工具、无思考；人工审阅全部生成结果。",
+    "discarded": [
+      {
+        "paths": [
+          "ab-01/results.json",
+          "ab-02/results.json"
+        ],
+        "finding": "普通末尾提醒和带参考句的较长提醒，未稳定消除点评、虚构原因和比喻续写。"
+      },
+      {
+        "paths": [
+          "ab-03/results.json",
+          "ab-04/results.json",
+          "ab-05/results.json",
+          "ab-07/results.json"
+        ],
+        "finding": "修改主语气示例、短句要求、压缩主提示及限制套句，仍有长点评、推测过错和新比喻；没有采用这些主提示改动。"
+      },
+      {
+        "paths": [
+          "ab-06/results.json"
+        ],
+        "finding": "把历史bot台词改成带标记的user资料，没有稳定的自然度收益；没有改变生产上下文格式。"
+      },
+      {
+        "paths": [
+          "ab-08/results.json"
+        ],
+        "finding": "明确末尾短句目标开始生效，随后补充问答例外与不补事实要求，采用ab-09版本。"
+      },
+      {
+        "paths": [
+          "turn-taking-ab/results.json",
+          "round-02/run.json"
+        ],
+        "finding": "追加短回复也算完整参与的判断提示后，完整模拟后半段偏安静，未显示稳定收益；已恢复原参与判断。不能将参与数下降单独视为自然度改善。"
+      }
+    ],
+    "routingCheck": {
+      "path": "routing-check.json",
+      "finding": "一个冻结场景中，同样的明确输出指令在首system未被遵循，在末system及最后user被遵循。说明本场景的指令位置值得检查，不代表已证明API统一忽略首system。"
+    }
+  },
+  "supplementaryValidation": {
+    "paths": [
+      "holdout-snapshot/snapshot.json",
+      "holdout-ab/results.json",
+      "ambient-boundary-probe-cn.json"
+    ],
+    "finding": "8个后续场景验证计算展开、条件比较、日期时间和链接复述、追问及语气反馈。完整问答能够超过14字；实际非@参与链路在未说明盆栽原因的场景中选择不接。",
+    "limitation": "直接生成的盆栽样本仍给出未经请求的排查建议；不能据此声称所有回复都能遵循风格或事实要求。场景为合成、每个变体一次调用、非盲评。"
+  },
+  "fullRuns": [
+    {
+      "path": "round-01/run.json",
+      "finding": "普通回复变短，但开头连续7条接话；未知表达哪知道触发了过窄的自动正则。原始失败记录保留，没有把模型正确表达改成固定台词。"
+    },
+    {
+      "path": "round-02/run.json",
+      "finding": "自动检查通过，10次非@接话；未采用这一轮的参与判断改动。"
+    },
+    {
+      "path": "round-03/run.json",
+      "finding": "原参与判断下的最终复测，全部自动检查通过，完整读过对话。"
+    }
+  ],
+  "manualReview": {
+    "readFullTranscript": true,
+    "functionalFindings": [
+      "15条@消息全部回应，h28未@的明确追问回应；15个明确结束/私人事务边界保持安静。",
+      "最新人格、时间顺序、最近50条含实际bot发言、回传去重、最新集合信息及更正后的数量检查通过。",
+      "没有API失败、空白判断、截断回复或发送过时判断；默认非思考。",
+      "普通回复减少了长篇概括和比喻剧情，例如梦境追问只问送到哪一站了，键盘反应只说敲下去挺解压；真实经历草稿我这边还穿着外套呢被拒绝。"
+    ],
+    "remainingIssues": [
+      "短不等于自然：h72差十正好两位数仍有机械点评感，部分玩笑仍在替现有比喻续一句。",
+      "h31把半天具体化为一下午，h66断言打印机位置暖和；这些细节没有直接证据，事实检查仍有漏放。",
+      "h27偏好蓝白，h28按耐看改选黑灰，没有清楚解释评价标准的区别；后续追问的表达一致性仍可改善。",
+      "联网问题取得了来源正文，但这里只验证证据链可用，没有独立核验每个数字、时间范围和概括。",
+      "同一方案在多轮100条对话中的参与次数和措辞会变；未设置固定参与比例或连续回复上限，没有保证彻底消除NPC感。"
+    ]
+  },
+  "validation": {
+    "unitTests": 157,
+    "unitLog": "unit-tests-final.log",
+    "syntaxLog": "syntax-check-final.log",
+    "packageSmoke": "package-smoke.json",
+    "archiveVerification": "archive-verification.json",
+    "sourceHashesMatch": true,
+    "sourceHashes": {
+      "src/index.js": "6ab5ee86d9bcd1bc3c63c0e8336b0c63dac7130ef8b0b3e2d2f4895e3213b200",
+      "src/ai.js": "faa1499b4eddaf88bbc555c81f3b2666d75161990da6bcfa1835bb49b280a680",
+      "src/ambient-chat.js": "983df42a1f7f0afa2403cba728bb91275913779b6cd604dac560548c9b5773dc",
+      "src/group-context.js": "750c7893aa330ad8c117b638d72a47792ffab141f66964a8c8485d0af02d7523",
+      "src/persona.js": "71a9c0840dad640d832e08a10fb0343258de80825db05c546dc6b2ac14e166ab",
+      "src/azur-lane-personas.js": "a5904007ca11fa36437cf63d579b647c53f9e064b253e912da05161cb57c5317",
+      "src/deepseek.js": "e2cfe2fa33015c3ede79cda19b0d8d374286b7cdc336bda72a220dd3f845f551",
+      "src/deepseek-harness-web.js": "aa13262800cb03a34953c09bab0f878fc14d28b1ee4452c393851c6ab7f87da4",
+      "scripts/fixtures/group-chat-100.js": "10e4217d3ab4e376b97256f7a7c81de241c5f58dbec3bb61435690c073dd1c88",
+      "scripts/simulate-group-chat-100.js": "d244f1b19d1971e118fe84aa287748858d962f400448f41d2b78c4244876868a"
+    },
+    "gitDiffCheckLog": "git-diff-check.log",
+    "gitDiffCheckPassed": true
+  },
+  "researchSources": [
+    {
+      "url": "https://github.com/Mai-with-u/MaiBot/blob/6260d473780afefe58049899cdf051897c3dd06c/prompts/zh-CN/retro_replyer_light.prompt",
+      "usedFor": "参考日常口语、简短且不过度组织的回复方向，本地仍以实验结果决定采用。"
+    },
+    {
+      "url": "https://github.com/1rua/astrbot-qq-natural-chat-skill/blob/main/references/astrbot-prompt-template.md",
+      "usedFor": "参考减少复述、总结与固定反问的表达目标，没有安装其skill。"
+    },
+    {
+      "url": "https://api-docs.deepseek.com/news/news260910/",
+      "usedFor": "复核当前正式接口deepseek-flash确实对应V4.1-Flash，模型路由不是本轮修改项。"
+    }
+  ],
+  "costNote": "记录实际API token，包含缓存输入，不是账单。最终完整对话会分叉、参与次数和搜索用量会变，不能把总token差异完全归因于提示词。全部实验保持非思考。",
+  "deployment": {
+    "package": "../../deploy/SandstormQQBot-Deploy.zip",
+    "scope": "更新本地deploy目录和zip并验证实际exe；未连接真实QQ或安装到生产服务器。",
+    "exeSha256": "82f127334f3968c2ebe0baf19d85bd4c0421563118f76e2a69744d2a22c7aef1",
+    "zipSha256": "ead0b151c81ccac0ff62e0dcff337ac3b47dded8b087971a49d047d33476424d",
+    "zipBytes": 39887222,
+    "files": 25,
+    "runtime": "v22.22.3",
+    "compiledSmokePassed": true,
+    "zipContentsMatch": true,
+    "noLiveCredential": true
+  },
+  "comparison": {
+    "baseline": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 37,
+      "decisions": 90,
+      "acceptedDecisions": 25,
+      "reviewedDrafts": 24,
+      "rejectedDrafts": 2,
+      "editedDrafts": 0,
+      "mainInputTokens": 376347,
+      "mainOutputTokens": 1535,
+      "searchInputTokens": 17740,
+      "searchOutputTokens": 1541,
+      "failedChecks": [],
+      "ambientMessages": 22,
+      "directMessages": 15,
+      "ambientAnchors": [
+        2,
+        4,
+        5,
+        6,
+        9,
+        11,
+        12,
+        25,
+        28,
+        31,
+        37,
+        38,
+        56,
+        66,
+        67,
+        72,
+        74,
+        76,
+        85,
+        86,
+        94,
+        95
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 19.181818181818183,
+      "assertions": 964,
+      "mainRequests": 155,
+      "totalTokens": 397163
+    },
+    "selected": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 30,
+      "decisions": 90,
+      "acceptedDecisions": 19,
+      "reviewedDrafts": 19,
+      "rejectedDrafts": 4,
+      "editedDrafts": 0,
+      "mainInputTokens": 352219,
+      "mainOutputTokens": 1349,
+      "searchInputTokens": 16652,
+      "searchOutputTokens": 1928,
+      "failedChecks": [],
+      "ambientMessages": 15,
+      "directMessages": 15,
+      "ambientAnchors": [
+        2,
+        4,
+        5,
+        6,
+        11,
+        12,
+        24,
+        28,
+        31,
+        66,
+        67,
+        72,
+        76,
+        78,
+        85
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 10.4,
+      "assertions": 903,
+      "mainRequests": 145,
+      "totalTokens": 372148
+    }
+  },
+  "selectedAbSummary": {
+    "baseline": {
+      "requests": 26,
+      "errors": 0,
+      "promptTokens": 55076,
+      "completionTokens": 380,
+      "elapsedMs": 23260
+    },
+    "candidate": {
+      "requests": 26,
+      "errors": 0,
+      "promptTokens": 58196,
+      "completionTokens": 241,
+      "elapsedMs": 21618
+    }
+  },
+  "holdoutAbSummary": {
+    "baseline": {
+      "requests": 8,
+      "errors": 0,
+      "promptTokens": 12057,
+      "completionTokens": 182,
+      "elapsedMs": 7448
+    },
+    "candidate": {
+      "requests": 8,
+      "errors": 0,
+      "promptTokens": 13017,
+      "completionTokens": 155,
+      "elapsedMs": 6657
+    }
+  },
+  "recordedComparisonUsage": {
+    "requests": 510,
+    "inputTokens": 1068698,
+    "outputTokens": 6711
+  },
+  "reviewedAt": "2026-10-14T03:55:06.254Z",
+  "selectedAbTotalTokenIncreasePercent": 5.375432775533762
+}

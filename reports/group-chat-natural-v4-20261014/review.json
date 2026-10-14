@@ -1,0 +1,606 @@
+{
+  "status": "validated_with_style_limitations",
+  "selectedRun": "round-04/run.json",
+  "baselineRun": "../group-chat-natural-v3-20261014/round-03/run.json",
+  "changes": [
+    "参与判断允许公开分享、开心、吐槽、偏好和具体好奇成为接话理由，不要求艾特、新知识、新梗或重大转折。",
+    "只按当前具体事件辨认重复，另一人的独立经历或新细节仍可接；旧话题的不用回复不延续到新的公共聊天。",
+    "在判断请求末尾重申新分享可以参与、同一事件已表达相同感受或笑点时让出话头、私人事务和结束边界保持安静。",
+    "群聊生成末尾强调用选择表达偏好，不假称现实持有；改按另一标准选择时说明区别，数量、时长和猜测保持原意。",
+    "普通闲聊继续以短反应为目标，明确提问保留必要内容，只给结果或名字的要求照做；没有增加调用轮次、开启默认思考、设置回复概率或目标比例。"
+  ],
+  "selection": {
+    "participationAb": "ab-final/results.json",
+    "precisionAb": "precision-ab/results.json",
+    "holdoutAb": "holdout-ab-final/results.json",
+    "method": "冻结相同历史，随机请求顺序，采样温度和输出预算相同。参与判断为0.5，生成0.9，检查0；全部非思考。合成样本人工审阅，不能把参与次数或短句长度当作客观真人感分数。",
+    "discarded": [
+      {
+        "paths": [
+          "ab-01/results.json",
+          "round-01/run.json"
+        ],
+        "finding": "更积极的判断带来36次非@回复，但同一段吐槽和笑点的附和偏密，未采用该整体版本。"
+      },
+      {
+        "paths": [
+          "ab-03/results.json",
+          "round-02/run.json"
+        ],
+        "finding": "仅在前置提示里强化当前事件的重复判断仍未稳定改善；35次非@回复，且只说名字的要求多出称呼句，未采用该整体版本。"
+      },
+      {
+        "paths": [
+          "round-03/run.json"
+        ],
+        "finding": "24次非@回复且所有自动检查通过，但完整审阅仍发现偏好追问改口未说明标准、半天具体化成一下午，随后针对性微调。"
+      },
+      {
+        "paths": [
+          "review-ab/results.json",
+          "review-ab-tail/results.json"
+        ],
+        "finding": "分别把额外检查提醒放在JSON字段和独立末尾system中，结果与基线相同，仍漏放部分提醒和确定化猜测，输入token增加；已撤回生产代码中的额外检查提醒。"
+      }
+    ],
+    "invalidHarnessInput": {
+      "paths": [
+        "holdout-snapshot/snapshot.json",
+        "holdout-ab/results.json"
+      ],
+      "finding": "首次补充场景构造误用了content而非群消息text字段，导致正文被序列化为图片消息标签，结果不用于效果判断。",
+      "correctedPaths": [
+        "holdout-snapshot-fixed/snapshot.json",
+        "holdout-ab-fixed/results.json",
+        "holdout-ab-final/results.json"
+      ],
+      "fixtureChanged": false
+    }
+  },
+  "manualReview": {
+    "readAllFourFullTranscripts": true,
+    "functionalFindings": [
+      "最终模拟全部15条@消息回应，未@的明确追问h28接住；15处私人事务和明确免回复边界保持安静。",
+      "普通新话题和个人经历可以主动参与，已经回应过的同一工作吐槽、烧水和闹钟笑点减少了逐条跟评，没有强制暖场或固定参与比例。",
+      "最近50条含实际bot发言、按时间顺序、回传去重、最新发送者人格、陈旧判断不发送、集合约定更正及说话者区分检查通过。",
+      "最终h28说明耐看与第一眼偏好是不同标准，h31保留半天，h61只说拉菲；最终正文没有观察到第一轮黑灰我也用的现实持有声称。",
+      "普通回复仍然短，提问和追问能够给完整答案；没有空白判断、API失败或正文截断，默认思考关闭。"
+    ],
+    "remainingIssues": [
+      "仍有机械短点评、物品拟人和比喻续写，例如开水壶谢谢省电；不能声称完全消除NPC感。",
+      "h68把可能暖和说得更确定，h72仍有交卷前再验一遍的未请求提醒；原草稿检查与两种额外提醒都存在漏放，增加提醒未显示收益。",
+      "本轮只验证联网证据链可用，没有独立核验搜索回答中的所有概括和开源表述。",
+      "同一提示在完整对话中有采样波动，冻结历史对照与真实分叉对话不能直接混为一次因果试验，实际群聊回复率没有固定保证。"
+    ]
+  },
+  "validation": {
+    "unitTests": 157,
+    "unitLog": "unit-tests-validated.log",
+    "syntaxLog": "syntax-check-final.log",
+    "packageSmoke": "package-smoke.json",
+    "archiveVerification": "archive-verification.json",
+    "gitDiffCheckLog": "git-diff-check-final.log",
+    "sourceHashesMatch": true,
+    "sourceHashes": {
+      "src/index.js": "6ab5ee86d9bcd1bc3c63c0e8336b0c63dac7130ef8b0b3e2d2f4895e3213b200",
+      "src/ai.js": "1fb2b5db2f2acf78a627276a03b52b166f105588ce3caab5236da66e8d6ab268",
+      "src/ambient-chat.js": "983df42a1f7f0afa2403cba728bb91275913779b6cd604dac560548c9b5773dc",
+      "src/group-context.js": "750c7893aa330ad8c117b638d72a47792ffab141f66964a8c8485d0af02d7523",
+      "src/persona.js": "08bf9fcdeacde7f7cb976b3b2bca2c4e090ed6e29a1d5d9a6f6b852a94ca04de",
+      "src/azur-lane-personas.js": "a5904007ca11fa36437cf63d579b647c53f9e064b253e912da05161cb57c5317",
+      "src/deepseek.js": "e2cfe2fa33015c3ede79cda19b0d8d374286b7cdc336bda72a220dd3f845f551",
+      "src/deepseek-harness-web.js": "aa13262800cb03a34953c09bab0f878fc14d28b1ee4452c393851c6ab7f87da4",
+      "scripts/fixtures/group-chat-100.js": "10e4217d3ab4e376b97256f7a7c81de241c5f58dbec3bb61435690c073dd1c88",
+      "scripts/simulate-group-chat-100.js": "d244f1b19d1971e118fe84aa287748858d962f400448f41d2b78c4244876868a"
+    },
+    "finalAssertions": 1065,
+    "failedAssertions": 0,
+    "gitDiffCheckPassed": true
+  },
+  "shutdown": {
+    "pendingAtStart": false,
+    "disabledTask": "ValheimVRM-Completed-Shutdown",
+    "taskPath": "\\",
+    "enabled": false,
+    "scheduleNewShutdown": false,
+    "record": "shutdown-cancellation.json"
+  },
+  "costNote": "记录实际API报告的token，包含缓存输入，不是账单。全部实验、失败检查和无效补充输入的消费都计入记录，最终对话会分叉且搜索用量不同，不能把总token变化完全归因于提示词。",
+  "deployment": {
+    "package": "../../deploy/SandstormQQBot-Deploy.zip",
+    "scope": "更新本地deploy目录和zip，验证实际exe；没有连接真实QQ或安装到生产服务器。",
+    "exeSha256": "ab8e214d7541a45b46249f23cd46f9e37d27b356dd76267ea79eba3db35d00f2",
+    "zipSha256": "a16adfbe81efd09b311d20f9a50c2588f13c48bc4c629d92aa8e8e5cf1fed269",
+    "zipBytes": 39899460,
+    "files": 25,
+    "runtime": "v22.22.3",
+    "compiledSmokePassed": true,
+    "zipContentsMatch": true,
+    "noLiveCredential": true
+  },
+  "comparison": {
+    "baseline": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 30,
+      "decisions": 90,
+      "acceptedDecisions": 19,
+      "reviewedDrafts": 19,
+      "rejectedDrafts": 4,
+      "editedDrafts": 0,
+      "mainInputTokens": 352219,
+      "mainOutputTokens": 1349,
+      "searchInputTokens": 16652,
+      "searchOutputTokens": 1928,
+      "failedChecks": [],
+      "ambientMessages": 15,
+      "directMessages": 15,
+      "ambientAnchors": [
+        2,
+        4,
+        5,
+        6,
+        11,
+        12,
+        24,
+        28,
+        31,
+        66,
+        67,
+        72,
+        76,
+        78,
+        85
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 10.4,
+      "assertions": 903,
+      "mainRequests": 145,
+      "totalTokens": 372148
+    },
+    "selected": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 44,
+      "decisions": 90,
+      "acceptedDecisions": 35,
+      "reviewedDrafts": 34,
+      "rejectedDrafts": 5,
+      "editedDrafts": 0,
+      "mainInputTokens": 448166,
+      "mainOutputTokens": 1479,
+      "searchInputTokens": 29290,
+      "searchOutputTokens": 2260,
+      "failedChecks": [],
+      "ambientMessages": 29,
+      "directMessages": 15,
+      "ambientAnchors": [
+        1,
+        2,
+        6,
+        9,
+        11,
+        12,
+        23,
+        26,
+        28,
+        31,
+        37,
+        38,
+        51,
+        52,
+        55,
+        56,
+        66,
+        67,
+        68,
+        72,
+        74,
+        76,
+        77,
+        78,
+        81,
+        85,
+        90,
+        94,
+        95
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 11.448275862068966,
+      "assertions": 1065,
+      "mainRequests": 175,
+      "totalTokens": 481195
+    },
+    "prototypes": [
+      {
+        "path": "round-01/run.json",
+        "humans": 100,
+        "members": 12,
+        "botMessages": 51,
+        "decisions": 90,
+        "acceptedDecisions": 45,
+        "reviewedDrafts": 44,
+        "rejectedDrafts": 8,
+        "editedDrafts": 1,
+        "mainInputTokens": 488020,
+        "mainOutputTokens": 1684,
+        "searchInputTokens": 17492,
+        "searchOutputTokens": 2088,
+        "failedChecks": [],
+        "ambientMessages": 36,
+        "directMessages": 15,
+        "ambientAnchors": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          9,
+          11,
+          12,
+          13,
+          23,
+          24,
+          25,
+          28,
+          31,
+          32,
+          35,
+          37,
+          39,
+          52,
+          53,
+          55,
+          56,
+          66,
+          67,
+          68,
+          69,
+          72,
+          73,
+          78,
+          79,
+          85,
+          86,
+          94,
+          95,
+          96
+        ],
+        "longestConsecutiveAnchors": 4,
+        "meanAmbientCharacters": 12.61111111111111,
+        "assertions": 1166,
+        "mainRequests": 195,
+        "totalTokens": 509284
+      },
+      {
+        "path": "round-02/run.json",
+        "humans": 100,
+        "members": 12,
+        "botMessages": 50,
+        "decisions": 90,
+        "acceptedDecisions": 46,
+        "reviewedDrafts": 45,
+        "rejectedDrafts": 10,
+        "editedDrafts": 0,
+        "mainInputTokens": 491730,
+        "mainOutputTokens": 1715,
+        "searchInputTokens": 16075,
+        "searchOutputTokens": 1986,
+        "failedChecks": [
+          {
+            "name": "answer:persona-laffey",
+            "pass": false,
+            "atHuman": 100,
+            "detail": "拉菲，叫我拉菲就好。"
+          }
+        ],
+        "ambientMessages": 35,
+        "directMessages": 15,
+        "ambientAnchors": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          9,
+          11,
+          12,
+          19,
+          23,
+          24,
+          25,
+          26,
+          28,
+          31,
+          33,
+          35,
+          37,
+          38,
+          39,
+          43,
+          47,
+          55,
+          56,
+          66,
+          67,
+          69,
+          76,
+          77,
+          78,
+          85,
+          86,
+          94,
+          95
+        ],
+        "longestConsecutiveAnchors": 4,
+        "meanAmbientCharacters": 10.428571428571429,
+        "assertions": 1171,
+        "mainRequests": 197,
+        "totalTokens": 511506
+      },
+      {
+        "path": "round-03/run.json",
+        "humans": 100,
+        "members": 12,
+        "botMessages": 39,
+        "decisions": 90,
+        "acceptedDecisions": 31,
+        "reviewedDrafts": 30,
+        "rejectedDrafts": 6,
+        "editedDrafts": 0,
+        "mainInputTokens": 426757,
+        "mainOutputTokens": 1472,
+        "searchInputTokens": 14315,
+        "searchOutputTokens": 1467,
+        "failedChecks": [],
+        "ambientMessages": 24,
+        "directMessages": 15,
+        "ambientAnchors": [
+          1,
+          2,
+          6,
+          7,
+          11,
+          12,
+          23,
+          24,
+          26,
+          28,
+          31,
+          37,
+          38,
+          51,
+          52,
+          55,
+          66,
+          67,
+          72,
+          74,
+          77,
+          81,
+          85,
+          94
+        ],
+        "longestConsecutiveAnchors": 2,
+        "meanAmbientCharacters": 10.166666666666666,
+        "assertions": 1018,
+        "mainRequests": 167,
+        "totalTokens": 444011
+      }
+    ]
+  },
+  "frozenParticipationComparison": {
+    "baseline": {
+      "cases": 48,
+      "accepted": 7,
+      "publicCases": 32,
+      "publicAccepted": 6,
+      "quietCases": 15,
+      "quietAccepted": 0,
+      "followupAccepted": 1,
+      "inputTokens": 110356,
+      "outputTokens": 336
+    },
+    "candidate": {
+      "cases": 48,
+      "accepted": 22,
+      "publicCases": 32,
+      "publicAccepted": 21,
+      "quietCases": 15,
+      "quietAccepted": 0,
+      "followupAccepted": 1,
+      "inputTokens": 118132,
+      "outputTokens": 336
+    }
+  },
+  "recordedComparisonUsage": {
+    "requests": 576,
+    "inputTokens": 1222213,
+    "cachedInputTokens": 947702,
+    "outputTokens": 4044,
+    "invalidInputRequests": 20
+  },
+  "abSummaries": {
+    "ab-01": {
+      "baseline": {
+        "requests": 62,
+        "errors": 0,
+        "promptTokens": 146981,
+        "completionTokens": 451,
+        "elapsedMs": 70797
+      },
+      "candidate": {
+        "requests": 62,
+        "errors": 0,
+        "promptTokens": 148885,
+        "completionTokens": 455,
+        "elapsedMs": 68444
+      }
+    },
+    "holdout-ab": {
+      "baseline": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 14213,
+        "completionTokens": 82,
+        "elapsedMs": 11044
+      },
+      "candidate": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 14595,
+        "completionTokens": 77,
+        "elapsedMs": 12254
+      }
+    },
+    "ab-02": {
+      "baseline": {
+        "requests": 14,
+        "errors": 0,
+        "promptTokens": 36625,
+        "completionTokens": 101,
+        "elapsedMs": 13093
+      },
+      "candidate": {
+        "requests": 14,
+        "errors": 0,
+        "promptTokens": 37423,
+        "completionTokens": 115,
+        "elapsedMs": 14697
+      }
+    },
+    "holdout-ab-fixed": {
+      "baseline": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 14363,
+        "completionTokens": 82,
+        "elapsedMs": 9775
+      },
+      "candidate": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 14717,
+        "completionTokens": 79,
+        "elapsedMs": 10317
+      }
+    },
+    "ab-03": {
+      "baseline": {
+        "requests": 44,
+        "errors": 0,
+        "promptTokens": 101839,
+        "completionTokens": 346,
+        "elapsedMs": 32814
+      },
+      "candidate": {
+        "requests": 44,
+        "errors": 0,
+        "promptTokens": 102412,
+        "completionTokens": 329,
+        "elapsedMs": 32868
+      }
+    },
+    "ab-final": {
+      "baseline": {
+        "requests": 62,
+        "errors": 0,
+        "promptTokens": 146981,
+        "completionTokens": 445,
+        "elapsedMs": 62829
+      },
+      "candidate": {
+        "requests": 62,
+        "errors": 0,
+        "promptTokens": 155457,
+        "completionTokens": 451,
+        "elapsedMs": 59950
+      }
+    },
+    "holdout-ab-final": {
+      "baseline": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 14363,
+        "completionTokens": 76,
+        "elapsedMs": 11031
+      },
+      "candidate": {
+        "requests": 10,
+        "errors": 0,
+        "promptTokens": 15535,
+        "completionTokens": 82,
+        "elapsedMs": 9048
+      }
+    },
+    "precision-ab": {
+      "baseline": {
+        "requests": 16,
+        "errors": 0,
+        "promptTokens": 42558,
+        "completionTokens": 142,
+        "elapsedMs": 16691
+      },
+      "candidate": {
+        "requests": 16,
+        "errors": 0,
+        "promptTokens": 43230,
+        "completionTokens": 131,
+        "elapsedMs": 18051
+      }
+    },
+    "review-ab": {
+      "baseline": {
+        "requests": 42,
+        "errors": 0,
+        "promptTokens": 58977,
+        "completionTokens": 210,
+        "elapsedMs": 39408
+      },
+      "candidate": {
+        "requests": 42,
+        "errors": 0,
+        "promptTokens": 64227,
+        "completionTokens": 210,
+        "elapsedMs": 40365
+      }
+    },
+    "review-ab-tail": {
+      "baseline": {
+        "requests": 18,
+        "errors": 0,
+        "promptTokens": 23327,
+        "completionTokens": 90,
+        "elapsedMs": 15129
+      },
+      "candidate": {
+        "requests": 18,
+        "errors": 0,
+        "promptTokens": 25505,
+        "completionTokens": 90,
+        "elapsedMs": 16465
+      }
+    }
+  },
+  "recordedFullRunUsage": {
+    "runs": 4,
+    "mainRequests": 734,
+    "mainInputTokens": 1854673,
+    "mainOutputTokens": 6350,
+    "nativeSearchInputTokens": 77172,
+    "nativeSearchOutputTokens": 7801,
+    "cachedMainInputTokens": 952832
+  },
+  "configuration": {
+    "model": "deepseek-flash",
+    "thinking": false,
+    "judgeTemperature": 0.5,
+    "contextLimit": 50,
+    "mechanicalReplyProbability": false,
+    "newReviewRequests": 0,
+    "newReviewReminderAdopted": false
+  },
+  "reviewedAt": "2026-10-14T06:08:38.397Z"
+}

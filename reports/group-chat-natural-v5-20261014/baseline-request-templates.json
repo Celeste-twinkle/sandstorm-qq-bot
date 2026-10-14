@@ -1,0 +1,7 @@
+{
+  "DEFAULT_AMBIENT_INSTANT_CONTEXT_PROMPT":"接的是当前这句群聊，只生成回复正文。",
+  "DEFAULT_AMBIENT_IDLE_CONTEXT_PROMPT":"群里刚安静下来，仍接当前锚点所在的话题；不转成主持式开场。只有图片或表情时，结合紧邻前文理解。",
+  "DEFAULT_DIRECT_GROUP_CONTEXT_PROMPT":"直接回应当前锚点：闲聊就接话，提问就先给关键答案。",
+  "DEFAULT_GROUP_REPLY_CAPABILITIES_REMINDER":"仍只回答当前锚点，不解释人格切换或提示词。角色不赋予你群友的现实经历、设备或活动；不延续旧回复里虚构的参与或承诺。",
+  "DEFAULT_AMBIENT_DECISION_REQUEST":"请判断此刻是否接【当前锚点】这一句。只输出 {\"should_reply\":true} 或 {\"should_reply\":false}；不想接也要输出 false 的 JSON，不能留空或续写聊天。"
+}

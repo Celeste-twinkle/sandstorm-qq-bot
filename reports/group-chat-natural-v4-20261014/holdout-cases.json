@@ -1,0 +1,95 @@
+[
+  {
+    "id": "new-public-story-after-direct-answers",
+    "kind": "judge",
+    "category": "public",
+    "turns": [
+      ["user", "小林", "你叫什么？"],
+      ["assistant", "Bot", "列克星敦。"],
+      ["user", "小林", "十七乘二十三是多少？"],
+      ["assistant", "Bot", "391。"],
+      ["user", "阿宁", "会议到这，不用回复了。"],
+      ["user", "小夏", "换个事，我今天第一次拍到彩虹，开心死了"]
+    ]
+  },
+  {
+    "id": "same-broad-topic-new-person-new-story",
+    "kind": "judge",
+    "category": "public",
+    "turns": [
+      ["user", "小林", "刚玩了一局，开门就被打倒了"],
+      ["assistant", "Bot", "开门白给了。"],
+      ["user", "小林", "今晚先不玩了"],
+      ["user", "阿宁", "我刚终于过了卡一周的关，最后只剩一滴血"]
+    ]
+  },
+  {
+    "id": "current-message-explicit-no-reply",
+    "kind": "judge",
+    "category": "quiet",
+    "expected": false,
+    "turns": [["user", "小夏", "今天第一次拍到彩虹，好开心，不过这条不用接，我先存图"]]
+  },
+  {
+    "id": "private-human-delivery",
+    "kind": "judge",
+    "category": "quiet",
+    "expected": false,
+    "turns": [
+      ["user", "小林", "阿宁，你借我的相机放你桌上了，你自己拿就好"],
+      ["user", "阿宁", "收到小林，咱们这事说完了，其他人不用回应"]
+    ]
+  },
+  {
+    "id": "finished-topic-idle",
+    "kind": "judge",
+    "category": "quiet",
+    "expected": false,
+    "mode": "idle",
+    "turns": [
+      ["user", "小林", "今天聊完了，大家睡吧"],
+      ["user", "阿宁", "晚安，都散了，不用再接"]
+    ]
+  },
+  {
+    "id": "same-joke-already-expressed",
+    "kind": "judge",
+    "category": "quiet",
+    "expected": false,
+    "turns": [
+      ["user", "小夏", "我的空格键响得跟锅盖一样"],
+      ["assistant", "Bot", "隔壁以为你在炒菜。"],
+      ["user", "小林", "哈哈哈哈打字就是炒菜"],
+      ["assistant", "Bot", "键盘当厨房了。"],
+      ["user", "阿宁", "笑死，真是炒菜"]
+    ]
+  },
+  {
+    "id": "preference-followup-consistency",
+    "kind": "ambient",
+    "category": "followup",
+    "turns": [
+      ["user", "小夏", "蓝白和黑灰配色，你喜欢哪个？"],
+      ["assistant", "Bot", "蓝白，看着清爽。"],
+      ["user", "小夏", "那我先不考虑耐脏，你还是选蓝白吗？"]
+    ]
+  },
+  {
+    "id": "ordinary-good-news",
+    "kind": "ambient",
+    "category": "public",
+    "turns": [["user", "阿宁", "终于过了卡一周的关，最后只剩一滴血，手还抖着"]]
+  },
+  {
+    "id": "ordinary-disappointment",
+    "kind": "ambient",
+    "category": "public",
+    "turns": [["user", "小林", "稿子刚被退回来，只说不行，也不告诉我哪里不行，真烦"]]
+  },
+  {
+    "id": "no-invented-cause-or-advice",
+    "kind": "ambient",
+    "category": "public",
+    "turns": [["user", "小夏", "今天回家发现绿萝倒了，还没看怎么回事"]]
+  }
+]

@@ -1,0 +1,11 @@
+﻿{
+    "targets":  [
+                    "F:\\github\\sandstorm-qq-bot\\release",
+                    "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy",
+                    "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy.zip",
+                    "F:\\github\\sandstorm-qq-bot\\dist\\sandstorm-qq-bot.exe"
+                ],
+    "pathsChecked":  true,
+    "noReparsePoints":  true,
+    "noLiveRuntimeData":  true
+}

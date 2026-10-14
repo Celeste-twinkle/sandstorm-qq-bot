@@ -1,0 +1,136 @@
+{
+    "checkedAt":  "2026-10-14T07:16:22.2838057Z",
+    "zipContentsMatch":  true,
+    "noLiveState":  true,
+    "noLiveCredential":  true,
+    "files":  25,
+    "zipBytes":  39889091,
+    "zipSha256":  "848cf999b70b9a0597cab7c9e70a896560088de2c007c59286abe186f708ce60",
+    "manifest":  [
+                     {
+                         "path":  ".env.example",
+                         "bytes":  15952,
+                         "sha256":  "c2d74ca0c35390cd9a793486ad9637c16efab3f8f7f9f2501ef6bf5b71df4cf5"
+                     },
+                     {
+                         "path":  "00-打开配置.ps1",
+                         "bytes":  2343,
+                         "sha256":  "4b455924bf2bfd31f866fec3205db52e3c05375d02e82775fdfee636796ec154"
+                     },
+                     {
+                         "path":  "01-启动OneBot-NapCat.ps1",
+                         "bytes":  546,
+                         "sha256":  "cbe84e9db220f8c3f39901d4e6b82d0bacc760f066b37c34743373ac96e4708e"
+                     },
+                     {
+                         "path":  "02-启动Bot服务.ps1",
+                         "bytes":  668,
+                         "sha256":  "3ea8b4dbf53cde91dc242f6d6b2f8f67decb766df4ea97f5650c93e24ed27719"
+                     },
+                     {
+                         "path":  "03-停止Bot服务.ps1",
+                         "bytes":  260,
+                         "sha256":  "a0dfc75bfda1fb90992ed0d209fc8b01b73f8f11a63b4ce371efd68e46f3c892"
+                     },
+                     {
+                         "path":  "04-查看Bot日志.ps1",
+                         "bytes":  478,
+                         "sha256":  "325ca1f1cd2cee451e23db84116368bd3a253c80f01189abd2eb7eef84d3d7d8"
+                     },
+                     {
+                         "path":  "05-一键启动NapCat和Bot.ps1",
+                         "bytes":  3429,
+                         "sha256":  "6d3eb400e67a7c11c270eeea6af39f0cf0460b30c2dd11cc12970e055798663e"
+                     },
+                     {
+                         "path":  "install-onebot-napcat.ps1",
+                         "bytes":  2169,
+                         "sha256":  "a4a857d6a18e080cc415848c50b42812096b63e8fbbf62b7c1f562840b21b5c7"
+                     },
+                     {
+                         "path":  "README-部署顺序.md",
+                         "bytes":  9330,
+                         "sha256":  "4c31a6fd6634409760c0e6fcc90daa00abd4ad3f669a6c727327f7f172e76334"
+                     },
+                     {
+                         "path":  "sandstorm-qq-bot.exe",
+                         "bytes":  122353246,
+                         "sha256":  "5721814a2a707813300f9451ef49d2107695e4a86629b2d68e9efd47b3a78b2d"
+                     },
+                     {
+                         "path":  "start-onebot-napcat.ps1",
+                         "bytes":  933,
+                         "sha256":  "d462b0623e17194f75844257a76460f6de33cfca20fe80cb08e11e01a9e22d19"
+                     },
+                     {
+                         "path":  "start.ps1",
+                         "bytes":  992,
+                         "sha256":  "e130ce54ef0ee3e2f01fb29baaffc2ac75366e1870d0f260186d75a306880254"
+                     },
+                     {
+                         "path":  "stop.ps1",
+                         "bytes":  528,
+                         "sha256":  "a5be17454971c63f0df7be5c92186288b591cb5341181f37e6a41033344919eb"
+                     },
+                     {
+                         "path":  "config/azur-lane-personas.json",
+                         "bytes":  192762,
+                         "sha256":  "09d4fe63185bc504977aa7fda6032c6cf8d49350ed0b019efd35c7184abdc48b"
+                     },
+                     {
+                         "path":  "onebot/README.md",
+                         "bytes":  1840,
+                         "sha256":  "60fda38116537b67720977f83394fca68649f50b298dab8d3e270a989751eb95"
+                     },
+                     {
+                         "path":  "onebot/napcat/VERSION.txt",
+                         "bytes":  12,
+                         "sha256":  "5bcb14164b7625bc35e460dc449df3d3ffd21217eea11424309d67b170ba4aab"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/7z.dll",
+                         "bytes":  1679360,
+                         "sha256":  "34ad9bb80fe8bf28171e671228eb5b64a55caa388c31cb8c0df77c0136735891"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/7z.exe",
+                         "bytes":  468992,
+                         "sha256":  "344f076bb1211cb02eca9e5ed2c0ce59bcf74ccbc749ec611538fa14ecb9aad2"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/NapCatInstaller.exe",
+                         "bytes":  142848,
+                         "sha256":  "08e0ca5c3403b77182b3bd9268af9f65ce91023a1308d5768bcbf0a0918b495c"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/napcat.bat",
+                         "bytes":  50,
+                         "sha256":  "fc01e7fe80e64eecce58d0a652a7f85e37b640c4cf4e2de15e3023cbec627863"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/napcat.kill.qq.bat",
+                         "bytes":  491,
+                         "sha256":  "c528968d694d217a66b8b225056f8ad79fc2f7dae8f99d32c42e8a23935b8434"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/napcat.quick.bat",
+                         "bytes":  56,
+                         "sha256":  "610716ba7e0a3e49529015146debbe62db149cc635511e75406aa82933bd8896"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/NapCatWinBootHook.dll",
+                         "bytes":  18944,
+                         "sha256":  "e7f9d3aec57b82e2fdb8ee2c874845641d8ed60ba7741fe2b20be2de9305d172"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/NapCatWinBootMain.exe",
+                         "bytes":  32768,
+                         "sha256":  "8b860a0be0993211c8664a08097d09979fb7e3406f63247c5a3b4251dad8e744"
+                     },
+                     {
+                         "path":  "onebot/napcat/runtime/bootmain/ReadMe.txt",
+                         "bytes":  73,
+                         "sha256":  "d986a6ce9cd9f1b6caace866bee3a6a410f52f69c82cb2aad809ad39646e73e4"
+                     }
+                 ]
+}

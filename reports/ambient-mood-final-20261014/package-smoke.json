@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "runtime": "v22.22.3",
+  "searchModelRequests": 4,
+  "searchTools": [
+    "web_search",
+    "web_fetch"
+  ],
+  "schedulingOrder": [
+    "first",
+    "latest"
+  ],
+  "moodPromptMatchesSource": true,
+  "noNetwork": true,
+  "noQQConnection": true,
+  "exeSha256": "c18ae47defb5271c1b369237e4ba670eb553af0126d8e3bb66a52ff04f5307f5",
+  "date": "2026-10-13T17:05:04.436Z"
+}

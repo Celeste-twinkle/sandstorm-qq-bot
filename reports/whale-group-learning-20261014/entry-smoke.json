@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "fakeQQ": true,
+  "noNetwork": true,
+  "startupWithoutCatalog": true,
+  "removedPersonaCommandsNoLongerChangeSettings": true,
+  "noMemberPersonaMetadata": true,
+  "helpMenuUpdated": true,
+  "localEnvUsesNewDefaultForBothProviders": true,
+  "learningReasoningEffort": "high",
+  "learningBudget": 4096,
+  "learningTimeoutMs": 90000
+}

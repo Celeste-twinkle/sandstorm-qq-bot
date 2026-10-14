@@ -1,0 +1,540 @@
+{
+  "checkedAt": "2026-10-14T07:23:01.967Z",
+  "status": "validated_with_style_limitations",
+  "selectedRun": "round-03/run.json",
+  "baselineRun": "../group-chat-natural-v4-20261014/round-04/run.json",
+  "changes": [
+    "已删除只回应当前一句或只回答锚点的限制。提示词说明群消息按时间从旧到新排列，由模型联系整段讨论直接发言；锚点只作最后一条成员消息的位置标记。",
+    "即时闲聊、冷场闲聊的判断、正文和检查共用最近50条共享群消息，包含实际发送的bot回复。旧4/6条闲聊设置和Qwen独立会话历史上限不再缩短共享群记录。",
+    "仍以时间上最新群成员的个人设置选择人格，没有设置就使用默认人格。",
+    "参与判断倾向加入公共分享、共鸣和偏好，无需艾特、新知识或新梗；同时减少已参与事件的连续跟评，保留对自己的追问和真正的新进展。",
+    "生成强调直接和群友说话，减少点评谁总结得准、旁白群友情绪和虚构地点；不把机器人写成现场队友或现实同事。",
+    ".env 中旧 AMBIENT_CHAT_SYSTEM_PROMPT 覆盖已清空，使用当前内置提示词；.env.example 同步留空。其他凭据与运行设置未改。",
+    "没有启用默认思考、增加请求环节、引入回复概率、固定比例、次数配额或强制暖场。"
+  ],
+  "manualReview": {
+    "readAllThreeFullTranscripts": true,
+    "findings": [
+      "最终15条艾特消息全部回复，未艾特的偏好追问h28保持蓝白选择。集合更正、数量更正、说话者区分、最新发送者人格与未知问题留白检查通过。",
+      "最终正文未再观察到第二轮h20挑我站着的、h67卡纸归我管那样把自己代入真实队友或同事的说法。",
+      "最终h37的新叶比表好看多了能够联系前面的工作吐槽，h44/h49/h54/h93从群聊记录读取更正和发言人，不把末尾消息孤立成单独的问题。",
+      "冻结50条连续性场景中，最早保留记录的深绿键盘仍能关联米白键帽；同一话题条件变更的追问可以接，只有前一条说明接收人的私人事务保持安静。",
+      "最终完整模拟非艾特26次，比前两轮35次和上轮29次少。连续人类消息均被插话的最长长度从5/4降至3，未用程序设上限。",
+      "最终固定31条历史的判断对照为旧版7次、新版9次想接话，全部已标注边界正确；9个连续性判断中，纠正旧bot结论的场景由漏接变为接住。"
+    ],
+    "remainingIssues": [
+      "没有证明完整对话的非艾特回复率稳定提高；一次固定历史的意愿增加与完整对话分叉后的发言次数是不同指标。",
+      "仍有简短评语、物品拟人和未请求提醒，如h19截图记得挑好看的那张、h94闹钟输赢；h85还把未指明的烧水容器说成锅，不能声称彻底消除NPC感或无依据细节。",
+      "普通短附和的补充场景仍选择不接，想接就接的提示不保证每次回应；保留AI按兴致旁观的选择。",
+      "语气改善来自合成场景的非盲人工审阅，采样和分叉历史会影响结果，不把次数或字数作为客观真人感分。",
+      "只验证联网证据路径可用，没有独立复核联网回答的每个概括或所有开源表述。",
+      "群记录硬上限是50；极长正文或图片仍会受到模型与CHAT_MAX_CONTEXT_CHARS预算保护。"
+    ]
+  },
+  "experiments": {
+    "method": "冻结每对群聊历史，随机请求先后，判断温度0.5、正文0.9、相同输出预算，全部非思考。A/B无工具、无QQ；100条模拟使用实际index.js和OneBot入口、真实API与搜索、虚拟时间和假的WebSocket确认，不发送到真实QQ。",
+    "ab": [
+      {
+        "path": "ab-01/results.json",
+        "baseline": {
+          "requests": 45,
+          "errors": 0,
+          "promptTokens": 116076,
+          "completionTokens": 342,
+          "elapsedMs": 42283
+        },
+        "candidate": {
+          "requests": 45,
+          "errors": 0,
+          "promptTokens": 122234,
+          "completionTokens": 332,
+          "elapsedMs": 46006
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 31,
+            "reply": 7,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 31,
+            "reply": 6,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "continuity-ab/results.json",
+        "baseline": {
+          "requests": 15,
+          "errors": 0,
+          "promptTokens": 37661,
+          "completionTokens": 131,
+          "elapsedMs": 16481
+        },
+        "candidate": {
+          "requests": 15,
+          "errors": 0,
+          "promptTokens": 39743,
+          "completionTokens": 114,
+          "elapsedMs": 14654
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 9,
+            "reply": 4,
+            "expectedCaseErrors": 1
+          },
+          "candidate": {
+            "cases": 9,
+            "reply": 5,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "ab-revised/results.json",
+        "baseline": {
+          "requests": 45,
+          "errors": 0,
+          "promptTokens": 116076,
+          "completionTokens": 329,
+          "elapsedMs": 37037
+        },
+        "candidate": {
+          "requests": 45,
+          "errors": 0,
+          "promptTokens": 117279,
+          "completionTokens": 332,
+          "elapsedMs": 39269
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 31,
+            "reply": 9,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 31,
+            "reply": 6,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "continuity-ab-revised/results.json",
+        "baseline": {
+          "requests": 15,
+          "errors": 0,
+          "promptTokens": 37661,
+          "completionTokens": 121,
+          "elapsedMs": 13053
+        },
+        "candidate": {
+          "requests": 15,
+          "errors": 0,
+          "promptTokens": 38078,
+          "completionTokens": 127,
+          "elapsedMs": 14007
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 9,
+            "reply": 5,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 9,
+            "reply": 5,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "participation-ab/results.json",
+        "baseline": {
+          "requests": 31,
+          "errors": 0,
+          "promptTokens": 77399,
+          "completionTokens": 217,
+          "elapsedMs": 28362
+        },
+        "candidate": {
+          "requests": 31,
+          "errors": 0,
+          "promptTokens": 78205,
+          "completionTokens": 217,
+          "elapsedMs": 32152
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 31,
+            "reply": 7,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 31,
+            "reply": 13,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "continuity-participation-ab/results.json",
+        "baseline": {
+          "requests": 9,
+          "errors": 0,
+          "promptTokens": 22482,
+          "completionTokens": 63,
+          "elapsedMs": 7946
+        },
+        "candidate": {
+          "requests": 9,
+          "errors": 0,
+          "promptTokens": 22716,
+          "completionTokens": 63,
+          "elapsedMs": 8040
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 9,
+            "reply": 4,
+            "expectedCaseErrors": 1
+          },
+          "candidate": {
+            "cases": 9,
+            "reply": 5,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "tone-ab/results.json",
+        "baseline": {
+          "requests": 12,
+          "errors": 0,
+          "promptTokens": 35461,
+          "completionTokens": 95,
+          "elapsedMs": 11544
+        },
+        "candidate": {
+          "requests": 12,
+          "errors": 0,
+          "promptTokens": 35835,
+          "completionTokens": 101,
+          "elapsedMs": 13392
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 0,
+            "reply": 0,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 0,
+            "reply": 0,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "participation-tone-ab/results.json",
+        "baseline": {
+          "requests": 18,
+          "errors": 0,
+          "promptTokens": 51760,
+          "completionTokens": 134,
+          "elapsedMs": 15862
+        },
+        "candidate": {
+          "requests": 18,
+          "errors": 0,
+          "promptTokens": 52132,
+          "completionTokens": 135,
+          "elapsedMs": 14455
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 12,
+            "reply": 10,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 12,
+            "reply": 7,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "participation-selected-ab/results.json",
+        "baseline": {
+          "requests": 31,
+          "errors": 0,
+          "promptTokens": 77399,
+          "completionTokens": 217,
+          "elapsedMs": 23997
+        },
+        "candidate": {
+          "requests": 31,
+          "errors": 0,
+          "promptTokens": 78658,
+          "completionTokens": 217,
+          "elapsedMs": 28890
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 31,
+            "reply": 7,
+            "expectedCaseErrors": 0
+          },
+          "candidate": {
+            "cases": 31,
+            "reply": 9,
+            "expectedCaseErrors": 0
+          }
+        }
+      },
+      {
+        "path": "continuity-selected-ab/results.json",
+        "baseline": {
+          "requests": 9,
+          "errors": 0,
+          "promptTokens": 22482,
+          "completionTokens": 63,
+          "elapsedMs": 6847
+        },
+        "candidate": {
+          "requests": 9,
+          "errors": 0,
+          "promptTokens": 22851,
+          "completionTokens": 63,
+          "elapsedMs": 8102
+        },
+        "decisions": {
+          "baseline": {
+            "cases": 9,
+            "reply": 4,
+            "expectedCaseErrors": 1
+          },
+          "candidate": {
+            "cases": 9,
+            "reply": 5,
+            "expectedCaseErrors": 0
+          }
+        }
+      }
+    ],
+    "discarded": [
+      {
+        "paths": [
+          "ab-01/results.json",
+          "continuity-ab/results.json"
+        ],
+        "reason": "用户澄清前的原型，已按后续要求删除所有只回应锚点的控制语句。"
+      },
+      {
+        "paths": [
+          "ab-revised/results.json"
+        ],
+        "reason": "删除单句限定后仍过度保守，固定31条历史只想接6次，随后强化公共话题参与意愿。"
+      },
+      {
+        "paths": [
+          "round-01/run.json"
+        ],
+        "reason": "35次非艾特但最长连续跟评5条，有旁观点评与补造锅底、墙边地点。"
+      },
+      {
+        "paths": [
+          "round-02/run.json"
+        ],
+        "reason": "35次非艾特但最长连续跟评4条，有虚构现场参与和同一笑点连续补充，随后收紧这两点。"
+      }
+    ],
+    "rawForcedGenerationNote": "部分A/B正文被强制生成，即使判断阶段本应不接；原始回复包含未请求提醒与不合适比喻，不代表经过检查后实际发送的正文。"
+  },
+  "comparison": {
+    "baseline": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 44,
+      "decisions": 90,
+      "acceptedDecisions": 35,
+      "reviewedDrafts": 34,
+      "rejectedDrafts": 5,
+      "editedDrafts": 0,
+      "mainInputTokens": 448166,
+      "mainOutputTokens": 1479,
+      "searchInputTokens": 29290,
+      "searchOutputTokens": 2260,
+      "failedChecks": [],
+      "nonAtReplies": 29,
+      "atReplies": 15,
+      "meanAmbientChars": 11.448275862068966,
+      "maxConsecutiveHumanMessagesWithAmbientReply": 3,
+      "assertions": 1065,
+      "boundaryChecks": 15,
+      "mainRequests": 175,
+      "totalReportedTokens": 481195
+    },
+    "rounds": [
+      {
+        "humans": 100,
+        "members": 12,
+        "botMessages": 50,
+        "decisions": 90,
+        "acceptedDecisions": 45,
+        "reviewedDrafts": 44,
+        "rejectedDrafts": 9,
+        "editedDrafts": 1,
+        "mainInputTokens": 495966,
+        "mainOutputTokens": 1643,
+        "searchInputTokens": 19232,
+        "searchOutputTokens": 1697,
+        "failedChecks": [],
+        "nonAtReplies": 35,
+        "atReplies": 15,
+        "meanAmbientChars": 10.457142857142857,
+        "maxConsecutiveHumanMessagesWithAmbientReply": 5,
+        "assertions": 1163,
+        "boundaryChecks": 15,
+        "mainRequests": 195,
+        "totalReportedTokens": 518538
+      },
+      {
+        "humans": 100,
+        "members": 12,
+        "botMessages": 50,
+        "decisions": 90,
+        "acceptedDecisions": 45,
+        "reviewedDrafts": 44,
+        "rejectedDrafts": 9,
+        "editedDrafts": 0,
+        "mainInputTokens": 503716,
+        "mainOutputTokens": 1578,
+        "searchInputTokens": 29859,
+        "searchOutputTokens": 2257,
+        "failedChecks": [],
+        "nonAtReplies": 35,
+        "atReplies": 15,
+        "meanAmbientChars": 10.771428571428572,
+        "maxConsecutiveHumanMessagesWithAmbientReply": 4,
+        "assertions": 1163,
+        "boundaryChecks": 15,
+        "mainRequests": 195,
+        "totalReportedTokens": 537410
+      },
+      {
+        "humans": 100,
+        "members": 12,
+        "botMessages": 41,
+        "decisions": 90,
+        "acceptedDecisions": 31,
+        "reviewedDrafts": 31,
+        "rejectedDrafts": 5,
+        "editedDrafts": 1,
+        "mainInputTokens": 441203,
+        "mainOutputTokens": 1421,
+        "searchInputTokens": 25470,
+        "searchOutputTokens": 1433,
+        "failedChecks": [],
+        "nonAtReplies": 26,
+        "atReplies": 15,
+        "meanAmbientChars": 10.576923076923077,
+        "maxConsecutiveHumanMessagesWithAmbientReply": 3,
+        "assertions": 1032,
+        "boundaryChecks": 15,
+        "mainRequests": 169,
+        "totalReportedTokens": 469527
+      }
+    ],
+    "selected": {
+      "humans": 100,
+      "members": 12,
+      "botMessages": 41,
+      "decisions": 90,
+      "acceptedDecisions": 31,
+      "reviewedDrafts": 31,
+      "rejectedDrafts": 5,
+      "editedDrafts": 1,
+      "mainInputTokens": 441203,
+      "mainOutputTokens": 1421,
+      "searchInputTokens": 25470,
+      "searchOutputTokens": 1433,
+      "failedChecks": [],
+      "nonAtReplies": 26,
+      "atReplies": 15,
+      "meanAmbientChars": 10.576923076923077,
+      "maxConsecutiveHumanMessagesWithAmbientReply": 3,
+      "assertions": 1032,
+      "boundaryChecks": 15,
+      "mainRequests": 169,
+      "totalReportedTokens": 469527
+    }
+  },
+  "validation": {
+    "unitTests": 159,
+    "unitLog": "unit-tests-selected.log",
+    "syntaxLog": "syntax-check-final.log",
+    "sourceHashesMatch": true,
+    "sourceHashes": {
+      "src/index.js": "9be33c08aae4135764e75b595900634bca8aa1b9a4eb164f312a21623ac8b64d",
+      "src/ai.js": "7ba3387fac0aa1e0f7d2cbda9aff750cc576c6cf28281471d9ced741b1d8ea30",
+      "src/ambient-chat.js": "983df42a1f7f0afa2403cba728bb91275913779b6cd604dac560548c9b5773dc",
+      "src/group-context.js": "750c7893aa330ad8c117b638d72a47792ffab141f66964a8c8485d0af02d7523",
+      "src/persona.js": "99a517045d563ef5b64cdade06f187b81665cf14147eca16779db334c417ba1a",
+      "src/azur-lane-personas.js": "a5904007ca11fa36437cf63d579b647c53f9e064b253e912da05161cb57c5317",
+      "src/deepseek.js": "e2cfe2fa33015c3ede79cda19b0d8d374286b7cdc336bda72a220dd3f845f551",
+      "src/deepseek-harness-web.js": "aa13262800cb03a34953c09bab0f878fc14d28b1ee4452c393851c6ab7f87da4",
+      "scripts/fixtures/group-chat-100.js": "10e4217d3ab4e376b97256f7a7c81de241c5f58dbec3bb61435690c073dd1c88",
+      "scripts/simulate-group-chat-100.js": "00ebdef6445d067ac8584e31f664d0ea60afb9d8518cc179be38af8f03d92a82"
+    },
+    "finalAssertions": 1032,
+    "failedAssertions": 0,
+    "gitDiffCheckPassed": true,
+    "gitDiffCheckLog": "git-diff-check-final.log",
+    "compiled50DespiteLegacyLimits": true,
+    "correctedHarnessAssumptions": [
+      "旧文字断言只回应它更新为按时间从旧到新排列，功能测试未失败。",
+      "部署校验的历史窗口改为回传文本更新前的快照，避免测试回传echo替换row-69后正则失配；生产去重行为未改。",
+      "ZIP条目名兼容Windows反斜杠，规范化后再做边界与逐文件哈希校验。"
+    ]
+  },
+  "cost": {
+    "totals": {
+      "abRequests": 460,
+      "abInputTokens": 1202188,
+      "abOutputTokens": 3413,
+      "simulationMainRequests": 559,
+      "simulationInputTokens": 1440885,
+      "simulationOutputTokens": 4642,
+      "searchInputTokens": 74561,
+      "searchOutputTokens": 5387,
+      "totalReportedTokens": 2731076
+    },
+    "note": "计入全部原型与未采用实验。使用API返回token，包含缓存输入与搜索，不是账单。固定历史判断的输入略增；最终完整模拟总token较上轮低，但发言次数与搜索不同，不能全部归因于提示词。"
+  },
+  "deployment": {
+    "package": "../../deploy/SandstormQQBot-Deploy.zip",
+    "scope": "更新本地deploy目录与ZIP，没有连接QQ或安装到生产服务器。",
+    "exeSha256": "5721814a2a707813300f9451ef49d2107695e4a86629b2d68e9efd47b3a78b2d",
+    "zipSha256": "848cf999b70b9a0597cab7c9e70a896560088de2c007c59286abe186f708ce60",
+    "zipBytes": 39889091,
+    "files": 25,
+    "runtime": "v22.22.3",
+    "compiledSmokePassed": true,
+    "zipContentsMatch": true,
+    "noLiveCredential": true,
+    "smoke": "package-smoke.json",
+    "archiveVerification": "archive-verification.json"
+  },
+  "shutdown": {
+    "checkedAt": "2026-10-14T07:19:07.6458943Z",
+    "taskName": "ValheimVRM-Completed-Shutdown",
+    "exists": true,
+    "enabled": false,
+    "state": "Disabled",
+    "scheduleNewShutdown": false
+  }
+}

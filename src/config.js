@@ -1,9 +1,7 @@
 const dotenv = require("dotenv");
 const {
   DEFAULT_AI_PERSONA_PROMPT,
-  DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
   DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
-  DEFAULT_NATURAL_CHAT_PROMPT,
   DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
 } = require("./persona");
 const { MAX_GROUP_CONTEXT_MESSAGES } = require("./group-context");
@@ -86,15 +84,16 @@ const config = {
   cooldownSeconds: parseInteger(process.env.COOLDOWN_SECONDS, 20),
   allowedGroupIds: new Set(parseList(process.env.ALLOWED_GROUP_IDS)),
   botName: process.env.BOT_NAME || "沙暴状态",
-  personaCatalogFile: process.env.PERSONA_CATALOG_FILE || "",
-  personaCacheFile:
-    process.env.PERSONA_CACHE_FILE ||
-    process.env.PERSONA_SELECTION_CACHE_FILE ||
-    "",
-  personaFlexibilityPrompt:
-    process.env.PERSONA_FLEXIBILITY_PROMPT ||
-    DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
-  naturalChatPrompt: process.env.NATURAL_CHAT_PROMPT || DEFAULT_NATURAL_CHAT_PROMPT,
+  personaFlexibilityPrompt: process.env.PERSONA_FLEXIBILITY_PROMPT || "",
+  naturalChatPrompt: process.env.NATURAL_CHAT_PROMPT || "",
+  groupChatLearningEnabled: parseBoolean(process.env.GROUP_CHAT_LEARNING_ENABLED, true),
+  groupChatLearningDir: process.env.GROUP_CHAT_LEARNING_DIR || "",
+  groupChatLearningMinMessages: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_MIN_MESSAGES, 20), 8, 50),
+  groupChatLearningEveryMessages: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_EVERY_MESSAGES, 30), 8, 200),
+  groupChatLearningMinIntervalMs: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_MIN_INTERVAL_MS, 600000), 60000, 86400000),
+  groupChatLearningReasoningEffort: parseStrongReasoningEffort(process.env.GROUP_CHAT_LEARNING_REASONING_EFFORT),
+  groupChatLearningMaxOutputTokens: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_MAX_OUTPUT_TOKENS, 8192), 1024, 16384),
+  groupChatLearningTimeoutMs: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_TIMEOUT_MS, 90000), 1000, 180000),
   aiPrimaryProvider:
     String(process.env.AI_PRIMARY_PROVIDER || "").trim().toLowerCase() === "local-qwen"
       ? "local-qwen"
@@ -430,6 +429,7 @@ const config = {
   ambientChatEnabled: parseBoolean(process.env.AMBIENT_CHAT_ENABLED, true),
   ambientChatCooldownSeconds: parseInteger(process.env.AMBIENT_CHAT_COOLDOWN_SECONDS, 60),
   ambientChatIdleSeconds: parseInteger(process.env.AMBIENT_CHAT_IDLE_SECONDS, 60),
+  ambientChatDebounceMs: clampNumber(parseInteger(process.env.AMBIENT_CHAT_DEBOUNCE_MS, 600), 0, 5000),
   ambientChatInstantMaxMessages: clampNumber(
     parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
     1,
@@ -452,7 +452,10 @@ const config = {
   ambientChatJudgeMaxOutputTokens: clampNumber(
     parseInteger(process.env.AMBIENT_CHAT_JUDGE_MAX_OUTPUT_TOKENS, 64), 32, 512,
   ),
+  ambientChatJudgeTemperature: clampNumber(parseNumber(process.env.AMBIENT_CHAT_JUDGE_TEMPERATURE, 0.5), 0, 2),
   ambientChatJudgePrompt: process.env.AMBIENT_CHAT_JUDGE_PROMPT || DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
+  ambientChatDraftReviewEnabled: parseBoolean(process.env.AMBIENT_CHAT_DRAFT_REVIEW_ENABLED, false),
+  groupChatSelfRepeatCheckEnabled: parseBoolean(process.env.GROUP_CHAT_SELF_REPEAT_CHECK_ENABLED, false),
   ambientChatMaxOutputTokens: parseInteger(process.env.AMBIENT_CHAT_MAX_OUTPUT_TOKENS, 180),
   ambientChatSystemPrompt:
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||

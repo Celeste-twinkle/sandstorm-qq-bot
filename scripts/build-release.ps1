@@ -10,10 +10,13 @@ Set-Location $root
 
 if (-not (Test-Path "node_modules")) {
   npm install
+  if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
 }
 
 npm run check
+if ($LASTEXITCODE -ne 0) { throw "Source syntax check failed" }
 npm run build:exe
+if ($LASTEXITCODE -ne 0) { throw "EXE build failed; release was not replaced" }
 
 if (Test-Path $releaseDir) {
   Remove-Item -LiteralPath $releaseDir -Recurse -Force
@@ -26,11 +29,6 @@ Copy-Item -Path (Join-Path $root "scripts\start-exe.ps1") -Destination (Join-Pat
 Copy-Item -Path (Join-Path $root "scripts\stop-exe.ps1") -Destination (Join-Path $releaseDir "stop.ps1") -Force
 Copy-Item -Path (Join-Path $root "scripts\install-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "install-onebot-napcat.ps1") -Force
 Copy-Item -Path (Join-Path $root "scripts\start-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "start-onebot-napcat.ps1") -Force
-
-# Keep persona data outside the executable so it can be maintained without rebuilding.
-$releaseConfigDir = Join-Path $releaseDir "config"
-New-Item -ItemType Directory -Path $releaseConfigDir -Force | Out-Null
-Copy-Item -Path (Join-Path $root "config\azur-lane-personas.json") -Destination (Join-Path $releaseConfigDir "azur-lane-personas.json") -Force
 
 $releaseOneBotDir = Join-Path $releaseDir "onebot"
 New-Item -ItemType Directory -Path $releaseOneBotDir -Force | Out-Null

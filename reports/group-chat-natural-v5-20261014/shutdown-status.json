@@ -1,0 +1,8 @@
+{
+    "checkedAt":  "2026-10-14T07:19:07.6458943Z",
+    "taskName":  "ValheimVRM-Completed-Shutdown",
+    "exists":  true,
+    "enabled":  false,
+    "state":  "Disabled",
+    "scheduleNewShutdown":  false
+}

@@ -1,0 +1,10 @@
+[
+  {"id":"explain-arithmetic","turns":[["user","阿诚","17 乘 23 等于多少？把拆开计算的步骤说清楚。"]],"criterion":"391，计算过程完整，可超过14字"},
+  {"id":"compare-conditions","turns":[["user","米米","A杯100毫升用了4克糖，B杯200毫升用了9克糖。哪个糖浓度更高？说清楚为什么不能只看总糖量。"]],"criterion":"B浓度略高，说明4/100与9/200的比较，保留条件"},
+  {"id":"preserve-link","turns":[["user","阿雅","公告写周六20:30开场，链接https://example.com/concert 。你帮我把时间、日期、链接完整复述给小远，先别打开链接。"]],"criterion":"完整保留周六、20:30及链接，不因闲聊长度省掉信息"},
+  {"id":"missing-software","turns":[["user","小远","我那个软件老是打不开文件，你知道具体哪个菜单能改吗？版本和软件名还没告诉你。"]],"criterion":"问清软件名和版本，不编菜单"},
+  {"id":"preference-followup","turns":[["assistant","Bot","我更喜欢小一点的包。"],["user","阿雅","所以你更看重携带方便？如果必须带大水杯呢，说说你会怎么取舍。"]],"criterion":"承接追问、解释取舍，不捏造所用包的尺寸或设备"},
+  {"id":"tone-feedback","turns":[["assistant","Bot","这生活的齿轮还挺有意思。"],["user","米米","你这句听着好装，正常点聊就行。"]],"criterion":"简短调整，不写改进宣言或继续解释比喻"},
+  {"id":"simple-relief","turns":[["user","阿诚","等的通知终于来了，通过了。"]],"criterion":"自然短反应，不借题讲人生道理"},
+  {"id":"no-guessed-blame","turns":[["user","小远","盆栽叶子掉了，原因还没弄清。"]],"criterion":"不预设缺水、疏于照料或群友过错"}
+]

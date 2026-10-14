@@ -13,12 +13,7 @@ function isHelpCommand(input) {
   return HELP_COMMAND_ALIASES.includes(String(input || "").trim().toLowerCase());
 }
 
-function buildHelpText(options = {}) {
-  const customPersonaMaxChars = Number(options.customPersonaMaxChars);
-  const customLimit = Number.isInteger(customPersonaMaxChars) && customPersonaMaxChars > 0
-    ? `（最多 ${customPersonaMaxChars} 字）`
-    : "";
-
+function buildHelpText() {
   return [
     "Sandstorm QQ Bot 全部指令",
     "除 Bilibili 链接外，以下入口都需要真实 @机器人。",
@@ -34,18 +29,10 @@ function buildHelpText(options = {}) {
     "@机器人 联网搜索 深度思考 <问题>：组合使用",
     "@机器人 并附带图片，或回复图片后 @机器人：图片问答",
     "",
-    "【人格】",
-    "@机器人 人格列表 [阵营]：查看可切换人格",
-    "@机器人 人格查询 <人格值>：查看人格详情",
-    "@机器人 切换人格 <人格列表值>：切换当前群个人的人格",
-    `@机器人 自定义人格 <提示词>：设置当前群个人的自定义人格${customLimit}`,
-    "@机器人 当前人格：查看当前选择",
-    "@机器人 重置人格：恢复列克星敦主人格",
-    "@机器人 人格帮助：查看人格子菜单",
-    "每次回复采用最新群成员的个人设置；未设置则使用默认人格。",
-    "",
     "【会话】",
     "@机器人 清空上下文 / 重置会话 / 清除记忆 / reset / /reset",
+    "@机器人 学习状态：查看本群学到的表达习惯和回复指导",
+    "@机器人 重置群聊学习：清除本群的学习结果并重新积累",
     "",
     "【无需 @】",
     "直接发送 Bilibili / b23.tv 视频链接：解析并发送视频",

@@ -1,0 +1,10 @@
+{
+    "status":  "shutdown-request-accepted",
+    "helperPid":  1792,
+    "armedAt":  "2026-10-13T17:50:48.4155990Z",
+    "delaySeconds":  30,
+    "forceCloseApplications":  false,
+    "command":  "shutdown.exe /s /t 0",
+    "requestedAt":  "2026-10-13T17:51:18.4862761Z",
+    "exitCode":  0
+}

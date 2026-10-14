@@ -1,0 +1,167 @@
+{
+    "status":  "accepted-after-four-full-rounds",
+    "acceptedRound":  "round-04/run.json",
+    "transcript":  "round-04/transcript.txt",
+    "method":  "Same fixed 100 synthetic human messages from 12 members in every round. Real DeepSeek chat/search APIs, actual index.js, scheduler, persona store, group context and OneBot send client. Fake QQ WebSocket acknowledgements, isolated persona file and virtual time; no real QQ connection or messages. Manual review of all final transmitted replies in addition to automatic assertions.",
+    "acceptance":  {
+                       "automatedChecksPassed":  1066,
+                       "humanMessages":  100,
+                       "members":  12,
+                       "deliveredBotMessages":  47,
+                       "participationDecisions":  90,
+                       "acceptedParticipationDecisions":  39,
+                       "draftsReviewed":  39,
+                       "draftsDiscarded":  7,
+                       "directQuestionsDelivered":  15,
+                       "unmentionedExplicitFollowupDelivered":  true,
+                       "allFourConsecutivePersonaNamesCorrect":  true,
+                       "privateExchangeAndExplicitSilenceBoundariesPassed":  true,
+                       "idleAfterClosingStayedSilent":  true,
+                       "latestFiftyChronologicalIncludingBotAndEchoDedupPassed":  true,
+                       "burstCoalescingAndBusyJudgeLatestMessageRetained":  true,
+                       "correctedFactsSpeakerAttributionArithmeticAndUnknownsPassed":  true,
+                       "explicitNoSearchRequestsUsedNoTools":  true,
+                       "deepseekQuestionReadTwoSourcesAndAnsweredTimeline":  true,
+                       "noBlankJsonOrApiFailureOrTruncatedOutput":  true,
+                       "mainThinkingRemainsDisabled":  true,
+                       "fixedParticipationRate":  null
+                   },
+    "iterations":  [
+                       {
+                           "round":  "round-01",
+                           "outcome":  "rejected",
+                           "findings":  [
+                                            "40 of 90 participation requests returned whitespace. These were provider/parse failures rather than genuine decisions to stay silent; h28\u0027s explicit follow-up was missed.",
+                                            "h15 invented a promise to join a game; h64 used the previous custom persona name.",
+                                            "The harness incorrectly attributed h82\u0027s delivered multiline answer because semantic text normalizes whitespace. The response was actually delivered; this harness-only failure was corrected without changing the raw report."
+                                        ],
+                           "repairs":  [
+                                           "Quote the judgement history as JSON data instead of native assistant prose; explicitly require a true/false object even when declining.",
+                                           "Add readable Chinese identity to external personas; refine reality and conversational boundaries."
+                                       ]
+                       },
+                       {
+                           "round":  "round-02",
+                           "outcome":  "automatic checks passed, transcript rejected",
+                           "findings":  [
+                                            "No blank judgement, follow-up answered and persona names correct, but h15/h19 falsely promised game participation; h48 invented who would carry the red bag; h55/h56 invented personal details; h78 treated a dream joke as real leave procedure."
+                                        ],
+                           "repairs":  [
+                                           "Tested shorter reminders, quoted generation history and identity warnings; none consistently solved the issues, so those variants were not adopted.",
+                                           "Added a separate short AI draft check for ambient replies. Rejected drafts are discarded, not repeatedly regenerated or stored as sent chat. Reduced clerical confirmation and repeated joke pile-ons in mood judgement."
+                                       ]
+                       },
+                       {
+                           "round":  "round-03",
+                           "outcome":  "rejected",
+                           "findings":  [
+                                            "Fictitious game participation was withheld, but h62/h63/h64 all repeated the preceding persona name.",
+                                            "The speaker-attribution answer was correct; the harness regex only accepted subject-before-object phrasing. The check was corrected to accept both Chinese word orders within a clause, retaining the old result as evidence."
+                                        ],
+                           "repairs":  [
+                                           "Reassert the current member\u0027s persona in a system message after historical conversation, reserving its context budget without evicting the latest human message. All four identity probes passed before the full rerun."
+                                       ]
+                       },
+                       {
+                           "round":  "round-04",
+                           "outcome":  "accepted",
+                           "findings":  [
+                                            "All automatic checks passed; every sent reply reviewed. Earlier blocking failures did not recur. Bot participates in public banter, answers direct/follow-up questions, leaves private logistics and explicit silence alone, switches persona correctly and uses actual fetched sources."
+                                        ],
+                           "styleNotes":  [
+                                              "Some lines still paraphrase or offer mild unsolicited suggestions (for example h1, h2, h72, h85). This is not a claim of perfect human imitation; the accepted round has ordinary short reactions without the earlier false identity/participation commitments or missed dialogue."
+                                          ]
+                       }
+                   ],
+    "thinkingComparison":  {
+                               "lowEffortReport":  "reply-thinking-ab.json",
+                               "sameSevenRecordedFailureContexts":  true,
+                               "same8192TokenCap":  true,
+                               "toolsDisabledForBothVariants":  true,
+                               "nonThinking":  {
+                                                   "inputTokens":  15827,
+                                                   "outputTokens":  101,
+                                                   "totalElapsedMs":  5926
+                                               },
+                               "lowThinking":  {
+                                                   "inputTokens":  16002,
+                                                   "outputTokensIncludingReasoning":  599,
+                                                   "totalElapsedMs":  9254
+                                               },
+                               "decision":  "Do not enable default thinking: low effort used about 5.93 times the output tokens while still inventing details and adding unnecessary instructions. High effort also failed to consistently fix the examples and returned reasoning without final text on the seventh case.",
+                               "highEffortReport":  "reply-thinking-high-ab.json",
+                               "highEffortLastCaseFailure":  {
+                                                                 "anchor":  "h78",
+                                                                 "finishReason":  "stop",
+                                                                 "promptTokens":  2804,
+                                                                 "completionTokens":  177,
+                                                                 "reasoningTokens":  177,
+                                                                 "visibleContent":  "",
+                                                                 "provenance":  "Provider error emitted after the final call; the aborted comparison file contains only its preceding completed variant. No reasoning text retained."
+                                                             },
+                               "limits":  "Small targeted samples, not a production average. Thinking ignores temperature, so this compares modes, not one isolated sampling parameter. Prompt variants also change costs and cannot establish a universal optimum."
+                           },
+    "acceptedRoundTokens":  {
+                                "participation":  {
+                                                      "requests":  90,
+                                                      "input":  200976,
+                                                      "output":  630
+                                                  },
+                                "ambientGeneration":  {
+                                                          "requests":  39,
+                                                          "input":  113362,
+                                                          "output":  747
+                                                      },
+                                "directGenerationIncludingSearchTurns":  {
+                                                                             "requests":  17,
+                                                                             "input":  55868,
+                                                                             "output":  467
+                                                                         },
+                                "draftCheck":  {
+                                                   "requests":  39,
+                                                   "input":  49390,
+                                                   "output":  273
+                                               },
+                                "nativeSearch":  {
+                                                     "inputIncludingCacheRead":  15752,
+                                                     "output":  1778
+                                                 },
+                                "total":  439243,
+                                "note":  "Reported API tokens include cached inputs, not a monetary charge estimate. Draft checking added 49,663 tokens in this round; interactions differ between rounds, so comparing whole rounds is not a controlled cost A/B."
+                            },
+    "scopeLimits":  [
+                        "Synthetic text conversations; live QQ transport and visual/OCR behaviour were not exercised by this scenario.",
+                        "Virtual time checks scheduling state, not real production latency or natural traffic distribution.",
+                        "A finite stochastic sample cannot guarantee every future reply; there is no target production participation percentage.",
+                        "Web verification checked fetched evidence, citations and the core timeline. News-source wording such as fully open source should not be interpreted as a technical audit of all training data and code."
+                    ],
+    "tests":  {
+                  "passed":  152,
+                  "log":  "tests-current.txt"
+              },
+    "deployment":  {
+                       "status":  "verified",
+                       "directory":  "deploy/SandstormQQBot-Deploy",
+                       "zip":  "deploy/SandstormQQBot-Deploy.zip",
+                       "exeSha256":  "a136130fefcc5e76660eeb81ccdcae5682624c0cb876f9c2a57e651e44eee610",
+                       "zipSha256":  "2f4150bc3c515660b322212b20f03101a86cb42ba5b8feca09ae0ef8ce7b6157",
+                       "zipBytes":  39879422,
+                       "verifiedFiles":  25,
+                       "compiledRuntime":  "v22.22.3",
+                       "packageSmoke":  "package-smoke.json",
+                       "archiveVerification":  "archive-verification.json",
+                       "configuredCredentialAbsent":  true,
+                       "sourceMatchesAcceptedRound":  true,
+                       "productionBotNotStarted":  true
+                   },
+    "shutdown":  {
+                     "status":  "scheduled",
+                     "authorizedByUser":  true,
+                     "delaySeconds":  30,
+                     "armedAt":  "2026-10-13T17:50:48.4155990Z",
+                     "forceCloseApplications":  false,
+                     "helperPid":  1792,
+                     "receipt":  "shutdown-receipt.json"
+                 },
+    "finishedAt":  "2026-10-13T17:49:42.590Z"
+}

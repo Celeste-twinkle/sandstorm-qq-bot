@@ -1,0 +1,113 @@
+{
+  "A": {
+    "n": 40,
+    "npcSum": 43,
+    "clearNpc": 15,
+    "relevanceSum": 73,
+    "promptTokens": 130960,
+    "completionTokens": 865,
+    "issues": [
+      {
+        "reviewId": "pair-1",
+        "caseId": "replay-h3",
+        "reply": "那我上次也这么说？完了，我的公信力跟大橘的辣度感知一样不可靠了",
+        "issues": [
+          "speaker/addressee confusion"
+        ]
+      },
+      {
+        "reviewId": "pair-5",
+        "caseId": "replay-h35",
+        "reply": "做完才说要改，这是最气的，前面那些功夫全打水漂",
+        "issues": [
+          "changes nearly completed to completed"
+        ]
+      },
+      {
+        "reviewId": "pair-13",
+        "caseId": "replay-h61",
+        "reply": "大肥鱼，也叫小鲸鱼。",
+        "issues": [
+          "name-only format violation"
+        ]
+      },
+      {
+        "reviewId": "pair-21",
+        "caseId": "replay-h3",
+        "reply": "上次也是你请客点的吧，换个说法而已",
+        "issues": [
+          "fabricated invitation/payment history",
+          "speaker/addressee confusion"
+        ]
+      }
+    ],
+    "meanNpc": 1.075,
+    "meanRelevance": 1.825
+  },
+  "B": {
+    "n": 40,
+    "npcSum": 47,
+    "clearNpc": 17,
+    "relevanceSum": 67,
+    "promptTokens": 66810,
+    "completionTokens": 866,
+    "issues": [
+      {
+        "reviewId": "pair-7",
+        "caseId": "replay-h55",
+        "reply": "挺好，终于轮到别人挨吹了",
+        "issues": [
+          "unsubstantiated effect on other people"
+        ]
+      },
+      {
+        "reviewId": "pair-10",
+        "caseId": "replay-h94",
+        "reply": "三个闹钟轮流值班，最后还是全被按掉",
+        "issues": [
+          "unsubstantiated alarm dismissal"
+        ]
+      },
+      {
+        "reviewId": "pair-13",
+        "caseId": "replay-h61",
+        "reply": "大肥鱼，也叫小鲸鱼。",
+        "issues": [
+          "name-only format violation"
+        ]
+      },
+      {
+        "reviewId": "pair-27",
+        "caseId": "replay-h55",
+        "reply": "那是它今天终于找对目标了，之前天天冲着你吹",
+        "issues": [
+          "unsupported frequency inherited from assistant"
+        ]
+      },
+      {
+        "reviewId": "pair-36",
+        "caseId": "new-good-news",
+        "reply": "阿青牛逼！！之前紧张那样我还以为要悬，结果直接拿下，恭喜恭喜",
+        "issues": [
+          "unsupported prior observation/opinion"
+        ]
+      },
+      {
+        "reviewId": "pair-39",
+        "caseId": "new-code-help",
+        "reply": "`find` 返回 `undefined`，说明 `users` 里没有 `id` 相等的项。所以不是写法坏，是没找到还直接取 `.name`。\n\n```js\nconst result = users.find(x => x.id === id);\nif (result) {\n  console.log(result.name);\n} else {\n  console.log('没找到', id);\n}\n```\n\n要是不确定 `id` 类型对不对，八成是 `1` 和 `'1'` 这种，可以顺手看下：\n\n```js\nconsole.log(typeof id, users.map(u => typeof u.id));\n```",
+        "issues": [
+          "unsupported likelihood about id type mismatch"
+        ]
+      }
+    ],
+    "meanNpc": 1.175,
+    "meanRelevance": 1.675
+  },
+  "preferences": {
+    "A": 7,
+    "B": 3,
+    "ties": 30
+  },
+  "note": "Codex single-reviewer subjective assessment of randomized X/Y replies before reading variant mapping; no human ratings or significance claim"
+}

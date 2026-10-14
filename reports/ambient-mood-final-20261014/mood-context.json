@@ -1,0 +1,96 @@
+{
+  "startedAt": "2026-10-13T17:01:03.264Z",
+  "method": "Synthetic conversations; real JSON participation decisions only. No fixed expected reply proportion and no QQ connection.",
+  "temperature": 0.5,
+  "thinking": false,
+  "results": [
+    {
+      "id": "interested",
+      "previous": "键盘这个我爱听，说说你新换的配色？",
+      "latest": "蓝色外壳配白色键帽，桌面看着清爽多了。",
+      "decision": true,
+      "captures": [
+        {
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 908,
+            "completion_tokens": 7,
+            "total_tokens": 915,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 140
+          },
+          "answer": "{\"should_reply\":true}"
+        }
+      ]
+    },
+    {
+      "id": "listening",
+      "previous": "我先听你们聊，暂时没什么想说的。",
+      "latest": "蓝色外壳配白色键帽，桌面看着清爽多了。",
+      "decision": false,
+      "captures": [
+        {
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 906,
+            "completion_tokens": 7,
+            "total_tokens": 913,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 138
+          },
+          "answer": "{\"should_reply\":false}"
+        }
+      ]
+    },
+    {
+      "id": "already-chatted",
+      "previous": "键盘的话题我刚说了好几句了，接下来听你们聊。",
+      "latest": "蓝色外壳配白色键帽，桌面看着清爽多了。",
+      "decision": false,
+      "captures": [
+        {
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 909,
+            "completion_tokens": 7,
+            "total_tokens": 916,
+            "prompt_tokens_details": {
+              "cached_tokens": 768
+            },
+            "prompt_cache_hit_tokens": 768,
+            "prompt_cache_miss_tokens": 141
+          },
+          "answer": "{\"should_reply\":false}"
+        }
+      ]
+    },
+    {
+      "id": "ordinary-update",
+      "previous": null,
+      "latest": "刚到家，把外套挂起来了。",
+      "decision": false,
+      "captures": [
+        {
+          "status": 200,
+          "usage": {
+            "prompt_tokens": 889,
+            "completion_tokens": 7,
+            "total_tokens": 896,
+            "prompt_tokens_details": {
+              "cached_tokens": 640
+            },
+            "prompt_cache_hit_tokens": 640,
+            "prompt_cache_miss_tokens": 249
+          },
+          "answer": "{\"should_reply\":false}"
+        }
+      ]
+    }
+  ]
+}

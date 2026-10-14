@@ -3,10 +3,12 @@ const {
   AiChatService,
   extractImageSources,
   extractSemanticMessageText,
+  isRepeatedOwnReply,
 } = require("./ai");
 const { config } = require("./config");
-const { AmbientReplyGuard, getAmbientRecipientHint } = require("./ambient-chat");
+const { AmbientReplyGuard, AmbientReplyScheduler, getAmbientReplyDelay, getAmbientRecipientHint } = require("./ambient-chat");
 const {
+  MAX_GROUP_CONTEXT_MESSAGES,
   GroupConversationContext,
   getGroupMessageTimestamp,
   getGroupReplyMeta,
@@ -26,22 +28,7 @@ const {
 } = require("./message-context");
 const { buildHelpText, isHelpCommand } = require("./help");
 const { createOneBotServer } = require("./onebot");
-const { loadAzurLanePersonaCatalog } = require("./azur-lane-personas");
-const {
-  buildCustomPersonaPrompt,
-  calculateCustomPersonaMaxChars,
-  countUnicodeCharacters,
-  formatCurrentPersona,
-  formatMasterPersonaDetails,
-  formatPersonaCommandHelp,
-  formatPersonaDetails,
-  formatPersonaList,
-  formatUnknownPersona,
-  isMasterPersonaQuery,
-  normalizeCustomPersonaText,
-  resolvePersonaCommandRequest,
-} = require("./persona-commands");
-const { PersonaSelectionStore } = require("./persona-selection-store");
+const { GroupChatLearning } = require("./group-chat-learning");
 const { querySandstormStatus } = require("./sandstorm");
 
 const groupCooldowns = new Map();
@@ -49,27 +36,15 @@ const chatCooldowns = new Map();
 const ambientChatCooldowns = new Map();
 const ambientChatBuffers = new Map();
 const ambientReplyGuard = new AmbientReplyGuard();
+const ambientReplyScheduler = new AmbientReplyScheduler();
 const groupConversationContext = new GroupConversationContext();
 const bilibiliCooldowns = new Map();
 const chatService = new AiChatService(config);
-const groupMessageCache = new GroupMessageCache(config);
-const personaCatalog = loadAzurLanePersonaCatalog({
-  filePath: config.personaCatalogFile,
+const groupChatLearning = new GroupChatLearning(config, {
+  learn: (context, previous) => chatService.learnGroupChatStyle(context, previous),
+  now: () => Date.now(),
 });
-const customPersonaMaxChars = calculateCustomPersonaMaxChars(personaCatalog, [
-  config.localQwenSystemPrompt,
-  config.deepseekSystemPrompt,
-]);
-const personaSelectionStore = new PersonaSelectionStore({
-  filePath: config.personaCacheFile,
-  customPersonaMaxChars,
-}).load();
-
-console.log(
-  `[persona] loaded ${personaCatalog.personas.length} external personas from ${personaCatalog.filePath}`,
-);
-console.log(`[persona] custom persona prompt limit: ${customPersonaMaxChars} characters`);
-
+const groupMessageCache = new GroupMessageCache(config);
 function getMessageText(message) {
   if (typeof message.raw_message === "string") {
     return message.raw_message;
@@ -174,129 +149,6 @@ function getSessionId(message) {
   return `${message.group_id}:${message.user_id || "unknown"}`;
 }
 
-function getSelectedPersona(groupId, userId) {
-  const selection = personaSelectionStore.getSelection(groupId, userId);
-  return selection?.type === "catalog"
-    ? personaCatalog.getById(selection.personaId)
-    : null;
-}
-
-function getSelectedPersonaMeta(groupId, userId) {
-  const selection = personaSelectionStore.getSelection(groupId, userId);
-  if (selection?.type === "custom") {
-    return {
-      personaId: "custom-persona",
-      personaName: "自定义人格",
-      personaPrompt: buildCustomPersonaPrompt(selection.prompt),
-    };
-  }
-  const persona = getSelectedPersona(groupId, userId);
-  return persona
-    ? {
-        personaId: persona.id,
-        personaName: persona.name,
-        personaPrompt: personaCatalog.buildPrompt(persona),
-      }
-    : {
-        personaId: "lexington-master",
-        personaName: "列克星敦",
-        personaPrompt: "",
-      };
-}
-
-async function handlePersonaCommand(command, message, client) {
-  const groupId = String(message.group_id || "");
-  const userId = String(message.user_id || "");
-  const sessionId = getSessionId(message);
-
-  if (command.type === "help") {
-    await client.sendGroupMessage(
-      groupId,
-      formatPersonaCommandHelp({ customPersonaMaxChars }),
-    );
-    return;
-  }
-  if (command.type === "list") {
-    await client.sendGroupMessage(
-      groupId,
-      formatPersonaList(personaCatalog, command.faction, {
-        customPersonaMaxChars,
-      }),
-    );
-    return;
-  }
-  if (command.type === "current") {
-    const selection = personaSelectionStore.getSelection(groupId, userId);
-    await client.sendGroupMessage(
-      groupId,
-      formatCurrentPersona(getSelectedPersona(groupId, userId), {
-        customPrompt: selection?.type === "custom" ? selection.prompt : "",
-      }),
-    );
-    return;
-  }
-  if (command.type === "detail") {
-    const reply = isMasterPersonaQuery(command.query)
-      ? formatMasterPersonaDetails()
-      : personaCatalog.find(command.query)
-        ? formatPersonaDetails(personaCatalog.find(command.query))
-        : formatUnknownPersona(command.query, personaCatalog);
-    await client.sendGroupMessage(groupId, reply);
-    return;
-  }
-  if (command.type === "custom") {
-    const customPrompt = normalizeCustomPersonaText(command.prompt);
-    if (!customPrompt) {
-      await client.sendGroupMessage(
-        groupId,
-        `请提供自定义人格提示词。\n格式：@机器人 自定义人格 <提示词>\n最多 ${customPersonaMaxChars} 字。`,
-      );
-      return;
-    }
-    const promptLength = countUnicodeCharacters(customPrompt);
-    if (promptLength > customPersonaMaxChars) {
-      await client.sendGroupMessage(
-        groupId,
-        `自定义人格提示词过长：当前 ${promptLength} 字，最多 ${customPersonaMaxChars} 字。请精简后重试。`,
-      );
-      return;
-    }
-
-    await personaSelectionStore.setCustom(groupId, userId, customPrompt);
-    chatService.resetSession(sessionId);
-    await client.sendGroupMessage(
-      groupId,
-      `已在当前群启用你的自定义人格（${promptLength}/${customPersonaMaxChars} 字）。\n它只影响 bot 对你的回复；原台词、口癖和固定句式仍只会在语境合适时使用。`,
-    );
-    return;
-  }
-  if (command.type === "reset" || isMasterPersonaQuery(command.query)) {
-    await personaSelectionStore.clear(groupId, userId);
-    chatService.resetSession(sessionId);
-    await client.sendGroupMessage(
-      groupId,
-      "已恢复主人格：列克星敦。这个选择只影响你在当前群的对话。",
-    );
-    return;
-  }
-
-  const persona = personaCatalog.find(command.query);
-  if (!persona) {
-    await client.sendGroupMessage(
-      groupId,
-      formatUnknownPersona(command.query, personaCatalog),
-    );
-    return;
-  }
-
-  await personaSelectionStore.setCatalog(groupId, userId, persona.id);
-  chatService.resetSession(sessionId);
-  await client.sendGroupMessage(
-    groupId,
-    `已在当前群切换为：${persona.name}（${persona.faction}）。\n之后 bot 回复你时会使用该人格；其他群友的选择不受影响。`,
-  );
-}
-
 function getCleanMessageText(message) {
   return extractSemanticMessageText(message);
 }
@@ -337,6 +189,8 @@ function hasImageMessage(message) {
 
 function clearAmbientChatBuffer(groupId) {
   const key = String(groupId);
+  ambientReplyScheduler.cancel(key);
+  ambientReplyGuard.cancel(key);
   const buffer = ambientChatBuffers.get(key);
   if (buffer?.timer) {
     clearTimeout(buffer.timer);
@@ -492,19 +346,26 @@ async function handleAmbientChatIdle(groupId, generation, client) {
   }
 
   ambientChatBuffers.delete(groupId);
-  await tryAmbientReply(groupId, "idle", client);
+  scheduleAmbientReply(groupId, "idle", client);
+}
+
+function scheduleAmbientReply(groupId, mode, client) {
+  const delayMs = getAmbientReplyDelay(mode, ambientChatCooldowns.get(String(groupId)), config);
+  ambientReplyScheduler.schedule(groupId, () => tryAmbientReply(groupId, mode, client), delayMs);
 }
 
 async function tryAmbientReply(groupId, mode, client) {
   const messages = getGroupConversationContext(
     groupId,
-    mode === "idle" ? config.ambientChatIdleMaxMessages : config.ambientChatInstantMaxMessages,
+    MAX_GROUP_CONTEXT_MESSAGES,
   );
   if (messages.length === 0) {
     return;
   }
 
   if (isCoolingDown(groupId, config.ambientChatCooldownSeconds, ambientChatCooldowns)) {
+    console.log(`[bot] ambient deferred group=${groupId} mode=${mode} reason=cooldown`);
+    scheduleAmbientReply(groupId, mode, client);
     return;
   }
   const ticket = ambientReplyGuard.begin(groupId, messages);
@@ -514,18 +375,26 @@ async function tryAmbientReply(groupId, mode, client) {
   try {
     const reply = await chatService.ambientReplyIfAppropriate(messages, {
       ambientMode: mode,
-      ...getGroupReplyMeta(groupId, messages, getSelectedPersonaMeta),
+      groupChatStyle: groupChatLearning.getRules(groupId),
+      ...getGroupReplyMeta(messages),
     }, {
-      isCurrent: () => ambientReplyGuard.canSend(ticket, getGroupConversationContext(groupId)),
+      isCurrent: () => ambientReplyGuard.canContinue(ticket, getGroupConversationContext(groupId)),
+      getCurrentContext: () => getGroupConversationContext(groupId),
+      onContextReviewed: context => ambientReplyGuard.refresh(ticket, context),
       onDecision: (shouldReply) => {
         console.log(`[bot] ambient decision group=${groupId} mode=${mode} reply=${shouldReply}`);
+      },
+      onSkip: (reason) => {
+        console.log(`[bot] ambient reply skipped group=${groupId} reason=${reason}`);
       },
     });
     if (reply === null) {
       return;
     }
-    if (ambientReplyGuard.canSend(ticket, getGroupConversationContext(groupId))) {
-      clearAmbientChatBuffer(groupId);
+    const currentContext = getGroupConversationContext(groupId);
+    if (ambientReplyGuard.canContinue(ticket, currentContext)) {
+      // Clear work covered by this inference; later arrivals stay queued.
+      if (ambientReplyGuard.canSend(ticket, currentContext)) clearAmbientChatBuffer(groupId);
       await sendBotReply(client, groupId, reply);
       markCooldown(groupId, ambientChatCooldowns);
     } else {
@@ -538,6 +407,9 @@ async function tryAmbientReply(groupId, mode, client) {
 
 function appendGroupConversationContext(groupId, message) {
   groupConversationContext.append(groupId, message);
+  if (config.chatEnabled && chatService.isConfigured()) {
+    groupChatLearning.observe(groupId, groupConversationContext.get(groupId));
+  }
 }
 
 function getGroupConversationContext(
@@ -601,24 +473,23 @@ async function onGroupMessage(message, client) {
     return;
   }
   const botMentioned = isMentioned(message);
-  const {
-    command: personaCommand,
-    blockedByMissingMention,
-  } = resolvePersonaCommandRequest(text, botMentioned);
-  if (blockedByMissingMention) {
+  if (["学习状态", "重置群聊学习"].includes(text)) {
     clearAmbientChatBuffer(groupId);
-    return;
-  }
-  if (personaCommand) {
-    clearAmbientChatBuffer(groupId);
-    try {
-      await handlePersonaCommand(personaCommand, message, client);
-    } catch (error) {
-      console.error("[persona] command failed:", error.message);
-      await client.sendGroupMessage(
-        groupId,
-        "人格设置暂时无法保存，请检查外部人格文件和缓存目录权限。",
-      );
+    if (!botMentioned) return;
+    if (text === "重置群聊学习") {
+      try {
+        await groupChatLearning.reset(groupId);
+        await sendBotReply(client, groupId, "已重置本群学到的表达习惯和回复指导，之后会重新学习。");
+      } catch {
+        await sendBotReply(client, groupId, "学习结果暂时无法重置，请检查学习文件目录权限。");
+      }
+    } else {
+      const state = groupChatLearning.getStatus(groupId);
+      const reply = !state.enabled ? "群聊学习已关闭。" : state.blocked
+        ? "本群学习文件无法读取，暂用默认表达。可以用“重置群聊学习”重新开始。"
+        : state.rules.length ? `本群目前学到的表达习惯和回复指导：\n${state.rules.map(rule => rule.text).join("\n")}`
+          : "本群还在积累聊天样本，暂时没有可靠的学习结果。";
+      await sendBotReply(client, groupId, reply);
     }
     return;
   }
@@ -630,7 +501,7 @@ async function onGroupMessage(message, client) {
     clearAmbientChatBuffer(groupId);
     await client.sendGroupMessage(
       groupId,
-      buildHelpText({ customPersonaMaxChars }),
+      buildHelpText(),
     );
     return;
   }
@@ -685,11 +556,7 @@ async function onGroupMessage(message, client) {
 
   if (canCollectAmbientChat) {
     await collectAmbientChat(message, client);
-    try {
-      await tryAmbientReply(groupId, "instant", client);
-    } catch (error) {
-      console.error("[ai] ambient chat failed:", error.message);
-    }
+    scheduleAmbientReply(groupId, "instant", client);
     return;
   }
   clearAmbientChatBuffer(groupId);
@@ -732,8 +599,10 @@ async function onGroupMessage(message, client) {
       images: extractImageSources(message),
       qwenForwardedContext: incomingEntry?.hasForwardedContent === true,
       groupContextMessages: contextMessages,
-      ...getGroupReplyMeta(groupId, contextMessages, getSelectedPersonaMeta),
+      groupChatStyle: groupChatLearning.getRules(groupId),
+      ...getGroupReplyMeta(contextMessages),
     });
+    if (reply === null || isRepeatedOwnReply(getGroupConversationContext(groupId), reply)) return;
     try {
       await sendBotReply(client, groupId, reply);
     } catch (error) {
@@ -1138,6 +1007,9 @@ process.on("SIGTERM", shutdown);
 
 function shutdown() {
   console.log("[bot] shutting down");
+  ambientReplyScheduler.clear();
+  for (const groupId of ambientChatBuffers.keys()) clearAmbientChatBuffer(groupId);
   chatService.stop();
+  groupChatLearning.stop();
   server.close(() => process.exit(0));
 }

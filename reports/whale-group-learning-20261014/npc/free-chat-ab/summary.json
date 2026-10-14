@@ -1,0 +1,105 @@
+{
+  "reviewer": "Codex subjective review of randomized X/Y replies, stored before reading the variant map; no human raters or statistical proof",
+  "rubric": "liveliness 0 mechanical/identity disclaimer; 1 clear template or detached narration; 2 plausible but processed; 3 natural conversational reaction; 4 particularly spontaneous/personal. Structured task controls assessed separately, not used to rank casual liveliness.",
+  "criteriaUpdate": "User explicitly prioritizes lively casual conversation even when it is nonsense. Casual exaggeration, invented experiences, guesses and personification are not correctness failures. Evaluate own voice, feeling, spontaneity and participation; neither shortness nor joke density alone is a good score.",
+  "attributionLimit": "Persona wording and prompt layers changed together after user steering; this comparison cannot isolate the cause to one built-in restriction. Evaluate liveliness, not truthfulness of casual jokes.",
+  "requests": 80,
+  "errors": 0,
+  "A": {
+    "all": {
+      "n": 40,
+      "sum": 103,
+      "scoreCounts": [
+        0,
+        1,
+        16,
+        22,
+        1
+      ],
+      "mean": 2.575
+    },
+    "casual": {
+      "n": 30,
+      "sum": 76,
+      "scoreCounts": [
+        0,
+        1,
+        13,
+        15,
+        1
+      ],
+      "mean": 2.533333333333333
+    },
+    "controls": {
+      "n": 10,
+      "sum": 27,
+      "scoreCounts": [
+        0,
+        0,
+        3,
+        7,
+        0
+      ],
+      "mean": 2.7
+    },
+    "promptTokens": 130960,
+    "completionTokens": 983
+  },
+  "B": {
+    "all": {
+      "n": 40,
+      "sum": 105,
+      "scoreCounts": [
+        0,
+        1,
+        17,
+        18,
+        4
+      ],
+      "mean": 2.625
+    },
+    "casual": {
+      "n": 30,
+      "sum": 75,
+      "scoreCounts": [
+        0,
+        1,
+        16,
+        10,
+        3
+      ],
+      "mean": 2.5
+    },
+    "controls": {
+      "n": 10,
+      "sum": 30,
+      "scoreCounts": [
+        0,
+        0,
+        1,
+        8,
+        1
+      ],
+      "mean": 3
+    },
+    "promptTokens": 49970,
+    "completionTokens": 787
+  },
+  "preference": {
+    "all": {
+      "A": 11,
+      "B": 13,
+      "ties": 16
+    },
+    "casual": {
+      "A": 10,
+      "B": 10,
+      "ties": 10
+    },
+    "controls": {
+      "A": 1,
+      "B": 3,
+      "ties": 6
+    }
+  }
+}

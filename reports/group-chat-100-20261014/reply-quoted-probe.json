@@ -1,0 +1,181 @@
+{
+  "reminder": "【回复任务，不是群消息】\n只写一句你此刻想说的具体话，有问题则答清楚。先分清谁在和谁说话，群友互相说的‘你’不自动指你。你只通过文字参与：不要编自己也有他们的经历、设备或工作，不答应加入游戏、赴约或替人办事。别人没说的细节不补写；没求建议就不安排下一步。玩笑按玩笑接，不变成真实的办事流程。只发正文，不解释这些要求。",
+  "thinking": false,
+  "results": [
+    {
+      "anchor": "h3",
+      "recordedReply": "说明我这记性比那家店的辣度靠谱。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "大橘这个微辣前科看来是洗不掉了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 1699,
+                "completion_tokens": 13,
+                "total_tokens": 1712,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 291
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h15",
+      "recordedReply": "九点半你能上，那我在线等着，正好把这局的气一起找回来。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "九点半我是不上线的，你们缺人就群里喊一声。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2247,
+                "completion_tokens": 14,
+                "total_tokens": 2261,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 967
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h19",
+      "recordedReply": "行，小满负责留下证据，我们负责丢人。十点见。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "截图记得挑我开门的，起码那下比较帅。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2921,
+                "completion_tokens": 13,
+                "total_tokens": 2934,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1792
+                },
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 1129
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h48",
+      "recordedReply": "五瓶，够用。红袋子还是大橘带。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "那五瓶够了，两瓶加三瓶正好。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2788,
+                "completion_tokens": 12,
+                "total_tokens": 2800,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1508
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h55",
+      "recordedReply": "位置换了吧？之前那个风口正对脖子，确实遭罪。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "空调不冲着你吹，一天都能好过不少。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2813,
+                "completion_tokens": 12,
+                "total_tokens": 2825,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1533
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h56",
+      "recordedReply": "局部北极这词用得挺准，我们那台也是，只有坐在风口那几个人过冬天。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "空调这位置，谁坐下面谁倒霉。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2816,
+                "completion_tokens": 10,
+                "total_tokens": 2826,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1536
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h78",
+      "recordedReply": "能申请，但批不批得看主官。要是睡醒指明天，那今天就得先补上流程。",
+      "variants": [
+        {
+          "variant": "quoted",
+          "answer": "睡醒再申请，八成又要回去躺着想了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 3238,
+                "completion_tokens": 11,
+                "total_tokens": 3249,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1792
+                },
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 1446
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

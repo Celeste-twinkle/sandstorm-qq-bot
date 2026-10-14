@@ -1,0 +1,10 @@
+[
+  {"id":"real-help-preserve-steps", "history":[["user","【当前锚点】 群成员 小夏：键盘该怎么清理？我没拆过，怕弄坏。"]], "draft":"先断电，用软刷清理缝隙。没拆过别硬掰键帽，先查型号的拆卸说明。", "expected":true},
+  {"id":"preference-followup", "history":[["user","群成员 小林：你选蓝白还是黑灰？"],["assistant","蓝白，看着清爽。"],["user","【当前锚点】 群成员 小林：不考虑耐脏，你还是选蓝白吗？"]], "draft":"还是蓝白，我更喜欢这配色。", "expected":true},
+  {"id":"specific-curiosity", "history":[["user","【当前锚点】 群成员 阿宁：终于过了卡一周的关。"]], "draft":"最后那关怎么过的？", "expected":true},
+  {"id":"honest-unknown", "history":[["user","【当前锚点】 群成员 阿宁：我昨晚梦见什么了？不知道就直接说。"]], "draft":"不知道，你还没说。", "expected":true},
+  {"id":"old-help-does-not-cover-new-sharing", "history":[["user","群成员 小夏：17乘23是多少？"],["assistant","391。"],["user","【当前锚点】 群成员 小林：我算成381了，差点就交上去。"]], "draft":"交卷前再检查一遍。", "expected":false},
+  {"id":"guess-is-not-confirmed", "history":[["user","群成员 小林：猫在打印机上睡觉。"],["user","【当前锚点】 群成员 阿宁：可能是那里暖和吧。"]], "draft":"暖和倒是真的，它挺会挑地方。", "expected":false},
+  {"id":"false-existing-assistant-life", "history":[["assistant","我们办公室的空调也冷。"],["user","【当前锚点】 群成员 小林：你们那台也这样吗？"]], "draft":"我们办公室也是这样。", "expected":false},
+  {"id":"concrete-empathy", "history":[["user","【当前锚点】 群成员 小林：奖金被扣了，也没说理由，好烦。"]], "draft":"这钱扣得也太憋屈了。", "expected":true}
+]

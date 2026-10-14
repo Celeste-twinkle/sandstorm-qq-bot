@@ -1,0 +1,14 @@
+{
+    "checkedAt":  "2026-10-14T05:23:35.0225029Z",
+    "workspace":  "F:\\github\\sandstorm-qq-bot",
+    "targets":  [
+                    "F:\\github\\sandstorm-qq-bot\\release",
+                    "F:\\github\\sandstorm-qq-bot\\dist\\sandstorm-qq-bot.exe",
+                    "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy",
+                    "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy.zip"
+                ],
+    "noReparsePoints":  true,
+    "noLiveConfigInOutput":  true,
+    "napcatRuntimeExists":  true,
+    "nodeModulesExists":  true
+}

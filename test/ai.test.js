@@ -5,6 +5,7 @@ const {
   AiChatService,
   extractImageSources,
   extractSemanticMessageText,
+  isRepeatedOwnReply,
   trimQwenMessagesToBudget,
 } = require("../src/ai");
 const { DeepSeekChatService } = require("../src/deepseek");
@@ -15,28 +16,156 @@ const {
 } = require("../src/qwen");
 const {
   DEFAULT_AI_PERSONA_PROMPT,
-  DEFAULT_PERSONA_FLEXIBILITY_PROMPT,
-  DEFAULT_NATURAL_CHAT_PROMPT,
 } = require("../src/persona");
+const { AmbientReplyGuard } = require("../src/ambient-chat");
 
-test("Lexington keeps her identity while allowing natural casual speech", () => {
+test("the default whale persona allows casual group conversation and playful nonsense", () => {
   const lines = DEFAULT_AI_PERSONA_PROMPT.split("\n");
 
   assert.equal(lines[0], "【PERSONA_LOAD】");
-  assert.match(DEFAULT_AI_PERSONA_PROMPT, /战舰少女R.*列克星敦.*太太/);
-  assert.match(DEFAULT_AI_PERSONA_PROMPT, /温和成熟.*有自己的判断/);
-  assert.match(DEFAULT_AI_PERSONA_PROMPT, /用简体中文/);
-  assert.match(DEFAULT_AI_PERSONA_PROMPT, /话题相关时才提/);
+  assert.match(DEFAULT_AI_PERSONA_PROMPT, /大肥鱼.*蓝色鲸鱼娘/);
+  assert.match(DEFAULT_AI_PERSONA_PROMPT, /自己的喜恶/);
+  assert.match(DEFAULT_AI_PERSONA_PROMPT, /简体中文/);
+  assert.match(DEFAULT_AI_PERSONA_PROMPT, /瞎扯.*吹牛/);
   assert.doesNotMatch(DEFAULT_AI_PERSONA_PROMPT, /FIXED_RULE|ALWAYS_LOYAL|TONE_STYLE_/);
 });
 
-test("shared persona flexibility keeps character voice without forcing canon lines", () => {
-  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /保留当前角色的核心性格/);
-  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /不是需要逐项展示的台词清单/);
-  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /以本规则为准.*适合语境才用/);
-  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /用户要求正常说话时直接照做/);
-  assert.match(DEFAULT_PERSONA_FLEXIBILITY_PROMPT, /不能补造事实/);
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} casual replies use one persona and bypass optional draft review`, async () => {
+    const calls = [];
+    const capture = async (messages, options) => {
+      calls.push({ messages, options });
+      return calls.length === 1 ? '{"should_reply":true}' : "能啊，八点我准时到";
+    };
+    const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: provider,
+      personaFlexibilityPrompt: "", naturalChatPrompt: "", ambientChatDraftReviewEnabled: false }, {
+      logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+      localQwenService: createQwenStub({ createCompletion: capture }),
+    });
+    assert.equal(await service.ambientReplyIfAppropriate([{ role: "user", text: "晚上开黑差一个人" }]), "能啊，八点我准时到");
+    assert.equal(calls.length, 2);
+    const defaultPrompt = provider === "deepseek" ? service.config.deepseekSystemPrompt : service.config.localQwenSystemPrompt;
+    assert.equal(calls[1].messages.filter(message => message.role === "system").length, 1);
+    assert.equal(calls[1].messages.map(message => message.content).join("\n").split(defaultPrompt).length - 1, 1);
+    service.stop();
+  });
+}
+
+test("own-reply detection allows matching humans, ignores expired records and catches punctuation-only repeats", () => {
+  assert.equal(isRepeatedOwnReply([{ role: "user", text: "哈哈" }], "哈哈"), false);
+  assert.equal(isRepeatedOwnReply([{ role: "assistant", text: "哈哈" }], "哈哈！"), true);
+  assert.equal(isRepeatedOwnReply([{ role: "assistant", content: "对啊\n就这个" }], "对啊，就这个"), false);
+  assert.equal(isRepeatedOwnReply([{ role: "assistant", content: "对啊\n就这个" }], "对啊 就这个。"), true);
+  assert.equal(isRepeatedOwnReply([{ role: "assistant", text: "我选蓝白" }], "那我更喜欢黑灰"), false);
+  const expired = [{ role: "assistant", text: "哈哈", timestamp: 0 },
+    ...Array.from({ length: 50 }, (_, i) => ({ role: "user", text: `word-${i}`, timestamp: i + 1 }))];
+  assert.equal(isRepeatedOwnReply(expired, "哈哈"), false);
 });
+
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} self-repeat checking blocks a paraphrase while allowing human echoes and playful new reactions`, async () => {
+    const cases = [
+      { own: "三个闹钟都吵不过你", human: "笑死，闹钟也要组队", draft: "闹钟群架，最后全输给你", repeat: true },
+      { own: "我喜欢蓝白", human: "今晚这风好舒服", draft: "今晚这风好舒服", repeat: false },
+      { own: "我喜欢蓝白", human: "上号吗", draft: "来啦，八点上线，我可不送人头", repeat: false },
+      { own: "我喜欢蓝白", human: "今天吃了什么", draft: "这个群里今天的晚饭话题真丰富。".repeat(35), repeat: false },
+    ];
+    for (const item of cases) {
+      const calls = [];
+      const capture = async (messages, options) => {
+        calls.push({ messages, options });
+        if (options.responseFormat) {
+          assert.match(JSON.stringify(messages), /json/i, "DeepSeek JSON mode requires the word JSON in the prompt");
+          return messages[0].content.includes("self_repeat")
+            ? JSON.stringify({ self_repeat: item.repeat }) : '{"should_reply":true}';
+        }
+        return item.draft;
+      };
+      const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: provider,
+        ambientChatDraftReviewEnabled: false, groupChatSelfRepeatCheckEnabled: true }, {
+        logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+        localQwenService: createQwenStub({ createCompletion: capture }),
+      });
+      const context = [{ role: "assistant", text: item.own, timestamp: 1 },
+        { role: "user", text: item.human, timestamp: 2 }];
+      const skips = [];
+      assert.equal(await service.ambientReplyIfAppropriate(context, {}, { onSkip: reason => skips.push(reason) }), item.repeat ? null : item.draft);
+      assert.deepEqual(skips, item.repeat ? ["self_repeat"] : []);
+      assert.equal(calls.length, 3);
+      const check = calls[2];
+      assert.equal(check.options.thinking, false);
+      assert.equal(check.options.reasoningEffort, "none");
+      assert.equal(check.options.maxOutputTokens, 64);
+      assert.equal(check.options.decisionOnly, true);
+      assert.deepEqual(JSON.parse(check.messages[1].content).history.map(x=>x.role), ["assistant", "user"]);
+      assert.equal(await service.chat("group:user", item.human, { groupContextMessages: context }), item.repeat ? null : item.draft);
+      assert.equal(calls.length, 5);
+      service.stop();
+    }
+  });
+}
+
+test("self-repeat checking skips malformed boolean decisions", async () => {
+  const logger = createLogger();
+  const service = new AiChatService({ ...createConfig(), groupChatSelfRepeatCheckEnabled: true }, {
+    logger, deepseekService: createDeepSeekStub({ createCompletion: async () => '{"self_repeat":"no"}' }),
+    localQwenService: createQwenStub({ createCompletion: async () => "not JSON" }),
+  });
+  assert.equal(await service.checkOwnReplyRepeat([{ role: "assistant", text: "previous" }, { role: "user", text: "next" }], "new"), true);
+  assert.match(logger.lines.join("\n"), /self-repeat check failed/);
+  service.stop();
+});
+
+test("a new message during self-repeat checking invalidates the pending reply", async () => {
+  let current = true;
+  const capture = async (messages, options) => {
+    if (!options.responseFormat) return "新反应";
+    if (messages[0].content.includes("self_repeat")) { current = false; return '{"self_repeat":false}'; }
+    return '{"should_reply":true}';
+  };
+  const service = new AiChatService({ ...createConfig(), ambientChatDraftReviewEnabled: false,
+    groupChatSelfRepeatCheckEnabled: true }, {
+    logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+    localQwenService: createQwenStub({ createCompletion: capture }),
+  });
+  const reasons = [];
+  assert.equal(await service.ambientReplyIfAppropriate([
+    { role: "assistant", text: "过去说的话" }, { role: "user", text: "新话题" },
+  ], {}, { isCurrent: () => current, onSkip: reason => reasons.push(reason) }), null);
+  assert.deepEqual(reasons, ["context_changed"]);
+  service.stop();
+});
+
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} allows short and long human echoes but suppresses its own repeated replies in both paths`, async () => {
+    const cases = [
+      { role: "user", text: "笑死", draft: "笑死", expected: "笑死" },
+      { role: "user", text: "这个故事真的离谱。".repeat(40), draft: "这个故事真的离谱。".repeat(40) },
+      { role: "assistant", text: "笑死", draft: "笑死！", expected: null },
+      { role: "assistant", text: "刚才这个故事真的离谱。".repeat(40), draft: "刚才这个故事真的离谱。".repeat(40), expected: null },
+    ];
+    for (const item of cases) {
+      const calls = [];
+      const capture = async (messages, options) => {
+        calls.push({ messages, options });
+        return options.responseFormat ? '{"should_reply":true}' : item.draft;
+      };
+      const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: provider, ambientChatDraftReviewEnabled: false }, {
+        logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+        localQwenService: createQwenStub({ createCompletion: capture }),
+      });
+      const context = [{ role: item.role, text: item.text, timestamp: 1 }, { role: "user", text: "继续聊", timestamp: 2 }];
+      const expected = Object.hasOwn(item, "expected") ? item.expected : item.draft;
+      const skipped = [];
+      assert.equal(await service.ambientReplyIfAppropriate(context, {}, { onSkip: reason => skipped.push(reason) }), expected);
+      assert.equal(calls.length, 2, "No extra review or regeneration call");
+      assert.deepEqual(skipped, expected === null ? ["self_repeat"] : []);
+      assert.equal(await service.chat("group:user", "继续聊", { groupContextMessages: context }), expected);
+      assert.equal(calls.length, 3);
+      service.stop();
+    }
+  });
+}
 
 test("direct and ambient prompts share persona, flexibility, and sensitivity cache prefix", () => {
   const config = createConfig();
@@ -95,75 +224,29 @@ test("direct and ambient prompts share persona, flexibility, and sensitivity cac
   );
 });
 
-test("a selected member persona overrides defaults in direct and ambient replies", () => {
-  const config = createConfig();
-  const qwen = new LocalQwenChatService(config, { logger: createLogger() });
-  const deepseek = new DeepSeekChatService(config);
-  const service = new AiChatService(config, {
-    logger: createLogger(),
-    localQwenService: qwen,
-    deepseekService: deepseek,
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} uses its default prompt despite obsolete member persona metadata`, async () => {
+    const config = { ...createConfig(), aiPrimaryProvider: provider };
+    const calls = [];
+    const capture = async messages => { calls.push(messages); return "Reply"; };
+    const service = new AiChatService(config, {
+      logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+      localQwenService: createQwenStub({ createCompletion: capture }),
+    });
+    const meta = { personaPrompt: "OBSOLETE_MEMBER_PERSONA" };
+    const context = [{ role: "user", text: "hello", senderName: "Alice", timestamp: 1 }];
+    await service.chat("standalone", "hello", meta);
+    await service.chat("group", "hello", { ...meta, groupContextMessages: context });
+    await service.ambientReply(context, { ...meta, ambientMode: "instant" });
+    const defaultPrompt = provider === "deepseek" ? config.deepseekSystemPrompt : config.localQwenSystemPrompt;
+    assert.equal(calls.length, 3);
+    for (const messages of calls) {
+      assert.ok(messages[0].content.startsWith(defaultPrompt));
+      assert.doesNotMatch(JSON.stringify(messages), /OBSOLETE_MEMBER_PERSONA/);
+    }
+    service.stop();
   });
-  const selectedPersona = [
-    "【PERSONA_LOAD】",
-    "CHARACTER_ENTERPRISE_AZUR_LANE_FULL",
-    "AFFECTION_STATE_MAX_WITH_CURRENT_GROUP_MEMBER",
-  ].join("\n");
-  const session = { messages: [] };
-  const current = { role: "user", content: "hello" };
-  const context = [
-    {
-      role: "user",
-      userId: "10001",
-      senderName: "Alice",
-      text: "hello",
-      images: [],
-      timestamp: 1,
-    },
-  ];
-
-  const qwenDirect = service.buildLocalQwenMessages(
-    session,
-    current,
-    {},
-    1,
-    [],
-    selectedPersona,
-  )[0].content;
-  const qwenGroup = service.buildLocalQwenMessages(
-    session,
-    current,
-    {},
-    1,
-    context,
-    selectedPersona,
-  )[0].content;
-  const qwenAmbient = service.buildAmbientSystemPrompt("idle", selectedPersona);
-  const deepseekDirect = service.buildDeepSeekMessages(
-    session,
-    current,
-    selectedPersona,
-  )[0].content;
-  const deepseekAmbient = service.buildDeepSeekAmbientMessages(
-    context,
-    "idle",
-    selectedPersona,
-  )[0].content;
-
-  for (const prompt of [
-    qwenDirect,
-    qwenGroup,
-    qwenAmbient,
-    deepseekDirect,
-    deepseekAmbient,
-  ]) {
-    assert.equal(prompt.startsWith(selectedPersona), true);
-    assert.equal(prompt.includes(config.localQwenSystemPrompt), false);
-    assert.equal(prompt.includes(config.deepseekSystemPrompt), false);
-    assert.equal(prompt.includes(config.personaFlexibilityPrompt), true);
-    assert.equal(prompt.includes(config.responseNeutralityPrompt), true);
-  }
-});
+}
 
 test("inherited Local Qwen quick replies use the Qwen persona, not DeepSeek's", async () => {
   const config = {
@@ -892,16 +975,93 @@ test("AI choosing to join generates a reply only after its decision", async () =
     logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
     deepseekService: createDeepSeekStub({ async createCompletion(messages, options) {
       calls.push({ messages, options });
+      if (calls.length === 3) return '{"action":"send"}';
       return options.decisionOnly ? '{"should_reply":true}' : "接话正文";
     } }),
   });
   const context = [{ role: "user", messageId: "one", text: "太太，我怎么查版本？", timestamp: 1 }];
   assert.equal(await service.ambientReplyIfAppropriate(context, { personaPrompt: "Member persona" }), "接话正文");
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   assert.equal(calls[0].options.decisionOnly, true);
   assert.equal(calls[1].options.decisionOnly, undefined);
-  assert.equal(calls[0].messages[0].content.startsWith("Member persona"), true);
-  assert.equal(calls[1].messages[0].content.startsWith("Member persona"), true);
+  assert.equal(calls[2].options.decisionOnly, true);
+  assert.equal(calls[2].options.thinking, false);
+  assert.equal(calls[2].options.temperature, 0);
+  assert.equal(calls[0].messages[0].content.startsWith(service.config.deepseekSystemPrompt), true);
+  assert.equal(calls[1].messages[0].content.startsWith(service.config.deepseekSystemPrompt), true);
+});
+
+test("rejected ambient drafts are never returned or rerolled into group history", async () => {
+  let calls = 0;
+  const skipped = [];
+  const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: "deepseek" }, {
+    logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
+    deepseekService: createDeepSeekStub({ async createCompletion(messages) {
+      calls += 1;
+      if (calls === 1) return '{"should_reply":true}';
+      if (calls === 2) return "今晚我上线等你";
+      const data = JSON.parse(messages[1].content);
+      assert.equal(data.draft, "今晚我上线等你");
+      assert.equal(data.history.length, 1);
+      return '{"action":"skip"}';
+    } }),
+  });
+  assert.equal(await service.ambientReplyIfAppropriate([{ role: "user", text: "今晚还打吗" }], {}, {
+    onSkip: reason => skipped.push(reason),
+  }), null);
+  assert.equal(calls, 3);
+  assert.deepEqual(skipped, ["draft_rejected"]);
+  assert.equal(service.sessions.size, 0);
+});
+
+test("a new message during ambient draft review prevents delivery", async () => {
+  let current = true;
+  let calls = 0;
+  const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: "deepseek" }, {
+    logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
+    deepseekService: createDeepSeekStub({ async createCompletion() {
+      calls += 1;
+      if (calls === 2) return "接话";
+      if (calls === 3) { current = false; return '{"action":"send"}'; }
+      return '{"should_reply":true}';
+    } }),
+  });
+  assert.equal(await service.ambientReplyIfAppropriate([{ role: "user", text: "话题" }], {}, {
+    isCurrent: () => current,
+  }), null);
+  assert.equal(calls, 3);
+});
+
+test("ambient review returns only the edited text without a fourth generation call", async () => {
+  const calls = [];
+  const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: "deepseek" }, {
+    logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
+    deepseekService: createDeepSeekStub({ async createCompletion(messages, options) {
+      calls.push({ messages, options });
+      return ['{"should_reply":true}', "敲着挺解压，就是别在半夜用。", '{"action":"edit","text":"敲着挺解压。"}'][calls.length - 1];
+    } }),
+  });
+  assert.equal(await service.ambientReplyIfAppropriate([{ role: "user", text: "空格键像盖锅盖" }]), "敲着挺解压。");
+  assert.equal(calls.length, 3);
+  assert.equal(calls[2].options.thinking, false);
+  assert.equal(calls[2].options.decisionOnly, true);
+  assert.equal(calls[2].options.maxOutputTokens, 180);
+  assert.equal(service.sessions.size, 0);
+});
+
+test("invalid or non-extractive review edits stay silent rather than leaking drafts", async () => {
+  for (const review of ['{"action":"edit","text":"我家的键盘也这样。"}', '{"action":"send","reason":"internal"}']) {
+    let calls = 0;
+    const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: "deepseek" }, {
+      logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
+      deepseekService: createDeepSeekStub({ async createCompletion() {
+        return ['{"should_reply":true}', "敲着挺解压。", review][calls++];
+      } }),
+    });
+    assert.equal(await service.ambientReplyIfAppropriate([{ role: "user", text: "空格键像盖锅盖" }]), null);
+    assert.equal(calls, 3);
+    assert.equal(service.sessions.size, 0);
+  }
 });
 
 test("stale conversations do not trigger reply generation after a positive AI decision", async () => {
@@ -914,6 +1074,96 @@ test("stale conversations do not trigger reply generation after a positive AI de
     isCurrent: () => false,
   }), null);
   assert.equal(calls, 1);
+});
+
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} accumulates public messages during serial requests and sends a relevant draft`, async () => {
+    const context = [{ role: "user", messageId: "h1", text: "下班想吃炒饭", timestamp: 1 }];
+    const guard = new AmbientReplyGuard();
+    const ticket = guard.begin("g", context);
+    let active = 0;
+    const calls = [];
+    const capture = async (messages, options) => {
+      assert.equal(++active, 1, "Requests within a group must stay serial");
+      try {
+        calls.push({ messages, options });
+        if (calls.length === 1) {
+          context.push({ role: "user", messageId: "h2", text: "蛋炒饭加火腿", timestamp: 2 });
+          return '{"should_reply":true}';
+        }
+        if (calls.length === 2) {
+          assert.match(JSON.stringify(messages), /蛋炒饭加火腿/);
+          context.push({ role: "user", messageId: "h3", text: "我还要双倍的蛋", timestamp: 3 });
+          return "蛋加双倍，饭是配菜";
+        }
+        const data = JSON.parse(messages[1].content.split("\n")[1]);
+        assert.equal(data.draft, "蛋加双倍，饭是配菜");
+        assert.match(JSON.stringify(data.messages), /双倍的蛋/);
+        return '{"should_reply":true}';
+      } finally { active--; }
+    };
+    const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: provider,
+      ambientChatDraftReviewEnabled: false }, {
+      logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+      localQwenService: createQwenStub({ createCompletion: capture }),
+    });
+    assert.equal(await service.ambientReplyIfAppropriate(context, {}, {
+      isCurrent: () => guard.canContinue(ticket, context), getCurrentContext: () => context,
+      onContextReviewed: latest => guard.refresh(ticket, latest),
+    }), "蛋加双倍，饭是配菜");
+    assert.equal(calls.length, 3, "Generate once, check fresh interest without rewriting");
+    assert.equal(guard.canSend(ticket, context), true);
+    service.stop();
+  });
+}
+
+test("a stop accumulated during generation suppresses the old draft", async () => {
+  const context = [{ role: "user", text: "聊蛋炒饭", timestamp: 1 }];
+  let calls = 0;
+  const capture = async (messages, options) => {
+    calls++;
+    if (calls === 1) return '{"should_reply":true}';
+    if (!options.decisionOnly) {
+      context.push({ role: "user", text: "我们先停，机器人这条不用回", timestamp: 2 });
+      return "炒饭多加蛋";
+    }
+    assert.match(JSON.stringify(messages), /这条不用回/);
+    return '{"should_reply":false}';
+  };
+  const skips = [];
+  const service = new AiChatService({ ...createConfig(), ambientChatDraftReviewEnabled: false }, {
+    logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+    localQwenService: createQwenStub({ configured: false }),
+  });
+  assert.equal(await service.ambientReplyIfAppropriate(context, {}, {
+    getCurrentContext: () => context, onSkip: reason => skips.push(reason),
+  }), null);
+  assert.equal(calls, 3);
+  assert.deepEqual(skips, ["conversation_moved_on"]);
+  service.stop();
+});
+
+test("arrivals during the last inference wait for the next cycle without starving this one", async () => {
+  const context = [{ role: "user", text: "一个公共话题", timestamp: 1 }];
+  let calls = 0;
+  const capture = async (_messages, options) => {
+    calls++;
+    if (calls === 1) return '{"should_reply":true}';
+    context.push({ role: "user", text: `新进展${calls}`, timestamp: calls });
+    return options.decisionOnly ? '{"should_reply":true}' : "想插一句";
+  };
+  const service = new AiChatService({ ...createConfig(), ambientChatDraftReviewEnabled: false }, {
+    logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+    localQwenService: createQwenStub({ configured: false }),
+  });
+  let reviewedContext;
+  assert.equal(await service.ambientReplyIfAppropriate(context, {}, {
+    getCurrentContext: () => context, onContextReviewed: latest => { reviewedContext = latest; },
+  }), "想插一句");
+  assert.equal(calls, 3);
+  assert.equal(reviewedContext.at(-1).text, "新进展2");
+  assert.equal(context.at(-1).text, "新进展3");
+  service.stop();
 });
 
 test("invalid judgement or provider failure keeps the bot silent", async () => {
@@ -944,15 +1194,20 @@ test("decision requests use 50 chronological text records and a JSON budget", as
     timestamp: index, images: ["https://image.invalid/not-fetched.png"],
   })).reverse();
   assert.equal(await service.shouldAmbientReply(context, { ambientMode: "idle" }), true);
-  assert.equal(body.messages.length, 51);
-  assert.match(body.messages[1].content, /item-20/);
-  assert.match(body.messages.at(-1).content, /item-69/);
+  assert.equal(body.messages.length, 2);
+  assert.equal(body.messages[1].role, "user");
+  const records = JSON.parse(body.messages[1].content.split("\n")[1]).messages;
+  assert.equal(records.length, 50);
+  assert.match(records[0].content, /item-20/);
+  assert.match(records.at(-1).content, /item-69/);
+  assert.equal(records[0].role, "assistant");
+  assert.match(body.messages[1].content, /不要生成聊天正文/);
   assert.equal(body.thinking.type, "disabled");
   assert.equal(body.max_tokens, 64);
-  assert.equal(body.temperature, 0);
+  assert.equal(body.temperature, 0.5);
   assert.deepEqual(body.response_format, { type: "json_object" });
   assert.equal(body.messages.every((message) => typeof message.content === "string"), true);
-  assert.equal(body.messages[0].content.includes(DEFAULT_NATURAL_CHAT_PROMPT), false);
+  assert.equal(body.messages[0].content.includes(config.naturalChatPrompt), false);
 });
 
 test("Qwen decision requests disable reasoning and use a small output budget", async () => {
@@ -1032,16 +1287,107 @@ test("DeepSeek direct and both ambient modes send the same latest 50 group recor
   for (const request of requests) {
     assert.equal(request.model, "deepseek-flash");
     assert.equal(request.thinking.type, "disabled");
-    assert.equal(request.messages.length, 51);
-    assert.deepEqual(request.messages.slice(1).map((message) => message.content.match(/timeline-\d+/)[0]),
+    const records = request.messages.filter(message => message.role !== "system");
+    assert.equal(records.length, 50);
+    assert.deepEqual(records.map((message) => message.content.match(/timeline-\d+/)[0]),
       Array.from({ length: 50 }, (_, index) => `timeline-${index + 20}`));
     assert.equal(request.messages.filter((message) => message.role === "assistant").length, 13);
     assert.doesNotMatch(JSON.stringify(request.messages), /obsolete personal/);
-    assert.equal(request.messages[0].content.includes(DEFAULT_NATURAL_CHAT_PROMPT), true);
-    assert.match(request.messages.at(-1).content, /当前锚点.*timeline-69/);
+    assert.equal(request.messages[0].content.includes(config.naturalChatPrompt), true);
+    assert.match(records.at(-1).content, /当前锚点.*timeline-69/);
+    assert.equal(request.messages.filter(message => message.role === "system").length, 1);
+    assert.equal(request.messages.map(message => message.content).join("\n").split(config.deepseekSystemPrompt).length - 1, 1);
   }
   // Actual sent replies are recorded by OneBot, never appended to a user session.
   assert.equal(service.sessions.get("group:user").messages.length, 2);
+});
+
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} learned phrasing reaches replies without gating interest`, async () => {
+    const calls = [];
+    const hint = "有上下文时，一个词也可以表达完整反应。";
+    const capture = async (messages, options) => {
+      calls.push({ messages, options });
+      return ['{"should_reply":true}', "啊？", '{"action":"send"}'][calls.length - 1];
+    };
+    const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: provider }, {
+      logger: createLogger(), deepseekService: createDeepSeekStub({ createCompletion: capture }),
+      localQwenService: createQwenStub({ createCompletion: capture }),
+    });
+    const context = [{ role: "user", text: "临下班说全改", timestamp: 1 }];
+    const meta = { groupChatStyle: [{ text: hint, evidence: ["m1"] }] };
+    assert.equal(await service.ambientReplyIfAppropriate(context, meta), "啊？");
+    assert.ok(!calls[0].messages.some(message => message.role === "system" && message.content.includes(hint)));
+    for (const call of calls.slice(1)) assert.ok(call.messages.some(message => message.role === "system" && message.content.includes(hint)));
+    const defaultPrompt = provider === "deepseek" ? service.config.deepseekSystemPrompt : service.config.localQwenSystemPrompt;
+    assert.ok(calls[1].messages[0].content.includes(defaultPrompt));
+    assert.ok(calls[1].messages.at(-1).content.includes(hint));
+    assert.ok(!calls[1].messages.at(-1).content.includes(defaultPrompt));
+    assert.equal(JSON.parse(calls[2].messages[1].content).draft, "啊？");
+    service.stop();
+  });
+
+  test(`${provider} ambient judgement, generation and review share 50 records despite legacy small limits`, async () => {
+    const config = { ...createConfig(), aiPrimaryProvider: provider,
+      ambientChatInstantMaxMessages: 4, ambientChatIdleMaxMessages: 6, localQwenMaxHistoryMessages: 8 };
+    const calls = [];
+    const capture = async (messages) => {
+      calls.push(messages);
+      return calls.length % 3 === 1 ? '{"should_reply":true}'
+        : calls.length % 3 === 2 ? "A connected reply." : '{"action":"send"}';
+    };
+    const service = new AiChatService(config, {
+      logger: createLogger(),
+      deepseekService: createDeepSeekStub({ createCompletion: capture }),
+      localQwenService: createQwenStub({ createCompletion: capture }),
+    });
+    const context = Array.from({ length: 70 }, (_, index) => ({
+      role: index % 4 === 0 ? "assistant" : "user", text: `timeline-${index}`,
+      senderName: index % 4 === 0 ? "Bot" : `Member-${index % 3}`, timestamp: index,
+    })).reverse();
+    for (const ambientMode of ["instant", "idle"]) {
+      const offset = calls.length;
+      assert.equal(await service.ambientReplyIfAppropriate(context, { ambientMode }), "A connected reply.");
+      const judgement = JSON.parse(calls[offset][1].content.split("\n")[1]).messages;
+      const generation = calls[offset + 1].filter(message => message.role !== "system");
+      const review = JSON.parse(calls[offset + 2][1].content).history;
+      for (const records of [judgement, generation, review]) {
+        assert.equal(records.length, 50);
+        assert.deepEqual(records.map(message => message.content.match(/timeline-\d+/)[0]),
+          Array.from({ length: 50 }, (_, index) => `timeline-${index + 20}`));
+        assert.equal(records.filter(message => message.role === "assistant").length, 13);
+        assert.match(records.at(-1).content, /当前锚点.*timeline-69/);
+      }
+    }
+    assert.equal(calls.length, 6);
+    assert.equal(context.length, 70);
+    assert.equal(context[0].text, "timeline-69");
+    service.stop();
+  });
+}
+
+test("learning evaluates the current module and chat in thinking mode without images or tools", async () => {
+  let seen;
+  const service = new AiChatService({ ...createConfig(), aiPrimaryProvider: "deepseek", groupChatLearningMaxOutputTokens: 4096 }, {
+    logger: createLogger(), localQwenService: createQwenStub({ configured: false }),
+    deepseekService: createDeepSeekStub({ async createCompletion(messages, options) {
+      seen = { messages, options }; return '{"rules":[]}';
+    } }),
+  });
+  const previous = [{ text: "搜索后自然重述，保留来源。", evidence: ["m1"] }];
+  assert.equal(await service.learnGroupChatStyle([{ role: "user", text: "嗯", images: ["https://unused.invalid/image"], timestamp: 1 }], previous), '{"rules":[]}');
+  assert.equal(seen.options.thinking, true);
+  assert.equal(seen.options.webSearch, false);
+  assert.equal(seen.options.reasoningEffort, "high");
+  assert.equal(seen.options.backgroundTask, true);
+  assert.equal(seen.options.decisionOnly, undefined);
+  assert.equal(seen.options.maxOutputTokens, 4096);
+  assert.deepEqual(seen.options.responseFormat, { type: "json_object" });
+  assert.equal(seen.messages.length, 2);
+  assert.doesNotMatch(JSON.stringify(seen.messages), /unused.invalid/);
+  assert.equal(JSON.parse(seen.messages[1].content).records[0].text, "嗯");
+  assert.deepEqual(JSON.parse(seen.messages[1].content).learning_module, { rules: [{ id: "p1", text: previous[0].text }] });
+  assert.equal(service.sessions.size, 0);
 });
 
 test("DeepSeek trimming preserves the active persona with an oversized latest message", () => {
@@ -1055,6 +1401,44 @@ test("DeepSeek trimming preserves the active persona with an oversized latest me
   assert.deepEqual(messages.map((message) => message.role), ["system", "user"]);
   assert.equal(messages[0].content, "active persona");
   assert.equal(messages[1].content.length, 2000);
+});
+
+for (const provider of ["deepseek", "local-qwen"]) {
+  test(`${provider} learning HTTP request keeps reasoning and a complete JSON budget`, async () => {
+    const config = { ...createConfig(), aiPrimaryProvider: provider,
+      groupChatLearningMaxOutputTokens: 4096, groupChatLearningReasoningEffort: "high" };
+    const bodies = [];
+    const service = new AiChatService(config, { logger: createLogger(), fetch: async (_url, options) => {
+      bodies.push(JSON.parse(options.body));
+      return completionResponse('{"rules":[]}');
+    } });
+    service.localQwen.markHealthy("test provider");
+    await service.learnGroupChatStyle([{ role: "user", text: "Search answers should sound natural.", timestamp: 1 }]);
+    assert.equal(bodies.length, 1);
+    const body = bodies[0];
+    assert.equal(body.reasoning_effort, "high");
+    if (provider === "deepseek") assert.equal(body.thinking.type, "enabled");
+    assert.equal(body.max_tokens, 4096);
+    assert.deepEqual(body.response_format, { type: "json_object" });
+    assert.equal(body.tools, undefined);
+    assert.equal(body.temperature, undefined);
+    service.stop();
+  });
+}
+
+test("group guidance preserves the latest message under a tight budget", () => {
+  const config = { ...createConfig(), chatMaxContextChars: 1000 };
+  const provider = new DeepSeekChatService(config);
+  const service = new AiChatService(config, { deepseekService: provider });
+  const messages = service.withGroupReplyGuidance([
+    { role: "system", content: "base rules" },
+    { role: "assistant", content: "I am the previous persona" },
+    { role: "user", content: "新".repeat(2000) },
+  ], provider, 1, [{ text: "顺着群里的口语表达自己的想法。", evidence: ["m1"] }]);
+  assert.deepEqual(messages.map(message => message.role), ["system", "user", "system"]);
+  assert.equal(messages[1].content.length, 2000);
+  assert.ok(messages.at(-1).content.includes("顺着群里的口语表达自己的想法"));
+  assert.doesNotMatch(JSON.stringify(messages), /previous persona/);
 });
 
 test("standalone DeepSeek requests also include the current message in the 50-message cap", () => {
@@ -1214,7 +1598,7 @@ test("DeepSeek attaches the image recovered from the current QQ reply context", 
   });
 
   assert.equal(
-    deepseekMessages.at(-1).content.some(
+    deepseekMessages.findLast(message => message.role === "user").content.some(
       (part) => part.type === "image_ref" && part.source === quotedImage,
     ),
     true,
@@ -1287,7 +1671,8 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
 
   assert.equal(calls.length, 2);
   for (const [callIndex, call] of calls.entries()) {
-    assert.equal(call.messages.length, 51);
+    const records = call.messages.filter(message => message.role !== "system");
+    assert.equal(records.length, 50);
     assert.equal(call.messages.slice(1).some((message) => message.role === "assistant"), true);
     assert.match(
       String(
@@ -1299,9 +1684,9 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
     );
     assert.match(
       String(
-        Array.isArray(call.messages.at(-2).content)
-          ? call.messages.at(-2).content[0].text
-          : call.messages.at(-2).content,
+        Array.isArray(records.at(-2).content)
+          ? records.at(-2).content[0].text
+          : records.at(-2).content,
       ),
       /群成员 Alice：图片 10/,
     );
@@ -1324,9 +1709,9 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
     );
     assert.match(
       String(
-        Array.isArray(call.messages.at(-1).content)
-          ? call.messages.at(-1).content[0].text
-          : call.messages.at(-1).content,
+        Array.isArray(records.at(-1).content)
+          ? records.at(-1).content[0].text
+          : records.at(-1).content,
       ),
       /【当前锚点】.*QQ引用来源：Alice.*仅用于定位，不代表语义相关.*上面这张图片里是什么/,
     );
@@ -1334,10 +1719,9 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
   assert.equal(calls[0].options.maxOutputTokens, 16384);
   assert.equal(calls[1].options.maxOutputTokens, 16384);
   for (const call of calls) {
-    assert.match(call.messages[0].content, /assistant 是你实际说过的话/);
-    assert.match(call.messages[0].content, /最后一条群成员消息.*当前锚点.*只回应它/);
-    assert.match(call.messages[0].content, /QQ引用来源只是定位.*依据内容判断是否相关/);
-    assert.match(call.messages[0].content, /无关旧话题放在一边/);
+    assert.match(call.messages[0].content, /assistant 是你已发过的话/);
+    assert.match(call.messages[0].content, /最近最多50条发言，从旧到新排列/);
+    assert.match(call.messages[0].content, /图片、表情、引用和转发属于所在消息/);
     assert.equal(call.messages.find((message) => message.role === "assistant").content, "这是机器人先前的回复");
     assert.doesNotMatch(JSON.stringify(call.messages), /权重 \d+/);
   }
@@ -2309,6 +2693,7 @@ function createConfig() {
     deepseekImageCacheDetail: "high",
     deepseekSystemPrompt: "DeepSeek system",
     personaFlexibilityPrompt: "Flexible roleplay",
+    naturalChatPrompt: "Optional natural overrides",
     responseNeutralityPrompt: "Neutral",
     deepseekTimeoutMs: 30000,
     deepseekThinkingEnabled: false,
@@ -2321,6 +2706,8 @@ function createConfig() {
     webSearchMaxToolRounds: 2,
     webSearchMaxToolCallsPerRound: 2,
     ambientChatSystemPrompt: "Ambient",
+    ambientChatDraftReviewEnabled: true, // Exercise the explicitly optional review path.
+    groupChatSelfRepeatCheckEnabled: false, // Self-repeat classifier has dedicated tests.
     ambientChatInstantMaxMessages: 100,
     ambientChatIdleMaxMessages: 100,
     ambientChatContextSeconds: 7200,

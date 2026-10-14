@@ -153,13 +153,22 @@ class DeepSeekHarnessWebToolRunner {
   formatToolResult(toolCall, result) {
     if (result?.error) return JSON.stringify(result);
     if (toolCall?.function?.name === "web_search" && Array.isArray(result?.sources)) {
-      return formatSearchOutput(result);
+      const text = formatSearchOutput(result);
+      const hint = this.getEvidenceRecoveryHint(toolCall, result);
+      return hint ? `${text}\n\nEvidence status: discovery_only.\n${hint}` : text;
     }
     if (toolCall?.function?.name === "web_fetch" && result?.body) {
       const text = renderFetchOutput(result, this.fetchMaxOutputChars).text;
       return result.source_id ? `${text}\n\nSource ID: 【${result.source_id}】` : text;
     }
     return JSON.stringify(result);
+  }
+
+  getEvidenceRecoveryHint(toolCall, result) {
+    if (toolCall?.function?.name !== "web_search" || result?.error
+      || !Array.isArray(result?.sources) || !result.sources.some((source) => isWebSourceUrl(source.url))
+      || this.hasUsableEvidence(toolCall, result)) return "";
+    return "搜索已找到候选网页，但本次结果只有标题和网址，没有引用片段或正文。若要回答具体事实，请先用 web_fetch 读取相关来源；已有候选链接时优先读正文，不要反复搜同一个问题。读取失败可换另一个来源，也可以说明本次未能查证。不能根据标题、网址或模型记忆声称已经核实，也不能把没有读到正文说成没有相关事件。";
   }
 
   hasUsableEvidence(toolCall, result) {

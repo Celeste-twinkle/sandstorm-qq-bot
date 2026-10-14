@@ -4,7 +4,6 @@ const path = require("node:path");
 const { createHash, randomInt } = require("node:crypto");
 const { config } = require("../src/config");
 const { AiChatService } = require("../src/ai");
-const { loadAzurLanePersonaCatalog } = require("../src/azur-lane-personas");
 const { scenarios, holdoutScenarios, interactionScenarios, naturalnessScenarios, contextFor } = require("./chat-ab-fixtures");
 
 const action = process.argv[2] || "run";
@@ -14,11 +13,11 @@ const baselinePath = path.join(outputDir, "baseline.json");
 const resultsPath = path.join(outputDir, "results.json");
 const hash = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
-function buildMessages(service, catalog, scenario) {
-  const personaPrompt = scenario.persona ? catalog.buildPrompt(catalog.getById(scenario.persona)) : "";
+function buildMessages(service, scenario) {
+
   return scenario.mode === "direct"
-    ? service.buildDeepSeekMessages({ messages: [] }, { role: "user", content: scenario.sourceMessages.at(-1)[2] }, scenario.context, personaPrompt)
-    : service.buildDeepSeekAmbientMessages(scenario.context, scenario.mode, personaPrompt);
+    ? service.buildDeepSeekMessages({ messages: [] }, { role: "user", content: scenario.sourceMessages.at(-1)[2] }, scenario.context)
+    : service.buildDeepSeekAmbientMessages(scenario.context, scenario.mode);
 }
 
 function summarize(rows) {
@@ -38,13 +37,12 @@ async function main() {
   assert.equal(config.deepseekThinkingEnabled, false, "Leave production thinking disabled during prompt comparison");
   assert.equal(config.deepseekModel, "deepseek-flash");
   const service = new AiChatService(config);
-  const catalog = loadAzurLanePersonaCatalog({ filePath: config.personaCatalogFile });
   if (action === "snapshot") {
     assert.ok(!fs.existsSync(baselinePath), "Do not overwrite an existing baseline");
     const cases = [...scenarios, ...holdoutScenarios, ...interactionScenarios, ...naturalnessScenarios].map((scenario) => {
       const item = { ...scenario, sourceMessages: scenario.messages, context: contextFor(scenario) };
       delete item.messages;
-      item.baselineMessages = buildMessages(service, catalog, item);
+      item.baselineMessages = buildMessages(service, item);
       assert.ok(item.context.length > 0 && item.context.length <= 50);
       assert.equal(item.baselineMessages.length, item.context.length + 1);
       item.contextHash = hash(item.context);
@@ -67,7 +65,7 @@ async function main() {
   assert.ok(!fs.existsSync(resultsPath), "Do not overwrite existing results");
   const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
   assert.equal(config.deepseekTemperature, baseline.temperature);
-  const cases = baseline.cases.map((scenario) => ({ ...scenario, candidateMessages: buildMessages(service, catalog, scenario) }));
+  const cases = baseline.cases.map((scenario) => ({ ...scenario, candidateMessages: buildMessages(service, scenario) }));
   for (const scenario of cases) {
     assert.equal(scenario.candidateMessages.length, scenario.context.length + 1);
     assert.equal(hash(scenario.context), scenario.contextHash);

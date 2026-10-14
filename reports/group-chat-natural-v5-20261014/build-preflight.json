@@ -1,0 +1,36 @@
+{
+    "checkedAt":  "2026-10-14T07:08:29.3312273Z",
+    "workspace":  "F:\\github\\sandstorm-qq-bot",
+    "targets":  [
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\release",
+                        "exists":  true,
+                        "noReparsePoint":  true,
+                        "noLiveState":  true,
+                        "items":  10
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\dist\\sandstorm-qq-bot.exe",
+                        "exists":  true,
+                        "noReparsePoint":  true,
+                        "noLiveState":  true,
+                        "items":  0
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy",
+                        "exists":  true,
+                        "noReparsePoint":  true,
+                        "noLiveState":  true,
+                        "items":  30
+                    },
+                    {
+                        "path":  "F:\\github\\sandstorm-qq-bot\\deploy\\SandstormQQBot-Deploy.zip",
+                        "exists":  true,
+                        "noReparsePoint":  true,
+                        "noLiveState":  true,
+                        "items":  0
+                    }
+                ],
+    "dependenciesAvailable":  true,
+    "runtimeAvailable":  true
+}

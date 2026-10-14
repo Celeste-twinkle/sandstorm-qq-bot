@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "runtime": "v22.22.3",
+  "searchRecovery": true,
+  "structuredJudgement": true,
+  "rejectedDraftNotDelivered": true,
+  "extractiveReview": true,
+  "currentPersonaReminder": true,
+  "chronological50WithEchoDedup": true,
+  "serializedLatestScheduling": true,
+  "promptHashesMatchSource": true,
+  "noNetwork": true,
+  "noQQConnection": true,
+  "exeSha256": "ab8e214d7541a45b46249f23cd46f9e37d27b356dd76267ea79eba3db35d00f2",
+  "date": "2026-10-14T06:05:58.387Z"
+}

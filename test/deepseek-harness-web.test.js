@@ -387,8 +387,55 @@ test("tool loop reads full Markdown when search has no cited excerpt, while titl
   const fetched = f.modelBodies[2].messages.filter((message) => message.role === "tool").at(-1).content;
   assert.match(fetched, /Fetched https:\/\/example.com\/release \(HTTP 200\)/);
   assert.doesNotMatch(fetched, /<p>|"kind":"html"/);
-  const failed = chatFixture([{ tool_calls: [nativeSearch] }, { content: "Invented answer" }], discovery);
+  assert.match(f.modelBodies[1].messages.at(-1).content, /discovery_only[\s\S]*web_fetch/);
+  const failed = chatFixture([{ tool_calls: [nativeSearch] }, { content: "Invented answer" }, { content: "Still unverified" }], discovery);
   assert.equal(await failed.service.createCompletion(chatMessages), "这个我没查到可靠的消息，暂时不确定。");
+  assert.equal(failed.modelBodies.length, 3, "Only one correction is allowed when the model declines to fetch");
+  assert.equal(failed.toolCalls.length, 1);
+});
+
+test("a premature answer after URL-only search gets one correction within the original tool budget", async () => {
+  const discovery = apiPayload([{ url: "https://example.com/release", title: "Release" }]);
+  const answer = "Verified [source](https://example.com/release)";
+  const f = chatFixture([{ tool_calls: [nativeSearch] }, { content: "Unverified draft from memory" },
+    { tool_calls: [nativeFetch] }, { content: answer }], discovery);
+  const logs = [];
+  f.config.webSearchDiagnosticsEnabled = true;
+  f.service.logger = { log: (line) => logs.push(line) };
+  assert.equal(await f.service.createCompletion(chatMessages, { maxOutputTokens: 180 }), answer);
+  assert.equal(f.config.webSearchMaxToolRounds, 2);
+  assert.equal(f.modelBodies.length, 4);
+  assert.deepEqual(f.toolCalls.map((call) => call.function.name), ["web_search", "web_fetch"]);
+  assert.match(f.modelBodies[2].messages.at(-1).content, /还可使用 1 轮工具/);
+  assert.doesNotMatch(JSON.stringify(f.modelBodies[2].messages), /Unverified draft from memory/);
+  assert.ok(f.modelBodies.every((body) => body.thinking.type === "disabled"));
+  assert.equal(f.modelBodies[2].tool_choice, "auto", "Recovery still lets the model decline");
+  assert.equal(f.modelBodies[3].max_tokens, 512);
+  assert.match(logs.join("\n"), /tool=web_search.*usable_evidence=false/);
+  assert.match(logs.join("\n"), /tool=web_fetch.*usable_evidence=true/);
+  assert.match(logs.at(-1), /outcome=evidence_answer_budget tool_rounds=2\/2 tool_calls=2 evidence_results=1 recovery_attempted=true/);
+  assert.doesNotMatch(logs.join("\n"), /test-search-key|public release|https:/);
+});
+
+test("evidence recovery neither exceeds tool limits nor treats failed pages as verified", async () => {
+  const discovery = apiPayload([{ url: "https://example.com/release", title: "Release" }]);
+  const oneRound = chatFixture([{ tool_calls: [nativeSearch] }], discovery);
+  oneRound.config.webSearchMaxToolRounds = 1;
+  assert.equal(await oneRound.service.createCompletion(chatMessages), "这个我没查到可靠的消息，暂时不确定。");
+  assert.equal(oneRound.modelBodies.length, 1);
+  const failed = chatFixture([{ tool_calls: [nativeSearch] }, { content: "Unverified draft" },
+    { tool_calls: [nativeFetch, { ...nativeFetch, id: "fetch-2" }, { ...nativeFetch, id: "fetch-3" }] }],
+  discovery, fetchResult("Access denied", { statusCode: 403 }));
+  assert.equal(await failed.service.createCompletion(chatMessages), "这个我没查到可靠的消息，暂时不确定。");
+  assert.equal(failed.modelBodies.length, 3);
+  assert.equal(failed.toolCalls.length, 3, "One search plus at most two fetches, despite three requested fetches");
+});
+
+test("empty native search has no candidate page to repair and stops normally", async () => {
+  const f = chatFixture([{ tool_calls: [nativeSearch] }, { content: "Unknown" }], apiPayload([]));
+  assert.equal(await f.service.createCompletion(chatMessages), "这个我没查到可靠的消息，暂时不确定。");
+  assert.equal(f.modelBodies.length, 2);
+  assert.doesNotMatch(f.modelBodies[1].messages.at(-1).content, /discovery_only/);
 });
 
 test("direct URLs need no preliminary search, but 404 content is not factual evidence", async () => {

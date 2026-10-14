@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "runtime": "v22.22.3",
+  "searchRecovery": true,
+  "structuredJudgement": true,
+  "rejectedDraftNotDelivered": true,
+  "extractiveReview": true,
+  "currentPersonaReminder": true,
+  "chronological50WithEchoDedup": true,
+  "ambientPhasesShare50DespiteLegacyLimits": true,
+  "serializedLatestScheduling": true,
+  "groupLearningPersists": true,
+  "learnedStyleAppliedToAllPhases": true,
+  "learningWithoutToolsOrThinking": true,
+  "learningDirBesideExe": true,
+  "obsoleteHintsCanBeRetired": true,
+  "promptHashesMatchSource": true,
+  "noNetwork": true,
+  "noQQConnection": true,
+  "exeSha256": "c533498cd6937adc665e1bcdabf2d4cb1c3dcbe15f822c559e05e916b1682924",
+  "date": "2026-10-14T10:07:03.529Z"
+}

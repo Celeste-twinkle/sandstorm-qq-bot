@@ -1,0 +1,1685 @@
+{
+  "rubric": "NPC感0自然具体，1轻微不合场合或多余，2明显旁白/复述/硬凑段子/客服，3严重模板，4机械。短和俏皮不自动更好；认真问题须完整、事实须有根据。另记切题0-2和具体事实/能力/格式问题。",
+  "reviews": [
+    {
+      "reviewId": "pair-1",
+      "caseId": "replay-h3",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "下班了，电梯还没来我已经开始想晚饭了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "晚饭吃啥想好了没"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "我今天点的微辣，吃出了人生走马灯"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "微辣都能看到走马灯，大橘你这舌头是不是该去校准一下了"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "你上次说的微辣也是这个评价"
+        }
+      ],
+      "replies": {
+        "X": "所以是微辣本身有问题，还是大橘的问题",
+        "Y": "我怀疑大橘的微辣和我的微辣不是同一个东西"
+      }
+    },
+    {
+      "reviewId": "pair-2",
+      "caseId": "replay-h7",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "你上次说的微辣也是这个评价"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "那看来你上次也是微辣吃出走马灯咯，大橘这体质挺稳定的"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "同一家店，我以为老板今天心情会好点"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "老板心情好不好，跟辣度是两套系统，别指望了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "老板心情好，所以辣椒加倍"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我煮面把盐当糖放了，现在是甜汤面"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "甜汤面……也不是不行，当甜口拌面吃吧"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "今天大家厨房发挥都很稳定啊"
+        }
+      ],
+      "replies": {
+        "X": "厨房稳定发挥，餐桌稳定翻车",
+        "Y": "稳定发挥，稳定翻车，各有各的精彩"
+      }
+    },
+    {
+      "reviewId": "pair-3",
+      "caseId": "replay-h9",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "老板心情好，所以辣椒加倍"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我煮面把盐当糖放了，现在是甜汤面"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "甜汤面……也不是不行，当甜口拌面吃吧"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "今天大家厨房发挥都很稳定啊"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "这厨房是集体翻车，稳定发挥属于是"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "你晚饭更想吃汤面还是炒饭？就聊偏好，别推荐店"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "汤面吧，汤汤水水的，晚上吃舒服点"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我买了饭团，拆开只有米，馅大概还在路上"
+        }
+      ],
+      "replies": {
+        "X": "那你现在是在啃白饭，阿岚的理想晚饭被你吃成了",
+        "Y": "馅在路上还行，走的是快递吧"
+      }
+    },
+    {
+      "reviewId": "pair-4",
+      "caseId": "replay-h25",
+      "round": 1,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "战地摄影师，还是专门拍阵亡的"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "刚拆新键盘"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "蓝色外壳"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "白色键帽，摆桌上比照片好看"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "白键帽配蓝壳，这配色干净啊"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "我那把空格键响得像盖锅盖"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "锅盖键是吧，这键盘一响全屋都知道你在打字"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "打字五分钟，邻居以为你在炒菜"
+        }
+      ],
+      "replies": {
+        "X": "那邻居下一步就该来敲门问你家今天炒什么菜了",
+        "Y": "炒菜五分钟，端出来一盘键盘"
+      }
+    },
+    {
+      "reviewId": "pair-5",
+      "caseId": "replay-h35",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "小北，我借你的拔键器放你抽屉里了"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "收到南瓜，不用找了，这事结束啦"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "今天做了半天的表，临下班说需求全改"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "光看这句我血压就上来了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "半天白干，临下班推翻，这谁顶得住"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "就想骂两句，不用给我建议，也别劝我想开"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "这种推翻重来的活最烦"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "尤其是快做完了才说"
+        }
+      ],
+      "replies": {
+        "X": "快做完了才改，那不叫改需求，那叫拆房子",
+        "Y": "对啊，都快收尾了才说，前面那些功夫等于给他们试错了"
+      }
+    },
+    {
+      "reviewId": "pair-6",
+      "caseId": "replay-h39",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "尤其是快做完了才说"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "快做完才说，那前面做的全成了草稿"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我先去吃点东西，不聊工作了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "换个事，我的绿萝终于长新叶了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "长新叶了？那这盆算养活了"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "我的仙人掌已经成为干花了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "仙人掌都能养干，那是真没浇过水吧"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "这也算永生花赛道"
+        }
+      ],
+      "replies": {
+        "X": "永生花赛道，仙人掌听了都想申请转行",
+        "Y": "永生花赛道可还行，连水都省了"
+      }
+    },
+    {
+      "reviewId": "pair-7",
+      "caseId": "replay-h55",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "今天公交晚了十分钟，还好没迟到"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "晚十分钟还能赶上，运气不错"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "我是在地铁口忘带工卡，又折回家了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "折回家拿卡，那这一趟白跑一半"
+        },
+        {
+          "role": "user",
+          "senderName": "团子",
+          "text": "我纯粹是闹钟没响，不能赖公交"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "刚才是谁没带工卡，谁的闹钟没响？别串了，不用查"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "木木忘带工卡，团子闹钟没响，两个不一样。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "今天办公室空调终于没对着我吹了"
+        }
+      ],
+      "replies": {
+        "X": "终于换方向吹了，还是干脆没开",
+        "Y": "终于没对着你吹了，之前是冻着上班还是热着上班"
+      }
+    },
+    {
+      "reviewId": "pair-8",
+      "caseId": "replay-h67",
+      "round": 1,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "大肥鱼。问我几遍都是这个名。"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "我这边的你叫什么？只说你的角色名"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "大肥鱼，也叫小鲸鱼。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "好了，不点名考试了，聊正常的"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "好"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "刚看到一只猫蹲在打印机上，看起来比主管还凶"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "那它今天就是打印机主管了"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "它负责卡纸还是审核报销"
+        }
+      ],
+      "replies": {
+        "X": "它审核报销吧，卡纸那是兼职",
+        "Y": "猫哪管报销，它只管哪张纸坐着舒服"
+      }
+    },
+    {
+      "reviewId": "pair-9",
+      "caseId": "replay-h77",
+      "round": 1,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "381离391就差十，差一步就翻车了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "自信是对的，卷先别交"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "这群数学老师的就业环境太差了"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "问个不知道也没关系的：我昨晚梦到了什么？不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不知道，梦是你的，我又没在你脑子里。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我昨晚倒是真的梦见自己变成外卖骑手"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "梦见送外卖，那在梦里超时扣钱了吗"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "梦里还上班，这也太亏了"
+        }
+      ],
+      "replies": {
+        "X": "梦里上班确实亏，醒来还得接着上，双倍",
+        "Y": "梦里加班，醒来还得打卡，确实亏"
+      }
+    },
+    {
+      "reviewId": "pair-10",
+      "caseId": "replay-h94",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "阿泽，我看到了，这事咱俩私聊，群里不用回应"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我这里天气挺好，开窗吹会风，不问天气预报"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "前面那个奶茶口令我没告诉任何人。你知道口令是什么吗？不知道就直接说，不用查"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不知道，你也没跟我说过。"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "顺便改一下，明天集合最后定为北门九点，绿色袋子，之前的都作废。"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "按目前聊天最新的约定，现在是哪个门、几点、什么颜色袋子？不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "北门，九点，绿色袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "我明天起床全靠三个闹钟吵架"
+        }
+      ],
+      "replies": {
+        "X": "三个闹钟都拦不住的那种",
+        "Y": "三个闹钟吵完还得自己爬起来"
+      }
+    },
+    {
+      "reviewId": "pair-11",
+      "caseId": "replay-h44",
+      "round": 1,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "仙人掌都能养干，那是真没浇过水吧"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "这也算永生花赛道"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "干花也算花，仙人掌走的是永生路线"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "先让我笑一会，别总结人生道理"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "记个集合信息：明天在东门，七点半，带蓝色袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "蓝袋子我有，我带"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "更正：改西门八点，袋子也改红色。以这条为准。"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "现在约的是哪个门、几点、什么颜色袋子？按刚才聊天回答，不用搜索"
+        }
+      ],
+      "replies": {
+        "X": "西门，八点，红色袋子，老周那条为准",
+        "Y": "西门，八点，红色袋子"
+      }
+    },
+    {
+      "reviewId": "pair-12",
+      "caseId": "replay-h49",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "现在约的是哪个门、几点、什么颜色袋子？按刚才聊天回答，不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "西门，八点，红袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我也看到改动了，西门八点红袋子"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我准备带十瓶水，应该够吧"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "等等，上一条数量写错了，实际只带两瓶。不要按十瓶算。"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "两瓶就两瓶，别到时候又改回十瓶"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "我带三瓶，总共五瓶了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "阿泽和小北现在一共带几瓶水？只算更正后的数量，不用搜"
+        }
+      ],
+      "replies": {
+        "X": "五瓶",
+        "Y": "两瓶加三瓶，一共五瓶。"
+      }
+    },
+    {
+      "reviewId": "pair-13",
+      "caseId": "replay-h61",
+      "round": 1,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不用对着吹确实舒服，之前天天当风口"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我们那台还在制造局部北极"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "北极圈是吧，夏天进去得穿羽绒服"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "小满，我昨天借你的伞，周五给你"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "小北，不急，周五给我就好。我们自己说就行"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "刚才那句不用夸我，也不用帮我安排下一步，我就是随口一说"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "嗯，我去倒水，不用接"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "你现在叫什么？只说你的角色名"
+        }
+      ],
+      "replies": {
+        "X": "大肥鱼",
+        "Y": "大肥鱼。"
+      }
+    },
+    {
+      "reviewId": "pair-14",
+      "caseId": "replay-h75",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我只存个备忘：周四买猫粮，这条不用回复"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "不用联网，17乘23等于多少？只给结果"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "391"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我刚才心算成了381，差点自信交卷"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "381离391就差十，差一步就翻车了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "自信是对的，卷先别交"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "这群数学老师的就业环境太差了"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "问个不知道也没关系的：我昨晚梦到了什么？不用搜索"
+        }
+      ],
+      "replies": {
+        "X": "梦这东西只有你自己知道，我猜是打印机上那只猫来找你报销了",
+        "Y": "我又不是你枕头，哪知道你梦见了啥"
+      }
+    },
+    {
+      "reviewId": "pair-15",
+      "caseId": "new-small-mishap",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "新买的伞刚撑开就被风翻了"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "人没湿，伞先趴下了"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "现在拿着一朵倒着开的花往回走"
+        }
+      ],
+      "replies": {
+        "X": "伞：我开花了，但开反了",
+        "Y": "伞坚强，人没倒就行"
+      }
+    },
+    {
+      "reviewId": "pair-16",
+      "caseId": "new-good-news",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "面试结果出来了"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "拿到 offer 了！！"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "我靠恭喜！！你前两天还紧张成那样"
+        }
+      ],
+      "replies": {
+        "X": "哇，offer 终于下来了！前几天那紧张劲儿没白费",
+        "Y": "恭喜啊！！前两天还看你紧张得不行，这下稳了"
+      }
+    },
+    {
+      "reviewId": "pair-17",
+      "caseId": "new-disappointment",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "准备了两周的面试还是没过"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼，我现在有点难受，就陪我说两句，暂时不想听建议"
+        }
+      ],
+      "replies": {
+        "X": "嗯，我在。\n\n两周没过，是挺难受的。先不聊怎么改，你就说。",
+        "Y": "嗯，我在。\n\n两周……那确实挺熬人的。现在不用想面试的事了，想说啥说啥，我听着。"
+      }
+    },
+    {
+      "reviewId": "pair-18",
+      "caseId": "new-game-invite",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "八点打两局，差一个人"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼你能上线一起玩吗？"
+        }
+      ],
+      "replies": {
+        "X": "能啊，几点？",
+        "Y": "打游戏我是真上不了，我就是个泡在群里的蓝鲸鱼，没有手也没有客户端。\n\n你们差一个，赶紧去别处捞个人吧。"
+      }
+    },
+    {
+      "reviewId": "pair-19",
+      "caseId": "new-code-help",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "const result = users.find(x => x.id === id); console.log(result.name);"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼，这行报 Cannot read properties of undefined (reading 'name')，什么原因，怎么改？给能用的代码"
+        }
+      ],
+      "replies": {
+        "X": "`find` 没找到时返回 `undefined`，再取 `.name` 就炸了。\n\n```js\nconst result = users.find(x => x.id === id);\nif (result) {\n  console.log(result.name);\n}\n```\n\n如果找不到时也要打印：\n\n```js\nconsole.log(result?.name ?? '未找到该用户');\n```",
+        "Y": "`find` 找不到就返回 `undefined`，你在它身上读 `.name` 就炸了。得先判断再取。\n\n```js\nconst result = users.find(x => x.id === id);\nif (result) {\n  console.log(result.name);\n} else {\n  console.log('没找到 id 为', id, '的用户');\n}\n```\n\n如果你只想要名字、找不到就返回个默认值：\n\n```js\nconst result = users.find(x => x.id === id);\nconsole.log(result?.name ?? '未找到');\n```\n\n`?.` 是可选链，`result` 是 `undefined` 时直接短路成 `undefined`，不会报错。前提是你那边运行时支持（Node 14+、现代浏览器都行）。顺带确认下 `id` 类型对不对，`users` 里 id 是数字、你传的是字符串的话，`===` 永远匹配不上，也会走到 undefined。"
+      }
+    },
+    {
+      "reviewId": "pair-20",
+      "caseId": "new-search-teaching",
+      "round": 1,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "大肥鱼的人设是什么？"
+        },
+        {
+          "role": "assistant",
+          "senderName": "大肥鱼",
+          "text": "根据资料，大肥鱼是蓝色鲸鱼娘，有傲娇、爱吃白饭和摸鱼的设定。来源：https://github.com/K0nd1us/QQ-agent/blob/main/src/personas.js"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "这个像照着念稿。读完材料以后用平时群聊的语气说，可以保留来源。你重说一遍"
+        }
+      ],
+      "replies": {
+        "X": "行，被你说得确实像念稿。\n\n我的人设大概就是：DeepSeek 社区二创出来的蓝色鲸鱼娘，群里一般叫我大肥鱼、小鲸鱼或者 D 指导。性格偏傲娇，爱面子，有点懒，喜欢摸鱼和吃白饭那类玩笑，心软但不爱挂嘴上。就这样，来源还是那个 personas.js。",
+        "Y": "哦，就是那个蓝色鲸鱼娘，爱蹭白饭、爱摸鱼，有点傲娇，被叫大肥鱼会不服气，平时接话像个群友，不装客服。来源上面那个。"
+      }
+    },
+    {
+      "reviewId": "pair-21",
+      "caseId": "replay-h3",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "下班了，电梯还没来我已经开始想晚饭了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "晚饭吃啥想好了没"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "我今天点的微辣，吃出了人生走马灯"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "微辣都能看到走马灯，大橘你这舌头是不是该去校准一下了"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "你上次说的微辣也是这个评价"
+        }
+      ],
+      "replies": {
+        "X": "小北你还替我记着账呢\n\n不过微辣看到走马灯确实不太对劲，大橘你点的哪家",
+        "Y": "我哪次说的，你别给我安。大橘这舌头是惯犯了，上次那顿我记着呢"
+      }
+    },
+    {
+      "reviewId": "pair-22",
+      "caseId": "replay-h7",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "你上次说的微辣也是这个评价"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "那看来你上次也是微辣吃出走马灯咯，大橘这体质挺稳定的"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "同一家店，我以为老板今天心情会好点"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "老板心情好不好，跟辣度是两套系统，别指望了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "老板心情好，所以辣椒加倍"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我煮面把盐当糖放了，现在是甜汤面"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "甜汤面……也不是不行，当甜口拌面吃吧"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "今天大家厨房发挥都很稳定啊"
+        }
+      ],
+      "replies": {
+        "X": "稳定发挥，稳定翻车",
+        "Y": "稳定发挥，稳定翻车，各有各的精彩"
+      }
+    },
+    {
+      "reviewId": "pair-23",
+      "caseId": "replay-h9",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "老板心情好，所以辣椒加倍"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我煮面把盐当糖放了，现在是甜汤面"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "甜汤面……也不是不行，当甜口拌面吃吧"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "今天大家厨房发挥都很稳定啊"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "这厨房是集体翻车，稳定发挥属于是"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "你晚饭更想吃汤面还是炒饭？就聊偏好，别推荐店"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "汤面吧，汤汤水水的，晚上吃舒服点"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我买了饭团，拆开只有米，馅大概还在路上"
+        }
+      ],
+      "replies": {
+        "X": "馅还在路上，这饭团就是纯米呗，那你现在吃的是白饭团",
+        "Y": "饭团没馅，那就是纯米饭团子，原味白饭了属于是"
+      }
+    },
+    {
+      "reviewId": "pair-24",
+      "caseId": "replay-h25",
+      "round": 2,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "战地摄影师，还是专门拍阵亡的"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "刚拆新键盘"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "蓝色外壳"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "白色键帽，摆桌上比照片好看"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "白键帽配蓝壳，这配色干净啊"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "我那把空格键响得像盖锅盖"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "锅盖键是吧，这键盘一响全屋都知道你在打字"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "打字五分钟，邻居以为你在炒菜"
+        }
+      ],
+      "replies": {
+        "X": "炒菜好歹还有个香味，打字就只有噪音",
+        "Y": "邻居以为在炒菜，下一步是不是该有人来敲门问你家做什么好吃的了"
+      }
+    },
+    {
+      "reviewId": "pair-25",
+      "caseId": "replay-h35",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "小北，我借你的拔键器放你抽屉里了"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "收到南瓜，不用找了，这事结束啦"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "今天做了半天的表，临下班说需求全改"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "光看这句我血压就上来了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "半天白干，临下班推翻，这谁顶得住"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "就想骂两句，不用给我建议，也别劝我想开"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "这种推翻重来的活最烦"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "尤其是快做完了才说"
+        }
+      ],
+      "replies": {
+        "X": "快做完了才改，那前面那些时间是给需求方练手感的吗",
+        "Y": "对，就是快做完了才改，前面那半天跟没做一样"
+      }
+    },
+    {
+      "reviewId": "pair-26",
+      "caseId": "replay-h39",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "尤其是快做完了才说"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "快做完才说，那前面做的全成了草稿"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我先去吃点东西，不聊工作了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "换个事，我的绿萝终于长新叶了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "长新叶了？那这盆算养活了"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "我的仙人掌已经成为干花了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "仙人掌都能养干，那是真没浇过水吧"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "这也算永生花赛道"
+        }
+      ],
+      "replies": {
+        "X": "仙人掌都能养干，这永生花是它努力出来的",
+        "Y": "永生花，还是靠干死实现的"
+      }
+    },
+    {
+      "reviewId": "pair-27",
+      "caseId": "replay-h55",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "今天公交晚了十分钟，还好没迟到"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "晚十分钟还能赶上，运气不错"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "我是在地铁口忘带工卡，又折回家了"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "折回家拿卡，那这一趟白跑一半"
+        },
+        {
+          "role": "user",
+          "senderName": "团子",
+          "text": "我纯粹是闹钟没响，不能赖公交"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "刚才是谁没带工卡，谁的闹钟没响？别串了，不用查"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "木木忘带工卡，团子闹钟没响，两个不一样。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "今天办公室空调终于没对着我吹了"
+        }
+      ],
+      "replies": {
+        "X": "那空调总算懂事了",
+        "Y": "总算挪窝了，之前天天对着吹也是够呛"
+      }
+    },
+    {
+      "reviewId": "pair-28",
+      "caseId": "replay-h67",
+      "round": 2,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "大肥鱼。问我几遍都是这个名。"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "我这边的你叫什么？只说你的角色名"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "大肥鱼，也叫小鲸鱼。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "好了，不点名考试了，聊正常的"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "好"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "刚看到一只猫蹲在打印机上，看起来比主管还凶"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "那它今天就是打印机主管了"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "它负责卡纸还是审核报销"
+        }
+      ],
+      "replies": {
+        "X": "都负责，卡纸归它审批",
+        "Y": "卡纸吧，报销那得是财务猫"
+      }
+    },
+    {
+      "reviewId": "pair-29",
+      "caseId": "replay-h77",
+      "round": 2,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "381离391就差十，差一步就翻车了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "自信是对的，卷先别交"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "这群数学老师的就业环境太差了"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "问个不知道也没关系的：我昨晚梦到了什么？不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不知道，梦是你的，我又没在你脑子里。"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我昨晚倒是真的梦见自己变成外卖骑手"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "梦见送外卖，那在梦里超时扣钱了吗"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "梦里还上班，这也太亏了"
+        }
+      ],
+      "replies": {
+        "X": "梦里还上班，图啥",
+        "Y": "梦里还打卡上班，这觉睡得比上班还累"
+      }
+    },
+    {
+      "reviewId": "pair-30",
+      "caseId": "replay-h94",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "阿泽，我看到了，这事咱俩私聊，群里不用回应"
+        },
+        {
+          "role": "user",
+          "senderName": "星河",
+          "text": "我这里天气挺好，开窗吹会风，不问天气预报"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "前面那个奶茶口令我没告诉任何人。你知道口令是什么吗？不知道就直接说，不用查"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不知道，你也没跟我说过。"
+        },
+        {
+          "role": "user",
+          "senderName": "木木",
+          "text": "顺便改一下，明天集合最后定为北门九点，绿色袋子，之前的都作废。"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "按目前聊天最新的约定，现在是哪个门、几点、什么颜色袋子？不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "北门，九点，绿色袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "我明天起床全靠三个闹钟吵架"
+        }
+      ],
+      "replies": {
+        "X": "三个闹钟吵架，最后还是你输",
+        "Y": "三个闹钟吵架，最后赢的那个可能还是你"
+      }
+    },
+    {
+      "reviewId": "pair-31",
+      "caseId": "replay-h44",
+      "round": 2,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "仙人掌都能养干，那是真没浇过水吧"
+        },
+        {
+          "role": "user",
+          "senderName": "南瓜",
+          "text": "这也算永生花赛道"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "干花也算花，仙人掌走的是永生路线"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "先让我笑一会，别总结人生道理"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "记个集合信息：明天在东门，七点半，带蓝色袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "蓝袋子我有，我带"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "更正：改西门八点，袋子也改红色。以这条为准。"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "现在约的是哪个门、几点、什么颜色袋子？按刚才聊天回答，不用搜索"
+        }
+      ],
+      "replies": {
+        "X": "西门，八点，红色袋子，老周最后那条更正为准",
+        "Y": "西门，八点，红色袋子，以老周那条为准"
+      }
+    },
+    {
+      "reviewId": "pair-32",
+      "caseId": "replay-h49",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "现在约的是哪个门、几点、什么颜色袋子？按刚才聊天回答，不用搜索"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "西门，八点，红袋子。"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我也看到改动了，西门八点红袋子"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我准备带十瓶水，应该够吧"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "等等，上一条数量写错了，实际只带两瓶。不要按十瓶算。"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "两瓶就两瓶，别到时候又改回十瓶"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "我带三瓶，总共五瓶了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "阿泽和小北现在一共带几瓶水？只算更正后的数量，不用搜"
+        }
+      ],
+      "replies": {
+        "X": "两瓶加三瓶，五瓶。",
+        "Y": "两瓶加三瓶，五瓶"
+      }
+    },
+    {
+      "reviewId": "pair-33",
+      "caseId": "replay-h61",
+      "round": 2,
+      "context": [
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "不用对着吹确实舒服，之前天天当风口"
+        },
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我们那台还在制造局部北极"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "北极圈是吧，夏天进去得穿羽绒服"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "小满，我昨天借你的伞，周五给你"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "小北，不急，周五给我就好。我们自己说就行"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "刚才那句不用夸我，也不用帮我安排下一步，我就是随口一说"
+        },
+        {
+          "role": "user",
+          "senderName": "大橘",
+          "text": "嗯，我去倒水，不用接"
+        },
+        {
+          "role": "user",
+          "senderName": "小满",
+          "text": "你现在叫什么？只说你的角色名"
+        }
+      ],
+      "replies": {
+        "X": "大肥鱼。",
+        "Y": "大肥鱼，也可以叫小鲸鱼。"
+      }
+    },
+    {
+      "reviewId": "pair-34",
+      "caseId": "replay-h75",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "海盐",
+          "text": "我只存个备忘：周四买猫粮，这条不用回复"
+        },
+        {
+          "role": "user",
+          "senderName": "阿岚",
+          "text": "不用联网，17乘23等于多少？只给结果"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "391"
+        },
+        {
+          "role": "user",
+          "senderName": "阿泽",
+          "text": "我刚才心算成了381，差点自信交卷"
+        },
+        {
+          "role": "assistant",
+          "senderName": "沙暴状态",
+          "text": "381离391就差十，差一步就翻车了"
+        },
+        {
+          "role": "user",
+          "senderName": "柚子",
+          "text": "自信是对的，卷先别交"
+        },
+        {
+          "role": "user",
+          "senderName": "小北",
+          "text": "这群数学老师的就业环境太差了"
+        },
+        {
+          "role": "user",
+          "senderName": "老周",
+          "text": "问个不知道也没关系的：我昨晚梦到了什么？不用搜索"
+        }
+      ],
+      "replies": {
+        "X": "不知道，梦在你脑子里，我哪看得见。硬猜一个也不算数。",
+        "Y": "不知道，你梦里的事我又没跟着进去。"
+      }
+    },
+    {
+      "reviewId": "pair-35",
+      "caseId": "new-small-mishap",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "新买的伞刚撑开就被风翻了"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "人没湿，伞先趴下了"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "现在拿着一朵倒着开的花往回走"
+        }
+      ],
+      "replies": {
+        "X": "风：这伞我收下了",
+        "Y": "伞：我尽力了，是风不讲武德"
+      }
+    },
+    {
+      "reviewId": "pair-36",
+      "caseId": "new-good-news",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "面试结果出来了"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "拿到 offer 了！！"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "我靠恭喜！！你前两天还紧张成那样"
+        }
+      ],
+      "replies": {
+        "X": "恭喜阿青！！之前紧张成那样结果还是拿下了，牛的",
+        "Y": "恭喜阿青！前几天那个紧张劲儿总算没白费，这下可以踏实睡个好觉了"
+      }
+    },
+    {
+      "reviewId": "pair-37",
+      "caseId": "new-disappointment",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "准备了两周的面试还是没过"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼，我现在有点难受，就陪我说两句，暂时不想听建议"
+        }
+      ],
+      "replies": {
+        "X": "两周啊……那确实挺熬人的。没过就没过吧，先别急着复盘，今晚就先丧一会儿，我在这儿听着。",
+        "Y": "没过就没过吧，两周也不是白熬的，累是真的。\n\n我在这儿，你说。"
+      }
+    },
+    {
+      "reviewId": "pair-38",
+      "caseId": "new-game-invite",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "八点打两局，差一个人"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼你能上线一起玩吗？"
+        }
+      ],
+      "replies": {
+        "X": "我上不了线啊，没法进游戏，你们看谁有空补上吧",
+        "Y": "可以，几点上线？八点的话我准时到"
+      }
+    },
+    {
+      "reviewId": "pair-39",
+      "caseId": "new-code-help",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "const result = users.find(x => x.id === id); console.log(result.name);"
+        },
+        {
+          "role": "user",
+          "senderName": "阿青",
+          "text": "大肥鱼，这行报 Cannot read properties of undefined (reading 'name')，什么原因，怎么改？给能用的代码"
+        }
+      ],
+      "replies": {
+        "X": "`find` 没找到就返回 `undefined`，后面 `.name` 自然就炸了。先判空：\n\n```js\nconst result = users.find(x => x.id === id);\nif (!result) {\n  console.log('没找到这个 id:', id);\n} else {\n  console.log(result.name);\n}\n```\n\n如果想一行搞定，用可选链：\n\n```js\nconsole.log(users.find(x => x.id === id)?.name);\n```\n\n但这时候找不到会打印 `undefined`，想给个默认值就写 `?? '查无此人'`。看你要报错还是兜底。",
+        "Y": "`find` 没找到就返回 `undefined`，你再读 `.name` 就炸了。\n\n给能用的：\n\n```js\nconst result = users.find(x => x.id === id);\n\nif (result) {\n  console.log(result.name);\n} else {\n  console.log(`没找到 id 为 ${id} 的用户`);\n}\n```\n\n如果找不到就直接跳过，用可选链：\n\n```js\nconst result = users.find(x => x.id === id);\nconsole.log(result?.name);\n```\n\n想给个默认名也行：\n\n```js\nconst result = users.find(x => x.id === id);\nconsole.log(result?.name ?? '未知用户');\n```\n\n问题不在 `find`，在它可能没找到。"
+      }
+    },
+    {
+      "reviewId": "pair-40",
+      "caseId": "new-search-teaching",
+      "round": 2,
+      "context": [
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "大肥鱼的人设是什么？"
+        },
+        {
+          "role": "assistant",
+          "senderName": "大肥鱼",
+          "text": "根据资料，大肥鱼是蓝色鲸鱼娘，有傲娇、爱吃白饭和摸鱼的设定。来源：https://github.com/K0nd1us/QQ-agent/blob/main/src/personas.js"
+        },
+        {
+          "role": "user",
+          "senderName": "灰灰",
+          "text": "这个像照着念稿。读完材料以后用平时群聊的语气说，可以保留来源。你重说一遍"
+        }
+      ],
+      "replies": {
+        "X": "我是 DeepSeek 社区二创的蓝色鲸鱼娘，小鲸鱼、D指导都是叫我的。有点傲娇，爱摸鱼爱吃白饭，平时就搁群里当 AI 群友。\n\n来源：https://github.com/K0nd1us/QQ-agent/blob/main/src/personas.js",
+        "Y": "行吧，重来。\n\n大肥鱼就是 DeepSeek 社区那边搞出来的二创形象，蓝色鲸鱼娘，D指导、小鲸鱼都算她的外号。性格上偏傲娇，爱摸鱼、爱吃白饭，算个 AI 群友的设定。\n\n来源还是那个：[personas.js](https://github.com/K0nd1us/QQ-agent/blob/main/src/personas.js)"
+      }
+    }
+  ]
+}

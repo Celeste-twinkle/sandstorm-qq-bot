@@ -1,0 +1,30 @@
+{
+  "rows": [
+    {
+      "id": "unclear-plant-cause",
+      "decision": false,
+      "reply": null
+    }
+  ],
+  "calls": [
+    {
+      "thinking": {
+        "type": "disabled"
+      },
+      "responseFormat": {
+        "type": "json_object"
+      },
+      "usage": {
+        "prompt_tokens": 1267,
+        "completion_tokens": 7,
+        "total_tokens": 1274,
+        "prompt_tokens_details": {
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 243
+      },
+      "answer": "{\"should_reply\":false}"
+    }
+  ]
+}

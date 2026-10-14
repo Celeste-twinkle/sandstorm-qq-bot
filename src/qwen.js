@@ -758,7 +758,7 @@ class LocalQwenChatService extends DeepSeekChatService {
       model: this.config.localQwenModel,
       messages,
       stream: false,
-      max_tokens: overrides.decisionOnly === true
+      max_tokens: overrides.decisionOnly === true || overrides.backgroundTask === true
         ? Math.min(maxOutputTokens, Math.max(32, Number(overrides.maxOutputTokens) || 64))
         : maxOutputTokens,
     };

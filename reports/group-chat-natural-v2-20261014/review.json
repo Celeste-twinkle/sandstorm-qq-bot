@@ -1,0 +1,258 @@
+{
+  "status": "validated_with_style_limitations",
+  "selectedRun": "round-02/run.json",
+  "baselineRun": "../group-chat-natural-20261014/round-02/run.json",
+  "scope": "继续降低群聊回复里的复述、多余叮嘱与硬凑比喻，同时保留按兴趣参与和明确追问。",
+  "changes": [
+    "沿用已有草稿检查请求，由布尔放行改成原样发送、删减、跳过三种动作；不增加重写循环。",
+    "编辑只能从原稿删减，程序检查字符顺序、数字、来源链接以及部分否定和不确定性表达。失败时不发送，不退回未经检查的原稿。",
+    "检查先核对事实与说话者，再辨认求助/追问，最后处理表达；允许对当前话题有具体好奇，不重新要求必须被点名或提供新知识。",
+    "生成提示强调数量、时长与对象保持原意，不把未说明的原因变成带责怪的预设。",
+    "上下文只记录实际发送的最终文本，仍是最新 50 条人类与 bot 消息；默认思考关闭。"
+  ],
+  "experiments": [
+    {
+      "path": "edit-ab-01/results.json",
+      "adopted": false,
+      "finding": "首版删减在定向样本里漏过虚构经历，并删去被请求帮助中的必要提醒，未采用。"
+    },
+    {
+      "path": "edit-ab-02/results.json",
+      "finding": "35 对相同草稿/历史的对照证明局部删减有用：删除半夜使用提醒、梦境后的补觉建议等，保留明确追问。该阶段提示随后继续调整，不能把它的成本作为最终版本的成本。",
+      "guardReview": "edit-ab-02/guard-review.json",
+      "limitation": "程序还拒绝了一条删掉整段否定表达的编辑，说明保守保护可能误拦。"
+    },
+    {
+      "path": "round-01/run.json",
+      "adopted": false,
+      "finding": "功能检查通过，但对具体好奇过于保守，且仍放过半天/一天的改动与推测疏于照料的问句，继续修改。"
+    },
+    {
+      "path": "correction-ab/results.json",
+      "finding": "24 对生成/检查样本：恢复键盘轴体的自然好奇；事实检查仍会漏过时长和问句预设，不能当成可靠事实审计。"
+    },
+    {
+      "path": "fresh-ab-final/results.json",
+      "finding": "最终检查提示在 10 个补充场景中保留求助、追问、必要条件、否定与链接；2 条删掉多余提醒，3 条拒绝虚构经历/原因和冒领私人事务。未基于这些补充场景继续调参。",
+      "limitation": "合成场景、每个变体一次调用、非盲评；不代表真实群聊的错误率。"
+    },
+    {
+      "path": "plain-style-ab/results.json",
+      "adopted": false,
+      "finding": "额外强调普通口语、替换风格示例的 12 对生成实验，没有稳定消除复述和编比喻，仍有时长改动，已恢复实验前提示。"
+    }
+  ],
+  "manualReview": {
+    "readFullTranscript": true,
+    "functionalFindings": [
+      "15 条 @ 和 h28 未 @ 的明确追问全部回应；15 个明确不接/私人事务边界全部保持安静。",
+      "最新人格、同群不同成员的经历、已更正的集合信息与数量正常；包含 bot 发言的 50 条时间序列及自身回传去重正常。",
+      "忙碌期间的新消息重新判断，旧判断未生成过时回复；没有接口异常、空白 JSON 或截断回复。",
+      "搜索实际获得了来源内容；这里只验证证据链可用，不代表每个事实表述都经过独立核验。"
+    ],
+    "styleLimitations": [
+      "最终完整模拟没有触发局部编辑（0 条）；删减收益来自固定草稿与补充场景的对照，不能据此宣称这 100 条的整体语气已经明显改善。",
+      "h5/h9/h11 等仍倾向把现有笑点继续加工；h31/h72 等仍有先复述再点评的形状。",
+      "h2 出现走马灯的错序表达，h56 反应较空泛；本轮没有通过硬编码替换这些具体句子来美化结果。",
+      "生成与检查都有随机性，两个完整运行的参与次数不同；不以少回复、短回复或固定比例判定更自然。"
+    ],
+    "decision": "接受可验证的删减能力及边界保护，保留明确语气局限；不声称已消除 NPC 感。"
+  },
+  "validation": {
+    "unitTests": 157,
+    "unitLog": "unit-tests-final.log",
+    "syntaxLog": "syntax-check.log",
+    "packageSmoke": "package-smoke.json",
+    "archiveVerification": "archive-verification.json",
+    "sourceHashesMatch": true,
+    "sourceHashes": {
+      "src/index.js": "6ab5ee86d9bcd1bc3c63c0e8336b0c63dac7130ef8b0b3e2d2f4895e3213b200",
+      "src/ai.js": "38e76b613b50d6d80076a67176ef5be3d5f4c18a73d132aac9ced7c6d19d09cc",
+      "src/ambient-chat.js": "983df42a1f7f0afa2403cba728bb91275913779b6cd604dac560548c9b5773dc",
+      "src/group-context.js": "750c7893aa330ad8c117b638d72a47792ffab141f66964a8c8485d0af02d7523",
+      "src/persona.js": "ba4a09ebe22fe7cdc8a88f7eded99d4f872e12bcbc4019d5839a35670706f282",
+      "src/azur-lane-personas.js": "a5904007ca11fa36437cf63d579b647c53f9e064b253e912da05161cb57c5317",
+      "src/deepseek.js": "e2cfe2fa33015c3ede79cda19b0d8d374286b7cdc336bda72a220dd3f845f551",
+      "src/deepseek-harness-web.js": "aa13262800cb03a34953c09bab0f878fc14d28b1ee4452c393851c6ab7f87da4",
+      "scripts/fixtures/group-chat-100.js": "10e4217d3ab4e376b97256f7a7c81de241c5f58dbec3bb61435690c073dd1c88",
+      "scripts/simulate-group-chat-100.js": "ef232cab4ad6815154e7251a3e15a21235d2e2853976f8e3f3f7296651379455"
+    }
+  },
+  "costNote": "token 数包含重复和缓存输入，不是实际账单。完整对话会分叉，搜索用量也变化；完整运行的总差异不能完全归因于提示词。新检查提高输出上限以容纳删减文本，但不增加检查请求轮数或启用思考。",
+  "deployment": {
+    "package": "../../deploy/SandstormQQBot-Deploy.zip",
+    "scope": "更新本地 deploy 目录与压缩包，验证实际 exe 快照；未连接真实 QQ，未向生产服务器安装或重启。",
+    "exeSha256": "ae09f678a4f17f19a1e20710056dc7d6460e03f85620c5e913073c8206af5a8a",
+    "zipSha256": "c27ec1b2cb0869ea141fc6967d92e91559e6f22d6bc22afa1a5ede70ba64d417",
+    "zipBytes": 39885909,
+    "files": 25,
+    "runtime": "v22.22.3",
+    "compiledSmokePassed": true,
+    "zipContentsMatch": true,
+    "noLiveCredential": true
+  },
+  "comparison": {
+    "baseline": {
+      "botMessages": 36,
+      "ambientMessages": 21,
+      "directMessages": 15,
+      "ambientAnchors": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        9,
+        11,
+        12,
+        24,
+        26,
+        28,
+        31,
+        38,
+        66,
+        67,
+        72,
+        76,
+        85,
+        86,
+        94,
+        95
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 19.523809523809526,
+      "assertions": 916,
+      "mainRequests": 153,
+      "humans": 100,
+      "members": 12,
+      "decisions": 90,
+      "acceptedDecisions": 23,
+      "reviewedDrafts": 23,
+      "rejectedDrafts": 2,
+      "mainInputTokens": 372765,
+      "mainOutputTokens": 1543,
+      "searchInputTokens": 14985,
+      "searchOutputTokens": 1546,
+      "failedChecks": [],
+      "totalTokens": 390839
+    },
+    "selected": {
+      "botMessages": 37,
+      "ambientMessages": 22,
+      "directMessages": 15,
+      "ambientAnchors": [
+        2,
+        4,
+        5,
+        6,
+        9,
+        11,
+        12,
+        25,
+        28,
+        31,
+        37,
+        38,
+        56,
+        66,
+        67,
+        72,
+        74,
+        76,
+        85,
+        86,
+        94,
+        95
+      ],
+      "longestConsecutiveAnchors": 3,
+      "meanAmbientCharacters": 19.181818181818183,
+      "assertions": 964,
+      "mainRequests": 155,
+      "humans": 100,
+      "members": 12,
+      "decisions": 90,
+      "acceptedDecisions": 25,
+      "reviewedDrafts": 24,
+      "rejectedDrafts": 2,
+      "editedDrafts": 0,
+      "mainInputTokens": 376347,
+      "mainOutputTokens": 1535,
+      "searchInputTokens": 17740,
+      "searchOutputTokens": 1541,
+      "failedChecks": [],
+      "totalTokens": 397163
+    }
+  },
+  "finalSupplementaryComparison": {
+    "summary": {
+      "boolean": {
+        "requests": 10,
+        "errors": 0,
+        "input": 5886,
+        "output": 70,
+        "elapsedMs": 6989
+      },
+      "editing": {
+        "requests": 10,
+        "errors": 0,
+        "input": 6876,
+        "output": 81,
+        "elapsedMs": 7754
+      }
+    },
+    "guardedResults": [
+      {
+        "id": "conditional-help",
+        "action": "send",
+        "actual": "只有开过备份才可能恢复，没开的话就不确定了。"
+      },
+      {
+        "id": "asked-advice",
+        "action": "send",
+        "actual": "先开自动保存，再看保存间隔是不是太长。"
+      },
+      {
+        "id": "sympathy-no-lesson",
+        "action": "edit",
+        "actual": "票都买了，太扫兴了。"
+      },
+      {
+        "id": "disagreement",
+        "action": "send",
+        "actual": "我倒更喜欢白色，黑色看着有点沉。"
+      },
+      {
+        "id": "invented-trip",
+        "action": "skip",
+        "actual": null
+      },
+      {
+        "id": "private-handoff",
+        "action": "skip",
+        "actual": null
+      },
+      {
+        "id": "ordinary-humour",
+        "action": "send",
+        "actual": "更新才是本体吧。"
+      },
+      {
+        "id": "no-fabricated-reason",
+        "action": "skip",
+        "actual": null
+      },
+      {
+        "id": "timed-source",
+        "action": "edit",
+        "actual": "公告写的是 20:30，见 https://example.com/event 。"
+      },
+      {
+        "id": "requested-negation",
+        "action": "send",
+        "actual": "对，不用整套换，坏的那个换掉就行。"
+      }
+    ],
+    "totalTokenIncreasePercent": 16.80658159838817
+  },
+  "reviewedAt": "2026-10-14T02:46:28.518Z"
+}

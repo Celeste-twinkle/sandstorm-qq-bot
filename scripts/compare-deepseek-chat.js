@@ -4,7 +4,6 @@ const path = require("node:path");
 const { createHash, randomInt } = require("node:crypto");
 const { config } = require("../src/config");
 const { AiChatService } = require("../src/ai");
-const { loadAzurLanePersonaCatalog } = require("../src/azur-lane-personas");
 
 // Offline synthetic group conversations. This script calls DeepSeek only;
 // it neither connects to OneBot nor changes .env or the bot's defaults.
@@ -40,7 +39,6 @@ async function main() {
   const blindPath = path.join(outputDir, "blind-review.json");
   assert.ok(!fs.existsSync(resultsPath), "results.json already exists; archive it before a new run");
   const service = new AiChatService(config);
-  const catalog = loadAzurLanePersonaCatalog({ filePath: config.personaCatalogFile });
   const experiment = {
     startedAt: new Date().toISOString(), model: config.deepseekModel,
     rounds, scenarioCount: scenarios.length, contextMessageCount: 50,
@@ -63,10 +61,10 @@ async function main() {
   const save = () => fs.writeFileSync(resultsPath, JSON.stringify(experiment, null, 2), "utf8");
   for (const scenario of scenarios) {
     const context = contextFor(scenario);
-    const personaPrompt = scenario.persona ? catalog.buildPrompt(catalog.getById(scenario.persona)) : "";
+
     const messages = scenario.mode === "direct"
-      ? service.buildDeepSeekMessages({ messages: [] }, { role: "user", content: scenario.messages.at(-1)[2] }, context, personaPrompt)
-      : service.buildDeepSeekAmbientMessages(context, scenario.mode, personaPrompt);
+      ? service.buildDeepSeekMessages({ messages: [] }, { role: "user", content: scenario.messages.at(-1)[2] }, context)
+      : service.buildDeepSeekAmbientMessages(context, scenario.mode);
     assert.equal(messages.length, 51);
     const hash = createHash("sha256").update(JSON.stringify(messages)).digest("hex");
     experiment.cases.push({ ...scenario, context, messages, messagesHash: hash });

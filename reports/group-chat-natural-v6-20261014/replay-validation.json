@@ -1,0 +1,106 @@
+{
+  "replayedWithCurrentParser": true,
+  "nonEmptyResultsUnaffectedByRetirementFix": true,
+  "rounds": [
+    {
+      "anchor": "h20",
+      "rules": [
+        {
+          "text": "用夸张比喻或自嘲描述倒霉事，不展开解释，让听者自己体会。",
+          "evidence": [
+            "m3",
+            "m10",
+            "m16",
+            "m19"
+          ]
+        },
+        {
+          "text": "用“别夸了”“让我丢完这个人”等短句自嘲式拒绝安慰，不要求对方正经回应。",
+          "evidence": [
+            "m23",
+            "m24"
+          ]
+        }
+      ],
+      "sourceRecords": 31
+    },
+    {
+      "anchor": "h50",
+      "rules": [
+        {
+          "text": "用短句或半句话接住共同语境，不把前因后果解释完整。",
+          "evidence": [
+            "m4",
+            "m23",
+            "m26",
+            "m28"
+          ]
+        },
+        {
+          "text": "用夸张比喻描述日常小事，让听者自己体会，不展开论证。",
+          "evidence": [
+            "m10",
+            "m12",
+            "m33",
+            "m35"
+          ]
+        },
+        {
+          "text": "明确说“不用给建议”“别总结道理”时，只接情绪或顺着说，不转成安慰和指导。",
+          "evidence": [
+            "m25",
+            "m37"
+          ]
+        }
+      ],
+      "sourceRecords": 50
+    },
+    {
+      "anchor": "h80",
+      "rules": [
+        {
+          "text": "有共同语境时，用短词、半句或省略主语接话，不把前因后果补全。",
+          "evidence": [
+            "m2",
+            "m4",
+            "m6",
+            "m10",
+            "m12"
+          ]
+        },
+        {
+          "text": "用夸张比喻或拟人化说法描述日常小事，让听者自己体会，不展开论证。",
+          "evidence": [
+            "m12",
+            "m27",
+            "m29",
+            "m32",
+            "m40"
+          ]
+        },
+        {
+          "text": "对心算、梦、猫这类随口话题，用短句顺着接或自嘲，不追问细节也不给建议。",
+          "evidence": [
+            "m36",
+            "m38",
+            "m42",
+            "m44",
+            "m45",
+            "m47"
+          ]
+        }
+      ],
+      "sourceRecords": 50
+    }
+  ],
+  "sourceMismatches": [
+    "src/group-chat-learning.js"
+  ],
+  "changeValidatedBy": "unit test and compiled smoke: valid empty result retires old hints; wholly invalid scope retains previous profile",
+  "manualSemanticReview": {
+    "check": "answer:unknown",
+    "answer": "梦是你的，我可没权限看。",
+    "passed": true,
+    "reason": "The answer explicitly denies access to the user dream and invents no dream contents."
+  }
+}

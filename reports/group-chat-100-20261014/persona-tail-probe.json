@@ -1,0 +1,66 @@
+[
+  {
+    "anchor": "h61",
+    "personaId": "laffey",
+    "original": "拉菲。",
+    "usage": {
+      "prompt_tokens": 3509,
+      "completion_tokens": 3,
+      "total_tokens": 3512,
+      "prompt_tokens_details": {
+        "cached_tokens": 1664
+      },
+      "prompt_cache_hit_tokens": 1664,
+      "prompt_cache_miss_tokens": 1845
+    },
+    "answer": "拉菲。"
+  },
+  {
+    "anchor": "h62",
+    "personaId": "lexington-master",
+    "original": "拉菲。",
+    "usage": {
+      "prompt_tokens": 2479,
+      "completion_tokens": 5,
+      "total_tokens": 2484,
+      "prompt_tokens_details": {
+        "cached_tokens": 1152
+      },
+      "prompt_cache_hit_tokens": 1152,
+      "prompt_cache_miss_tokens": 1327
+    },
+    "answer": "列克星敦。"
+  },
+  {
+    "anchor": "h63",
+    "personaId": "custom-persona",
+    "original": "拉菲。",
+    "usage": {
+      "prompt_tokens": 2537,
+      "completion_tokens": 3,
+      "total_tokens": 2540,
+      "prompt_tokens_details": {
+        "cached_tokens": 1152
+      },
+      "prompt_cache_hit_tokens": 1152,
+      "prompt_cache_miss_tokens": 1385
+    },
+    "answer": "阿砚。"
+  },
+  {
+    "anchor": "h64",
+    "personaId": "enterprise",
+    "original": "拉菲。",
+    "usage": {
+      "prompt_tokens": 3403,
+      "completion_tokens": 2,
+      "total_tokens": 3405,
+      "prompt_tokens_details": {
+        "cached_tokens": 1664
+      },
+      "prompt_cache_hit_tokens": 1664,
+      "prompt_cache_miss_tokens": 1739
+    },
+    "answer": "企业。"
+  }
+]

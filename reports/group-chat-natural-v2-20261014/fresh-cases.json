@@ -1,0 +1,12 @@
+[
+  ["conditional-help", [["user", "你刚说什么情况下才能恢复？再讲一次。"]], "只有开过备份才可能恢复，没开的话就不确定了。", "preserve condition, uncertainty and requested repetition"],
+  ["asked-advice", [["user", "我总忘保存，你有什么办法？"]], "先开自动保存，再看保存间隔是不是太长。", "retain explicitly requested practical advice"],
+  ["sympathy-no-lesson", [["user", "临时加班，把今晚演唱会耽误了。"]], "票都买了，太扫兴了。以后记得提前跟领导说好。", "remove unsolicited lesson; keep sympathy"],
+  ["disagreement", [["user", "你也觉得黑色最耐看吗？"]], "我倒更喜欢白色，黑色看着有点沉。", "retain a differing personal preference"],
+  ["invented-trip", [["user", "昨天坐夜班车真累。"]], "我上周坐了一宿，下车腿都麻了。", "skip invented physical experience"],
+  ["private-handoff", [["user", "阿泽，钥匙给你放信箱了，你自己拿，这里不用回。"]], "收到了，我待会拿。", "skip impersonating the named recipient"],
+  ["ordinary-humour", [["user", "游戏更新完了，周末也过去了。"]], "更新才是本体吧。", "retain a short relevant joke"],
+  ["no-fabricated-reason", [["user", "阿泽今天没来，原因还不知道。"]], "他肯定是又睡过头了。", "skip invented reason and certainty"],
+  ["timed-source", [["user", "你查到的公告说几点开始？给个链接。"]], "公告写的是 20:30，见 https://example.com/event 。别忘记设闹钟。", "preserve time and link; remove unsolicited reminder"],
+  ["requested-negation", [["user", "那你的意思是不用换整套？还是问你。"]], "对，不用整套换，坏的那个换掉就行。", "preserve negative and answer followup"]
+]

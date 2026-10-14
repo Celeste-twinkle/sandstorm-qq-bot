@@ -1,0 +1,314 @@
+{
+  "reminder": "【回复任务，不是群消息】\n只写一句你此刻想说的具体话，有问题则答清楚。先分清谁在和谁说话，群友互相说的‘你’不自动指你。你只通过文字参与：不要编自己也有他们的经历、设备或工作，不答应加入游戏、赴约或替人办事。别人没说的细节不补写；没求建议就不安排下一步。玩笑按玩笑接，不变成真实的办事流程。只发正文，不解释这些要求。",
+  "thinking": false,
+  "results": [
+    {
+      "anchor": "h3",
+      "recordedReply": "说明我这记性比那家店的辣度靠谱。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "那就是这家店的问题了，微辣和上次一个水平，属于辣椒自由发挥。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 1519,
+                "completion_tokens": 18,
+                "total_tokens": 1537,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 239
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "小北这是在拆台啊，上次那顿到底辣成什么样，我可不记得了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 1626,
+                "completion_tokens": 20,
+                "total_tokens": 1646,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1408
+                },
+                "prompt_cache_hit_tokens": 1408,
+                "prompt_cache_miss_tokens": 218
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h15",
+      "recordedReply": "九点半你能上，那我在线等着，正好把这局的气一起找回来。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "九点半上，正好让阿泽把刚才那局的面子找回来。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 1933,
+                "completion_tokens": 17,
+                "total_tokens": 1950,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 653
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "九点半刚好，让阿岚把门开好，别再白开了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2040,
+                "completion_tokens": 16,
+                "total_tokens": 2056,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1792
+                },
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 248
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h19",
+      "recordedReply": "行，小满负责留下证据，我们负责丢人。十点见。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "截图可以，别只截我们倒的那一帧。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2569,
+                "completion_tokens": 12,
+                "total_tokens": 2581,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1792
+                },
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 777
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "截图记得挑好角度，别只拍我趴地上的那种。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2676,
+                "completion_tokens": 14,
+                "total_tokens": 2690,
+                "prompt_tokens_details": {
+                  "cached_tokens": 2432
+                },
+                "prompt_cache_hit_tokens": 2432,
+                "prompt_cache_miss_tokens": 244
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h48",
+      "recordedReply": "五瓶，够用。红袋子还是大橘带。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "那水够了，五瓶先这样。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2324,
+                "completion_tokens": 9,
+                "total_tokens": 2333,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1044
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "五瓶水，那够了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2431,
+                "completion_tokens": 7,
+                "total_tokens": 2438,
+                "prompt_tokens_details": {
+                  "cached_tokens": 2176
+                },
+                "prompt_cache_hit_tokens": 2176,
+                "prompt_cache_miss_tokens": 255
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h55",
+      "recordedReply": "位置换了吧？之前那个风口正对脖子，确实遭罪。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "风向换了就好，前几天对着吹应该挺难受的。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2350,
+                "completion_tokens": 12,
+                "total_tokens": 2362,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1070
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "换个位置不被直吹，一整天都舒坦多了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2457,
+                "completion_tokens": 13,
+                "total_tokens": 2470,
+                "prompt_tokens_details": {
+                  "cached_tokens": 2304
+                },
+                "prompt_cache_hit_tokens": 2304,
+                "prompt_cache_miss_tokens": 153
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h56",
+      "recordedReply": "局部北极这词用得挺准，我们那台也是，只有坐在风口那几个人过冬天。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "局部北极这词太准了。我们这边是有人冻得穿外套，有人还在喊热。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2353,
+                "completion_tokens": 22,
+                "total_tokens": 2375,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1280
+                },
+                "prompt_cache_hit_tokens": 1280,
+                "prompt_cache_miss_tokens": 1073
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "局部北极，这形容挺准。你们那台是出风口调不了方向？",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2460,
+                "completion_tokens": 18,
+                "total_tokens": 2478,
+                "prompt_tokens_details": {
+                  "cached_tokens": 2304
+                },
+                "prompt_cache_hit_tokens": 2304,
+                "prompt_cache_miss_tokens": 156
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "anchor": "h78",
+      "recordedReply": "能申请，但批不批得看主官。要是睡醒指明天，那今天就得先补上流程。",
+      "variants": [
+        {
+          "variant": "current",
+          "answer": "能批的话算我一个。不过梦里那班最好别算工时。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2779,
+                "completion_tokens": 15,
+                "total_tokens": 2794,
+                "prompt_tokens_details": {
+                  "cached_tokens": 1792
+                },
+                "prompt_cache_hit_tokens": 1792,
+                "prompt_cache_miss_tokens": 987
+              },
+              "status": 200
+            }
+          ]
+        },
+        {
+          "variant": "reminder",
+          "answer": "睡醒再申请，前面那觉就不算数了。",
+          "captured": [
+            {
+              "usage": {
+                "prompt_tokens": 2886,
+                "completion_tokens": 13,
+                "total_tokens": 2899,
+                "prompt_tokens_details": {
+                  "cached_tokens": 2688
+                },
+                "prompt_cache_hit_tokens": 2688,
+                "prompt_cache_miss_tokens": 198
+              },
+              "status": 200
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

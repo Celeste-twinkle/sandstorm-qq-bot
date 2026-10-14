@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "9e79e66d7e6056bc4392d360b15b6e819bca99b5",
+  "prompt": "deepseek是什么时候火遍全球的，deepseek做了什么？",
+  "scope": "Local reproduction with synthetic group context. Original QQ incident logs were unavailable; this reproduces the same fixed fallback but does not prove the original conversation had an identical trace.",
+  "conclusion": "The reproduced failure is premature termination before page reading, not exhaustion of the tool-round limit. Increasing the limit alone from 2 to 4 cannot change an early return after a model answer.",
+  "baseline": {
+    "file": "rounds.json",
+    "actualToolRounds": 1,
+    "modelRequests": 2,
+    "nativeSearchRequests": 2,
+    "candidateSources": 8,
+    "citedSources": 0,
+    "fetchedPages": 0,
+    "modelReturnedAnswer": true,
+    "replyWasReplacedByController": true,
+    "outcomeWithLimit4AndIdenticalPrefix": "这个我没查到可靠的消息，暂时不确定。",
+    "extendedNewBilledTokens": 0
+  },
+  "causeChain": [
+    "Native Messages API returned real web_search_result entries but no cited_text citations. The pinned official mapping correctly retained only source URLs/titles; it discards generated provider prose.",
+    "The original search formatter invited URL citations even for URL-only discovery. The model answered without invoking web_fetch.",
+    "The bot correctly rejected an answer with no usable evidence, but immediately returned its fixed uncertainty message without a corrective turn despite having unused tool budget."
+  ],
+  "changes": [
+    "Adapter marks URL-only search output as discovery_only and asks the model to read a source before claiming verification; vendored upstream code remains unchanged.",
+    "Count actual tool-calling rounds. If a URL-only search is followed by a premature answer, allow at most one corrective model turn within the remaining tool budget, with tool_choice=auto. Unverified draft is not added to context or sent to QQ.",
+    "Log tool outcome, evidence status, errors, HTTP status, budget use and correction use, without query text or API keys."
+  ],
+  "unchangedLimits": {
+    "toolRounds": 2,
+    "callsPerRound": 2,
+    "nativeMaxUses": 5,
+    "chatThinking": false
+  },
+  "validations": [
+    {
+      "file": "fixed-1.json",
+      "mode": "Entirely live search/model/fetch",
+      "modelRequests": 3,
+      "nativeQueries": 3,
+      "readablePages": 2,
+      "success": true
+    },
+    {
+      "file": "fixed-same-sources.json",
+      "mode": "Replay initial model search and identical old URL-only results; remaining model/fetch requests live",
+      "modelRequests": 3,
+      "readablePages": 2,
+      "success": true
+    },
+    {
+      "file": "fixed-recovery.json",
+      "mode": "Also replay old premature answer; remaining corrective model/fetch requests live",
+      "modelRequests": 4,
+      "readablePages": 2,
+      "success": true
+    }
+  ],
+  "tokens": {
+    "definition": "All input and output tokens, including cache-read input. Counts are not monetary prices. Replayed prefixes are not billed again.",
+    "baseline": {
+      "chatInput": 3849,
+      "chatOutput": 216,
+      "searchInput": 14188,
+      "searchOutput": 2285,
+      "total": 20538
+    },
+    "sameSourcesCounterfactual": {
+      "sharedInitialChatAndSearch": 18201,
+      "newContinuation": 8066,
+      "totalIncludingSharedPrefix": 26267,
+      "increaseVsFailedBaseline": 5729
+    },
+    "forcedRecoveryCounterfactual": {
+      "sharedFailedPrefix": 20538,
+      "newContinuation": 8153,
+      "totalIncludingSharedPrefix": 28691
+    },
+    "entirelyFreshFixedRun": {
+      "chatInput": 11928,
+      "chatOutput": 442,
+      "searchInput": 23144,
+      "searchOutput": 2490,
+      "total": 38004,
+      "comparisonCaveat": "Used three search queries instead of two; not a matched cost comparison."
+    },
+    "totalNewTokensAcrossAllRuns": 74761
+  },
+  "verification": {
+    "unitTestsPassed": 143,
+    "unitTestsFailed": 0,
+    "npmCheck": true,
+    "diffCheck": true,
+    "deployment": {
+      "package": "deploy/SandstormQQBot-Deploy.zip",
+      "status": "ready",
+      "zipBytes": 39867738,
+      "zipEntries": 25,
+      "checkedZipFiles": 6,
+      "exeSha256": "c18ae47defb5271c1b369237e4ba670eb553af0126d8e3bb66a52ff04f5307f5",
+      "packagedRuntimeSmoke": "../ambient-mood-final-20261014/package-smoke.json",
+      "botStarted": false
+    },
+    "finalCombinedTestCount": 149
+  },
+  "limits": [
+    "These are targeted reproductions, not an independent statistical reliability or naturalness benchmark.",
+    "Success means actual readable page evidence and a sourced answer about the requested timeline. No claim that every wording or secondary-source assertion is factually perfect.",
+    "Actual page failures, unreadable content, absent credentials or exhausted budget can still produce uncertainty; refusing to fabricate remains intentional.",
+    "No QQ connection or production bot restart occurred. Local .env was not changed. Source changes have not been pushed."
+  ]
+}

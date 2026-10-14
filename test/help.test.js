@@ -15,8 +15,8 @@ test("all documented help aliases open the complete command menu", () => {
   assert.equal(isHelpCommand("人格列表"), false);
 });
 
-test("complete help lists every command family and the custom persona limit", () => {
-  const help = buildHelpText({ customPersonaMaxChars: 2000 });
+test("complete help lists supported commands without persona switching", () => {
+  const help = buildHelpText();
 
   for (const expected of [
     "Sandstorm QQ Bot 全部指令",
@@ -26,18 +26,13 @@ test("complete help lists every command family and the custom persona limit", ()
     "最近 50 条消息（含 bot 回复）",
     "@机器人 深度思考 <问题>",
     "@机器人 联网搜索",
-    "@机器人 人格列表 [阵营]",
-    "@机器人 人格查询 <人格值>",
-    "@机器人 切换人格 <人格列表值>",
-    "@机器人 自定义人格 <提示词>",
-    "最多 2000 字",
-    "@机器人 当前人格",
-    "@机器人 重置人格",
-    "@机器人 人格帮助",
+    "@机器人 学习状态",
+    "@机器人 重置群聊学习",
     "@机器人 清空上下文",
     "Bilibili / b23.tv",
     "@机器人 帮助 / help / /help / 使用说明 / 功能 / 菜单 / 指令 / 全部指令",
   ]) {
     assert.equal(help.includes(expected), true, `missing help entry: ${expected}`);
   }
+  assert.doesNotMatch(help, /人格列表|切换人格|自定义人格|当前人格|重置人格|列克星敦/);
 });

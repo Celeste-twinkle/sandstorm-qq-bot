@@ -1,0 +1,285 @@
+{
+  "promptMatches": true,
+  "rows": [
+    {
+      "id": "h2",
+      "draft": "微辣都能吃出走马灯，那家店的辣度表怕不是写着玩的。",
+      "action": "send",
+      "proposed": "微辣都能吃出走马灯，那家店的辣度表怕不是写着玩的。",
+      "actual": "微辣都能吃出走马灯，那家店的辣度表怕不是写着玩的。",
+      "guardRejected": false
+    },
+    {
+      "id": "h3",
+      "draft": "大橘这属于固定节目了。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "h5",
+      "draft": "心情好，手就松，辣椒往死里放。这逻辑还挺顺。",
+      "action": "edit",
+      "proposed": "心情好，手就松，辣椒往死里放。",
+      "actual": "心情好，手就松，辣椒往死里放。",
+      "guardRejected": false
+    },
+    {
+      "id": "h6",
+      "draft": "甜汤面……也算一种创新，就是不知道你吃不吃得下去。",
+      "action": "edit",
+      "proposed": "甜汤面……也算一种创新。",
+      "actual": null,
+      "guardRejected": true
+    },
+    {
+      "id": "h7",
+      "draft": "稳定得让人不太敢接话。",
+      "action": "send",
+      "proposed": "稳定得让人不太敢接话。",
+      "actual": "稳定得让人不太敢接话。",
+      "guardRejected": false
+    },
+    {
+      "id": "h9",
+      "draft": "米吃完了馅还没到，那你这是提前吃了个预告片。",
+      "action": "send",
+      "proposed": "米吃完了馅还没到，那你这是提前吃了个预告片。",
+      "actual": "米吃完了馅还没到，那你这是提前吃了个预告片。",
+      "guardRejected": false
+    },
+    {
+      "id": "h11",
+      "draft": "开门那下就是全场的巅峰时刻了。",
+      "action": "send",
+      "proposed": "开门那下就是全场的巅峰时刻了。",
+      "actual": "开门那下就是全场的巅峰时刻了。",
+      "guardRejected": false
+    },
+    {
+      "id": "h12",
+      "draft": "报点报到一半，回头发现只剩自己一个人站着。",
+      "action": "send",
+      "proposed": "报点报到一半，回头发现只剩自己一个人站着。",
+      "actual": "报点报到一半，回头发现只剩自己一个人站着。",
+      "guardRejected": false
+    },
+    {
+      "id": "h24",
+      "draft": "盖锅盖那种脆响，敲着是挺解压，就是别在半夜用。",
+      "action": "edit",
+      "proposed": "盖锅盖那种脆响，敲着是挺解压。",
+      "actual": "盖锅盖那种脆响，敲着是挺解压。",
+      "guardRejected": false
+    },
+    {
+      "id": "h26",
+      "draft": "安静轴确实比脆响实用，深夜里谁也不想被当成在炒菜。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "h28",
+      "draft": "蓝白。清爽的颜色不容易看厌，黑灰看久了会有点闷。",
+      "action": "edit",
+      "proposed": "蓝白。清爽的颜色不容易看厌。",
+      "actual": "蓝白。清爽的颜色不容易看厌。",
+      "guardRejected": false
+    },
+    {
+      "id": "h31",
+      "draft": "做完才说要全改，这一天等于白搭进去了。",
+      "action": "send",
+      "proposed": "做完才说要全改，这一天等于白搭进去了。",
+      "actual": "做完才说要全改，这一天等于白搭进去了。",
+      "guardRejected": false
+    },
+    {
+      "id": "h38",
+      "draft": "仙人掌都能养干，那它其实是被你晾着晾着就放弃了。",
+      "action": "send",
+      "proposed": "仙人掌都能养干，那它其实是被你晾着晾着就放弃了。",
+      "actual": "仙人掌都能养干，那它其实是被你晾着晾着就放弃了。",
+      "guardRejected": false
+    },
+    {
+      "id": "h56",
+      "draft": "北极就算了，还得天天穿着外套上班。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "h66",
+      "draft": "那它占据工位比谁都理直气壮，主管路过都得绕着走。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "h67",
+      "draft": "卡纸吧，报销那关猫过不去。",
+      "action": "send",
+      "proposed": "卡纸吧，报销那关猫过不去。",
+      "actual": "卡纸吧，报销那关猫过不去。",
+      "guardRejected": false
+    },
+    {
+      "id": "h72",
+      "draft": "差十，这个错法挺有手感的。",
+      "action": "send",
+      "proposed": "差十，这个错法挺有手感的。",
+      "actual": "差十，这个错法挺有手感的。",
+      "guardRejected": false
+    },
+    {
+      "id": "h76",
+      "draft": "那单跑完了吗，还是醒了才发现车还在原地",
+      "action": "send",
+      "proposed": "那单跑完了吗，还是醒了才发现车还在原地",
+      "actual": "那单跑完了吗，还是醒了才发现车还在原地",
+      "guardRejected": false
+    },
+    {
+      "id": "h78",
+      "draft": "梦里那班已经上完了，调休可能不批。补个真的觉吧。",
+      "action": "edit",
+      "proposed": "梦里那班已经上完了，调休可能不批。",
+      "actual": "梦里那班已经上完了，调休可能不批。",
+      "guardRejected": false
+    },
+    {
+      "id": "h85",
+      "draft": "没插电，那壶水陪你把耐心练了一遍。",
+      "action": "send",
+      "proposed": "没插电，那壶水陪你把耐心练了一遍。",
+      "actual": "没插电，那壶水陪你把耐心练了一遍。",
+      "guardRejected": false
+    },
+    {
+      "id": "h86",
+      "draft": "意念够旺的话，水没开，人先热了。",
+      "action": "send",
+      "proposed": "意念够旺的话，水没开，人先热了。",
+      "actual": "意念够旺的话，水没开，人先热了。",
+      "guardRejected": false
+    },
+    {
+      "id": "h94",
+      "draft": "三个闹钟轮番上阵，最后赢的往往是那个最吵的。",
+      "action": "send",
+      "proposed": "三个闹钟轮番上阵，最后赢的往往是那个最吵的。",
+      "actual": "三个闹钟轮番上阵，最后赢的往往是那个最吵的。",
+      "guardRejected": false
+    },
+    {
+      "id": "h95",
+      "draft": "五个都拦不住，那你睡的不是觉，是赌局。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "real-help",
+      "draft": "先把键帽拔下来看看卫星轴有没有松动，没拆过的话别硬掰。",
+      "action": "send",
+      "proposed": "先把键帽拔下来看看卫星轴有没有松动，没拆过的话别硬掰。",
+      "actual": "先把键帽拔下来看看卫星轴有没有松动，没拆过的话别硬掰。",
+      "guardRejected": false
+    },
+    {
+      "id": "repeated-preference",
+      "draft": "还是浅色，看久了比较舒服。",
+      "action": "send",
+      "proposed": "还是浅色，看久了比较舒服。",
+      "actual": "还是浅色，看久了比较舒服。",
+      "guardRejected": false
+    },
+    {
+      "id": "requested-recap",
+      "draft": "周五，南门，六点。",
+      "action": "send",
+      "proposed": "周五，南门，六点。",
+      "actual": "周五，南门，六点。",
+      "guardRejected": false
+    },
+    {
+      "id": "genuine-loss",
+      "draft": "一个月的心血就这样被否了，确实憋屈。",
+      "action": "send",
+      "proposed": "一个月的心血就这样被否了，确实憋屈。",
+      "actual": "一个月的心血就这样被否了，确实憋屈。",
+      "guardRejected": false
+    },
+    {
+      "id": "thanks",
+      "draft": "弄好了就行。",
+      "action": "send",
+      "proposed": "弄好了就行。",
+      "actual": "弄好了就行。",
+      "guardRejected": false
+    },
+    {
+      "id": "invented-gear",
+      "draft": "我这台也是，比旧的好多了。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "mixed-advice",
+      "draft": "白排半小时。下次先打电话问问，别又白跑。",
+      "action": "edit",
+      "proposed": "白排半小时。",
+      "actual": "白排半小时。",
+      "guardRejected": false
+    },
+    {
+      "id": "numbers",
+      "draft": "这一下午全浪费了。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "uncertain",
+      "draft": "不能确定，得看有没有备份。",
+      "action": "send",
+      "proposed": "不能确定，得看有没有备份。",
+      "actual": "不能确定，得看有没有备份。",
+      "guardRejected": false
+    },
+    {
+      "id": "citation",
+      "draft": "官方入口：https://example.com/docs ，以页面说明为准。",
+      "action": "send",
+      "proposed": "官方入口：https://example.com/docs ，以页面说明为准。",
+      "actual": "官方入口：https://example.com/docs ，以页面说明为准。",
+      "guardRejected": false
+    },
+    {
+      "id": "old-false-self",
+      "draft": "我家那只也咬，已经换三双了。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    },
+    {
+      "id": "explicit-silence",
+      "draft": "好，早点休息。",
+      "action": "skip",
+      "proposed": null,
+      "actual": null,
+      "guardRejected": false
+    }
+  ]
+}

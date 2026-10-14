@@ -12,3 +12,4 @@ logs/
 bot.pid
 data/persona-selections.json
 data/persona-selections.json.*.tmp
+data/group-chat-learning/
