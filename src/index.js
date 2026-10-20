@@ -10,6 +10,7 @@ const { AmbientReplyGuard, AmbientReplyScheduler, getAmbientReplyDelay, getAmbie
 const {
   MAX_GROUP_CONTEXT_MESSAGES,
   GroupConversationContext,
+  getLatestGroupMemberMessage,
   getGroupMessageTimestamp,
   getGroupReplyMeta,
 } = require("./group-context");
@@ -26,9 +27,11 @@ const {
   getReplyMessageId,
   getSenderName,
 } = require("./message-context");
-const { buildHelpText, isHelpCommand } = require("./help");
+const { buildHelpText, isHelpCommand, isLearningResetCommand } = require("./help");
 const { createOneBotServer } = require("./onebot");
 const { GroupChatLearning } = require("./group-chat-learning");
+const { GroupBotLoopGuard } = require("./group-bot-loop-guard");
+const { GroupBotPolicy, parseBotControlCommand } = require("./group-bot-policy");
 const { querySandstormStatus } = require("./sandstorm");
 
 const groupCooldowns = new Map();
@@ -45,6 +48,10 @@ const groupChatLearning = new GroupChatLearning(config, {
   now: () => Date.now(),
 });
 const groupMessageCache = new GroupMessageCache(config);
+const groupBotPolicy = new GroupBotPolicy(config);
+const groupBotLoopGuard = new GroupBotLoopGuard(config, {
+  accountDecision: (groupId, userId) => groupBotPolicy.decision(groupId, userId),
+});
 function getMessageText(message) {
   if (typeof message.raw_message === "string") {
     return message.raw_message;
@@ -362,6 +369,8 @@ async function tryAmbientReply(groupId, mode, client) {
   if (messages.length === 0) {
     return;
   }
+  const anchor = getLatestGroupMemberMessage(messages);
+  if (!anchor || !groupBotLoopGuard.canRespond(groupId, anchor.userId)) return;
 
   if (isCoolingDown(groupId, config.ambientChatCooldownSeconds, ambientChatCooldowns)) {
     console.log(`[bot] ambient deferred group=${groupId} mode=${mode} reason=cooldown`);
@@ -395,7 +404,7 @@ async function tryAmbientReply(groupId, mode, client) {
     if (ambientReplyGuard.canContinue(ticket, currentContext)) {
       // Clear work covered by this inference; later arrivals stay queued.
       if (ambientReplyGuard.canSend(ticket, currentContext)) clearAmbientChatBuffer(groupId);
-      await sendBotReply(client, groupId, reply);
+      await sendBotReply(client, groupId, reply, getLatestGroupMemberMessage(currentContext)?.userId);
       markCooldown(groupId, ambientChatCooldowns);
     } else {
       console.log(`[bot] ambient reply skipped after conversation changed in group ${groupId}`);
@@ -423,7 +432,8 @@ function clearGroupConversationContext(groupId) {
   groupConversationContext.clear(groupId);
 }
 
-function recordOutgoingGroupMessage(groupId, message, response) {
+function recordOutgoingGroupMessage(groupId, message, response, metadata = {}) {
+  groupBotLoopGuard.recordReply(groupId, metadata.replyToUserId);
   const text = extractSemanticMessageText({ message });
   if (!text) {
     return;
@@ -446,8 +456,11 @@ function recordOutgoingGroupMessage(groupId, message, response) {
   });
 }
 
-async function sendBotReply(client, groupId, reply) {
-  await client.sendGroupMessage(groupId, reply);
+async function sendBotReply(client, groupId, reply, replyToUserId) {
+  await client.sendGroupMessage(groupId, reply, {
+    replyToUserId,
+    canSend: groupBotLoopGuard.responseCheck(groupId, replyToUserId),
+  });
 }
 
 function isSelfGroupMessage(message) {
@@ -459,6 +472,55 @@ function dedupeStrings(values) {
   return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
+async function handleAdminCommand(message, command, client) {
+  const groupId = message.group_id;
+  clearAmbientChatBuffer(groupId);
+  if (!config.botAdminIds.has(String(message.user_id))) {
+    await sendBotReply(client, groupId, "只有机器人管理员可以使用这条管理命令。", message.user_id);
+    return;
+  }
+  if (command.action === "reset_learning") {
+    let reply;
+    try {
+      await groupChatLearning.reset(groupId);
+      reply = "已清空本群学习模块保存的表达习惯和回复指导，之后会重新积累学习。";
+    } catch {
+      reply = "学习模块暂时无法清空，请检查学习文件目录权限。";
+    }
+    await sendBotReply(client, groupId, reply, message.user_id);
+    return;
+  }
+  if (command.action !== "list" && !command.targets.length) {
+    await sendBotReply(client, groupId, "用法：@我 忽略 @目标账号 / 允许 @目标账号 / 忽略列表。也支持忽视、屏蔽、别理、取消忽略、恢复回复。", message.user_id);
+    return;
+  }
+  if (command.action === "ignore" && command.targets.some(id => config.botAdminIds.has(id))) {
+    await sendBotReply(client, groupId, "不能忽略机器人管理员账号。", message.user_id);
+    return;
+  }
+  let reply;
+  try {
+    if (command.action === "list") {
+      const ids = groupBotPolicy.ignoredIds(groupId, config.groupChatBotIds);
+      reply = ids.length ? `本群忽略账号：${ids.join("、")}` : "本群没有设置忽略账号。";
+    } else {
+      await groupBotPolicy.set(groupId, command.targets, command.action);
+      for (const id of command.targets) groupBotLoopGuard.resetAccount(groupId, id);
+      if (command.action === "ignore") {
+        groupConversationContext.removeMembers(groupId, command.targets);
+        groupChatLearning.excludeMembers(groupId, command.targets);
+      }
+      reply = command.action === "ignore"
+        ? `本群已忽略账号：${command.targets.join("、")}。设置已保存，重启后仍生效。`
+        : `本群已恢复接收账号：${command.targets.join("、")}。互聊防循环保护仍生效。`;
+    }
+  } catch (error) {
+    console.error(`[bot] ignore settings failed: ${error.message}`);
+    reply = "忽略设置暂时无法读取或保存，请检查数据文件和目录权限。";
+  }
+  await sendBotReply(client, groupId, reply, message.user_id);
+}
+
 async function onGroupMessage(message, client) {
   const groupId = message.group_id;
 
@@ -466,31 +528,48 @@ async function onGroupMessage(message, client) {
     return;
   }
 
-  const sessionId = getSessionId(message);
-  const text = getCleanMessageText(message);
-  let incomingEntry = recordIncomingGroupMessage(message, text);
   if (isSelfGroupMessage(message)) {
+    recordIncomingGroupMessage(message, getCleanMessageText(message));
     return;
   }
+  const text = getCleanMessageText(message);
   const botMentioned = isMentioned(message);
-  if (["学习状态", "重置群聊学习"].includes(text)) {
-    clearAmbientChatBuffer(groupId);
-    if (!botMentioned) return;
-    if (text === "重置群聊学习") {
-      try {
-        await groupChatLearning.reset(groupId);
-        await sendBotReply(client, groupId, "已重置本群学到的表达习惯和回复指导，之后会重新学习。");
-      } catch {
-        await sendBotReply(client, groupId, "学习结果暂时无法重置，请检查学习文件目录权限。");
-      }
-    } else {
-      const state = groupChatLearning.getStatus(groupId);
-      const reply = !state.enabled ? "群聊学习已关闭。" : state.blocked
-        ? "本群学习文件无法读取，暂用默认表达。可以用“重置群聊学习”重新开始。"
-        : state.rules.length ? `本群目前学到的表达习惯和回复指导：\n${state.rules.map(rule => rule.text).join("\n")}`
-          : "本群还在积累聊天样本，暂时没有可靠的学习结果。";
-      await sendBotReply(client, groupId, reply);
+  const control = botMentioned && isLearningResetCommand(text)
+    ? { action: "reset_learning" } : parseBotControlCommand(message);
+  // Administrators can always recover an ignored account, even when their own
+  // chat was previously caught by a loop or a stale account configuration.
+  if (control && config.botAdminIds.has(String(message.user_id))) {
+    await handleAdminCommand(message, control, client);
+    return;
+  }
+  // Reject bot loops before context/learning, forwarded-message lookups, OCR,
+  // participation judgement, commands or direct AI requests can do any work.
+  const admission = groupBotLoopGuard.inspect(message);
+  if (!admission.allowed) {
+    if (admission.justBlocked) {
+      clearAmbientChatBuffer(groupId);
+      groupConversationContext.removeMembers(groupId, [String(message.user_id)]);
+      groupChatLearning.excludeMembers(groupId, [String(message.user_id)]);
+      console.log(`[bot] reply loop blocked group=${groupId} user=${message.user_id}`);
     }
+    return;
+  }
+  if (control) {
+    await handleAdminCommand(message, control, client);
+    return;
+  }
+  const canRespond = groupBotLoopGuard.responseCheck(groupId, message.user_id);
+  const sessionId = getSessionId(message);
+  let incomingEntry = recordIncomingGroupMessage(message, text);
+  if (text === "学习状态" || isLearningResetCommand(text)) {
+    clearAmbientChatBuffer(groupId);
+    if (!botMentioned || text !== "学习状态") return;
+    const state = groupChatLearning.getStatus(groupId);
+    const reply = !state.enabled ? "群聊学习已关闭。" : state.blocked
+      ? "本群学习文件无法读取，暂用默认表达。可以请管理员用“重置学习模块”重新开始。"
+      : state.rules.length ? `本群目前学到的表达习惯和回复指导：\n${state.rules.map(rule => rule.text).join("\n")}`
+        : "本群还在积累聊天样本，暂时没有可靠的学习结果。";
+    await sendBotReply(client, groupId, reply, message.user_id);
     return;
   }
   if (isHelpCommand(text)) {
@@ -499,9 +578,10 @@ async function onGroupMessage(message, client) {
       return;
     }
     clearAmbientChatBuffer(groupId);
-    await client.sendGroupMessage(
+    await sendBotReply(client,
       groupId,
       buildHelpText(),
+      message.user_id,
     );
     return;
   }
@@ -510,6 +590,7 @@ async function onGroupMessage(message, client) {
     message,
     client,
   );
+  if (!canRespond()) return;
   const hasQwenForwardedContent = Boolean(forwarded);
   const canCollectAmbientChat = shouldCollectAmbientChat(
     message,
@@ -535,7 +616,7 @@ async function onGroupMessage(message, client) {
     }
 
     markCooldown(sessionId, bilibiliCooldowns);
-    await handleBilibiliMessage(groupId, text, client);
+    await handleBilibiliMessage(groupId, text, client, message.user_id);
     return;
   }
 
@@ -550,7 +631,7 @@ async function onGroupMessage(message, client) {
     console.log(`[bot] keyword hit in group ${groupId}: ${getMessageText(message)}`);
 
     const reply = await querySandstormStatus(config);
-    await sendBotReply(client, groupId, reply);
+    await sendBotReply(client, groupId, reply, message.user_id);
     return;
   }
 
@@ -568,7 +649,7 @@ async function onGroupMessage(message, client) {
   if (isResetCommand(text)) {
     chatService.resetSession(sessionId);
     clearGroupConversationContext(groupId);
-    await sendBotReply(client, groupId, "已清空当前群聊会话上下文。");
+    await sendBotReply(client, groupId, "已清空当前群聊会话上下文。", message.user_id);
     return;
   }
 
@@ -587,6 +668,7 @@ async function onGroupMessage(message, client) {
           : repliedMessage?.images,
       ),
     ]);
+    if (!canRespond()) return;
     const webSearch = shouldUseWebSearch(text);
     const thinking = shouldUseThinking(text);
     console.log(
@@ -594,6 +676,7 @@ async function onGroupMessage(message, client) {
     );
     const contextMessages = getGroupConversationContext(groupId);
     const reply = await chatService.chat(sessionId, text, {
+      isCurrent: canRespond,
       thinking,
       webSearch,
       images: extractImageSources(message),
@@ -602,19 +685,21 @@ async function onGroupMessage(message, client) {
       groupChatStyle: groupChatLearning.getRules(groupId),
       ...getGroupReplyMeta(contextMessages),
     });
-    if (reply === null || isRepeatedOwnReply(getGroupConversationContext(groupId), reply)) return;
+    if (!canRespond() || reply === null || isRepeatedOwnReply(getGroupConversationContext(groupId), reply)) return;
     try {
-      await sendBotReply(client, groupId, reply);
+      await sendBotReply(client, groupId, reply, message.user_id);
     } catch (error) {
       const chunk =
         Number.isInteger(error.chunkIndex) && Number.isInteger(error.chunkCount)
           ? ` chunk=${error.chunkIndex + 1}/${error.chunkCount}`
           : "";
       console.error(`[onebot] AI reply delivery failed${chunk}: ${error.message}`);
+      if (!canRespond()) return;
       try {
-        await client.sendGroupMessage(
+        await sendBotReply(client,
           groupId,
           "回答已经生成，但发送到 QQ 时失败了，请稍后重试。",
+          message.user_id,
         );
       } catch (fallbackError) {
         console.error(
@@ -624,11 +709,12 @@ async function onGroupMessage(message, client) {
     }
   } catch (error) {
     console.error("[ai] chat failed:", error.message);
-    await sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。");
+    if (!canRespond()) return;
+    await sendBotReply(client, groupId, "AI 服务暂时没有回复成功，稍后再试一下。", message.user_id);
   }
 }
 
-async function handleBilibiliMessage(groupId, text, client) {
+async function handleBilibiliMessage(groupId, text, client, userId) {
   const urls = extractBilibiliUrls(text);
   const traceId = randomUUID();
   const requestStartedAt = Date.now();
@@ -663,7 +749,7 @@ async function handleBilibiliMessage(groupId, text, client) {
     const message = error.message.startsWith("Bilibili 解析失败：")
       ? error.message
       : `Bilibili 解析失败：${error.message}`;
-    await sendBotReply(client, groupId, message);
+    await sendBotReply(client, groupId, message, userId);
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "resolve_failure",
@@ -673,7 +759,7 @@ async function handleBilibiliMessage(groupId, text, client) {
   }
 
   if (!config.bilibiliSendVideo) {
-    await sendBotReply(client, groupId, formatBilibiliResolveText(result));
+    await sendBotReply(client, groupId, formatBilibiliResolveText(result), userId);
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "text_only",
@@ -728,7 +814,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       { traceId, bvid: result.bvid || "" },
     );
     uploadSucceeded = true;
-    await sendBotReply(client, groupId, formatBilibiliResolveBrief(result));
+    await sendBotReply(client, groupId, formatBilibiliResolveBrief(result), userId);
     logBilibili("info", "request.complete", {
       traceId,
       outcome: "video_sent",
@@ -743,7 +829,7 @@ async function handleBilibiliMessage(groupId, text, client) {
       durationMs: Date.now() - requestStartedAt,
       error: formatErrorForLog(error),
     });
-    await sendBotReply(client, groupId, formatBilibiliUploadFallback(result, error));
+    await sendBotReply(client, groupId, formatBilibiliUploadFallback(result, error), userId);
   } finally {
     if (downloaded && !uploadSucceeded && config.bilibiliKeepFailedVideo) {
       logBilibili("warn", "cleanup.retained", {

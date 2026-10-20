@@ -159,6 +159,24 @@ test("learning serializes groups globally while keeping their profiles separate"
   assert.equal(service.getStatus("1002").revision, 1);
 });
 
+test("ignoring members cancels queued learning before spending tokens and invalidates in-flight results", async t => {
+  let calls = 0;
+  const { service } = fixture(t, { learn: async () => { calls++; return result(); } });
+  service.observe("1001", history(2));
+  service.excludeMembers("1001", ["member0"]);
+  await service.flush();
+  assert.equal(calls, 0);
+  assert.equal(service.getRules("1001").length, 0);
+  assert.equal(service.state("1001").snapshot.some(message => message.userId === "member0"), false);
+
+  let complete;
+  service.learn = () => new Promise(resolve => { complete = resolve; });
+  service.observe("1001", history(5)); await new Promise(setImmediate);
+  service.excludeMembers("1001", ["member1"]);
+  complete(result()); await service.flush();
+  assert.equal(service.getRules("1001").length, 0);
+});
+
 test("disabled learning and invalid group paths cannot create files", async t => {
   const { service, directory } = fixture(t, { learn: async () => { throw Error("Must not run"); } }, { groupChatLearningEnabled: false });
   service.observe("1001", history(5)); await service.flush();

@@ -62,6 +62,20 @@ test("own-reply detection allows matching humans, ignores expired records and ca
   assert.equal(isRepeatedOwnReply(expired, "哈哈"), false);
 });
 
+test("a queued direct chat discarded by account policy does not call the model", async () => {
+  const service = new AiChatService(createConfig());
+  let release, calls = 0, allowed = true;
+  service.chatUnlocked = async () => { calls++; await new Promise(resolve => { release = resolve; }); return "answer"; };
+  const first = service.chat("session", "first");
+  await new Promise(setImmediate);
+  const second = service.chat("session", "second", { isCurrent: () => allowed });
+  allowed = false; release();
+  assert.equal(await first, "answer");
+  assert.equal(await second, null);
+  assert.equal(calls, 1);
+  service.stop();
+});
+
 for (const provider of ["deepseek", "local-qwen"]) {
   test(`${provider} self-repeat checking blocks a paraphrase while allowing human echoes and playful new reactions`, async () => {
     const cases = [

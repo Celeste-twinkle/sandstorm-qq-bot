@@ -16,6 +16,8 @@ function readConfig(overrides = {}) {
     "WEB_SEARCH_AUTO_ENABLED",
     "AMBIENT_CHAT_DRAFT_REVIEW_ENABLED", "PERSONA_FLEXIBILITY_PROMPT", "NATURAL_CHAT_PROMPT",
     "GROUP_CHAT_SELF_REPEAT_CHECK_ENABLED",
+    "BOT_ADMIN_IDS", "GROUP_CHAT_BOT_IDS", "GROUP_CHAT_TRUSTED_USER_IDS", "GROUP_CHAT_BOT_POLICY_FILE",
+    "GROUP_CHAT_LOOP_MAX_TURNS", "GROUP_CHAT_LOOP_REPLY_WINDOW_SECONDS", "GROUP_CHAT_LOOP_QUIET_SECONDS",
     "WEB_SEARCH_PROVIDER", "DEEPSEEK_SEARCH_BASE_URL", "DEEPSEEK_SEARCH_MODEL",
     "DEEPSEEK_SEARCH_API_VERSION", "DEEPSEEK_SEARCH_MAX_TOKENS", "DEEPSEEK_SEARCH_MAX_USES",
     "WEB_SEARCH_MAX_QUERIES", "WEB_SEARCH_MAX_RESULTS", "WEB_SEARCH_TIMEOUT_MS",
@@ -52,6 +54,9 @@ function readConfig(overrides = {}) {
       fetchMaxBody: config.webFetchMaxBodyChars, fetchMaxOutput: config.webFetchMaxOutputChars,
       learningEffort: config.groupChatLearningReasoningEffort, learningMaxTokens: config.groupChatLearningMaxOutputTokens,
       learningTimeoutMs: config.groupChatLearningTimeoutMs,
+      adminIds: [...config.botAdminIds], botIds: [...config.groupChatBotIds], trustedIds: [...config.groupChatTrustedUserIds],
+      botPolicyFile: config.groupChatBotPolicyFile, loopTurns: config.groupChatLoopMaxTurns,
+      loopReplyWindow: config.groupChatLoopReplyWindowSeconds, loopQuietSeconds: config.groupChatLoopQuietSeconds,
     }));
   `;
   return JSON.parse(execFileSync(process.execPath, ["-e", source], {
@@ -75,12 +80,25 @@ test("fresh configuration defaults to official DeepSeek Flash and 50-message win
     searchMaxQueries: 4, searchMaxResults: 8, searchTimeout: 30000,
     fetchTimeout: 30000, fetchMaxBytes: 5000000, fetchMaxBody: 100000, fetchMaxOutput: 200000,
     learningEffort: "high", learningMaxTokens: 8192, learningTimeoutMs: 90000,
+    adminIds: [], botIds: [], trustedIds: [], botPolicyFile: "", loopTurns: 4, loopReplyWindow: 120, loopQuietSeconds: 600,
   });
 });
 
 test("legacy probability settings do not configure the AI decision path", () => {
   assert.equal(readConfig({ AMBIENT_CHAT_PROBABILITY: "1" }).probabilityConfigured, false);
   assert.equal(readConfig({ AMBIENT_CHAT_PROBABILITY: "0" }).probabilityConfigured, false);
+});
+
+test("administrator and bot lists are trimmed and loop settings stay within bounds", () => {
+  const config = readConfig({ BOT_ADMIN_IDS: "631978355, 90000001,631978355", GROUP_CHAT_BOT_IDS: " 90000002,90000003 ",
+    GROUP_CHAT_TRUSTED_USER_IDS: "90000004", GROUP_CHAT_LOOP_MAX_TURNS: "1",
+    GROUP_CHAT_LOOP_REPLY_WINDOW_SECONDS: "0", GROUP_CHAT_LOOP_QUIET_SECONDS: "1" });
+  assert.deepEqual(config.adminIds, ["631978355", "90000001"]);
+  assert.deepEqual(config.botIds, ["90000002", "90000003"]);
+  assert.deepEqual(config.trustedIds, ["90000004"]);
+  assert.equal(config.loopTurns, 2);
+  assert.equal(config.loopReplyWindow, 5);
+  assert.equal(config.loopQuietSeconds, 60);
 });
 
 test("ambient sampling and debounce accept zero and clamp invalid ranges", () => {

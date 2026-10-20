@@ -142,13 +142,13 @@ test("OneBot client waits for each long-text chunk and serializes later group me
   const client = createOneBotClient(ws, pendingActions, {
     textChunkMaxChars: 6,
     logger: { log() {} },
-    onGroupMessageSent(groupId, message, response) {
-      recorded.push({ groupId, message, messageId: response.data.message_id });
+    onGroupMessageSent(groupId, message, response, metadata) {
+      recorded.push({ groupId, message, messageId: response.data.message_id, metadata });
     },
   });
 
-  const longReply = client.sendGroupMessage("group-1", "第一段。第二段。第三段。");
-  const laterReply = client.sendGroupMessage("group-1", "最后一条");
+  const longReply = client.sendGroupMessage("group-1", "第一段。第二段。第三段。", { replyToUserId: "alice" });
+  const laterReply = client.sendGroupMessage("group-1", "最后一条", { replyToUserId: "bob" });
   await Promise.all([longReply, laterReply]);
 
   assert.equal(maxActiveActions, 1);
@@ -159,6 +159,25 @@ test("OneBot client waits for each long-text chunk and serializes later group me
   assert.deepEqual(recorded.map((entry) => entry.message), ["第一段。", "第二段。", "第三段。", "最后一条"]);
   assert.deepEqual(recorded.map((entry) => entry.messageId), [1, 2, 3, 4]);
   assert.equal(recorded.every((entry) => entry.groupId === "group-1"), true);
+  assert.deepEqual(recorded.map(entry => entry.metadata.replyToUserId), ["alice", "alice", "alice", "bob"]);
+  assert.equal(sent.every(entry => Object.keys(entry.params).sort().join(",") === "group_id,message"), true);
+});
+
+test("an ignored recipient stops remaining chunks and queued replies before sending", async () => {
+  const sent = [], pending = new Map();
+  let allowed = true;
+  const client = createOneBotClient({ OPEN: 1, readyState: 1, send(raw) {
+    const action = JSON.parse(raw); sent.push(action);
+    queueMicrotask(() => {
+      const request = pending.get(action.echo);
+      clearTimeout(request.timeout); pending.delete(action.echo);
+      request.resolve({ status: "ok", retcode: 0 });
+    });
+  } }, pending, { textChunkMaxChars: 6, logger: { log() {} }, onGroupMessageSent() { allowed = false; } });
+  const metadata = { canSend: () => allowed };
+  await Promise.all([client.sendGroupMessage("group", "第一段。第二段。第三段。", metadata),
+    client.sendGroupMessage("group", "queued", metadata)]);
+  assert.deepEqual(sent.map(action => action.params.message), ["第一段。"]);
 });
 
 test("OneBot client stops a long reply when a chunk fails", async () => {

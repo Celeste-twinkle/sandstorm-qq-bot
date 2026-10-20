@@ -8,6 +8,7 @@ const { execFileSync } = require("node:child_process");
 
 async function snapshotSmoke(expected) {
   const assert = require("node:assert/strict");
+  const fs = require("node:fs");
   const path = require("node:path");
   const { createHash } = require("node:crypto");
   assert.ok(process.pkg);
@@ -18,10 +19,38 @@ async function snapshotSmoke(expected) {
   const { AmbientReplyGuard, AmbientReplyScheduler } = require(path.join(src, "ambient-chat.js"));
   const { GroupConversationContext } = require(path.join(src, "group-context.js"));
   const { GroupChatLearning, resolveGroupChatLearningDir } = require(path.join(src, "group-chat-learning.js"));
+  const { GroupBotLoopGuard } = require(path.join(src, "group-bot-loop-guard.js"));
+  const { GroupBotPolicy, parseBotControlCommand, resolveBotPolicyFile } = require(path.join(src, "group-bot-policy.js"));
   const { querySandstormStatus } = require(path.join(src, "sandstorm.js"));
-  const { buildHelpText } = require(path.join(src, "help.js"));
+  const { buildHelpText, isLearningResetCommand } = require(path.join(src, "help.js"));
   assert.equal(typeof querySandstormStatus, "function");
   assert.doesNotMatch(buildHelpText(), /人格(?:列表|切换|设置|查询)|自定义人格/);
+  assert.match(buildHelpText(), /BOT_ADMIN_IDS/);
+  for (const command of ["重置学习模块", "清空学习模块", "重置群聊学习"]) assert.equal(isLearningResetCommand(command), true);
+  assert.equal(resolveBotPolicyFile(), path.join(path.dirname(process.execPath), "data", "group-bot-policy.json"));
+  const botId = "99000001", peerId = "99000002";
+  for (const [text, action] of [["忽视一下", "ignore"], ["无视", "ignore"], ["别理", "ignore"], ["解除屏蔽", "allow"], ["不要忽略", "allow"]]) {
+    assert.deepEqual(parseBotControlCommand({ self_id: botId, message: `[CQ:at,qq=${botId}] ${text} [CQ:at,qq=${peerId}]` }),
+      { action, targets: [peerId] });
+  }
+  const policyConfig = { groupChatBotPolicyFile: expected.botPolicyFile };
+  const botPolicy = new GroupBotPolicy(policyConfig);
+  await botPolicy.set("1001", [peerId], "ignore");
+  assert.equal(new GroupBotPolicy(policyConfig).decision("1001", peerId), "ignore");
+  assert.equal(botPolicy.decision("1002", peerId), null);
+  const botLoopGuard = new GroupBotLoopGuard({ botAdminIds: new Set(["631978355"]) }, {
+    accountDecision: (group, user) => botPolicy.decision(group, user),
+  });
+  const incomingBot = id => ({ group_id: "1001", user_id: peerId, message_id: id });
+  assert.equal(botLoopGuard.inspect(incomingBot(1)).allowed, false);
+  await botPolicy.set("1001", [peerId], "allow");
+  assert.equal(botLoopGuard.inspect(incomingBot(2)).allowed, true);
+  for (let turn = 1; turn <= 4; turn++) {
+    botLoopGuard.recordReply("1001", peerId);
+    assert.equal(botLoopGuard.inspect(incomingBot(turn + 2)).allowed, turn < 4);
+  }
+  assert.equal(botLoopGuard.canRespond("1001", peerId), false);
+  assert.equal(botLoopGuard.inspect({ group_id: "1001", user_id: "631978355", message_id: 100 }).allowed, true);
   const learningPrompts = require(path.join(src, "group-chat-learning-prompt.js"));
   const persona = require(path.join(src, "persona.js"));
   for (const [key, hash] of Object.entries(expected.prompts)) {
@@ -155,6 +184,9 @@ async function snapshotSmoke(expected) {
   await learning.flush();
   assert.equal(learning.getStatus("1001").revision, 2);
   assert.deepEqual(learning.getRules("1001"), []);
+  await learning.reset("1001");
+  assert.equal(learning.getStatus("1001").revision, 0);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(expected.learningDir, "1001.json"))).rules, []);
   learning.stop();
 
   const scheduler = new AmbientReplyScheduler();
@@ -212,6 +244,8 @@ async function snapshotSmoke(expected) {
     learningWithThinkingWithoutTools: true, learningBudget8192: true, learningDirBesideExe: true, obsoleteHintsCanBeRetired: true,
     ongoingPublicChatDoesNotInvalidateInference: true, messagesDuringFinalInferenceRetained: true,
     humanEchoAllowedOwnExactRepeatBlocked: true,
+    botIgnoreAllowPersistsByGroup: true, looseAdminCommandAliases: true,
+    unknownBotLoopStopsLocally: true, learningResetPersists: true,
     promptHashesMatchSource: true, noNetwork: true, noQQConnection: true }));
 }
 
@@ -235,6 +269,7 @@ for (const folder of ["release", path.join("deploy", "SandstormQQBot-Deploy")]) 
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "sandstorm-full-deploy-check-"));
 expected.learningDir = path.join(temp, "group-chat-learning");
+expected.botPolicyFile = path.join(temp, "group-bot-policy.json");
 const script = path.join(temp, "check.cjs");
 fs.writeFileSync(script, `(${snapshotSmoke.toString()})(${JSON.stringify(expected)}).catch(error => { console.error(error); process.exitCode = 1; });`);
 const output = execFileSync(exe, [script], { cwd: temp, env: { ...process.env, PKG_EXECPATH: exe },

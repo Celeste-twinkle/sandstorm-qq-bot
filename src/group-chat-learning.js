@@ -173,7 +173,9 @@ class GroupChatLearning {
     state.pendingHumans = 0;
     state.lastAttemptAt = this.now();
     state.learning = true;
-    this.running = Promise.resolve().then(() => this.learn(context, previous)).then(async text => {
+    this.running = Promise.resolve().then(() => this.closed || epoch !== state.epoch
+      ? null : this.learn(context, previous)).then(async text => {
+      if (this.closed || epoch !== state.epoch) return;
       const rules = parseLearningResult(text, context, previous);
       if (this.closed || epoch !== state.epoch) return;
       const record = { schemaVersion: SCHEMA_VERSION, groupId: state.groupId, revision: state.record.revision + 1,
@@ -220,6 +222,15 @@ class GroupChatLearning {
   }
 
   isBusy() { return Boolean(this.running || this.queue.size); }
+  excludeMembers(group, userIds) {
+    const state = this.states.get(String(group));
+    if (!state) return;
+    const ignored = new Set(userIds.map(String));
+    state.epoch++;
+    state.snapshot = state.snapshot.filter(message => message.role === "assistant" || !ignored.has(String(message.userId)));
+    state.pendingHumans = 0;
+    this.queue.delete(state);
+  }
   async flush() {
     while (this.running) await this.running;
     await Promise.all([...this.states.values()].map(state => state.writeChain.catch(() => undefined)));

@@ -121,7 +121,7 @@ class AiChatService {
     const previousLock = this.sessionLocks.get(sessionId) || Promise.resolve();
     const nextLock = previousLock
       .catch(() => undefined)
-      .then(() => this.chatUnlocked(sessionId, userText, meta));
+      .then(() => meta.isCurrent && !meta.isCurrent() ? null : this.chatUnlocked(sessionId, userText, meta));
 
     this.sessionLocks.set(sessionId, nextLock);
 

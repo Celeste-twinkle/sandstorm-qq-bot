@@ -128,7 +128,7 @@ function createOneBotClient(ws, pendingActions, options = {}) {
   }
 
   return {
-    sendGroupMessage(groupId, message) {
+    sendGroupMessage(groupId, message, metadata = {}) {
       return enqueueGroupSend(groupId, async () => {
         const chunks =
           typeof message === "string"
@@ -136,6 +136,7 @@ function createOneBotClient(ws, pendingActions, options = {}) {
             : [message];
 
         for (let index = 0; index < chunks.length; index += 1) {
+          if (metadata.canSend && !metadata.canSend()) return;
           let response;
           try {
             response = await sendAction(
@@ -153,7 +154,7 @@ function createOneBotClient(ws, pendingActions, options = {}) {
             error.deliveredChunks = index;
             throw error;
           }
-          await options.onGroupMessageSent?.(groupId, chunks[index], response);
+          await options.onGroupMessageSent?.(groupId, chunks[index], response, metadata);
         }
 
         if (chunks.length > 1) {
@@ -163,8 +164,9 @@ function createOneBotClient(ws, pendingActions, options = {}) {
         }
       });
     },
-    sendGroupMessageAndWait(groupId, message) {
+    sendGroupMessageAndWait(groupId, message, metadata = {}) {
       return enqueueGroupSend(groupId, async () => {
+        if (metadata.canSend && !metadata.canSend()) return null;
         const response = await sendAction(
           ws,
           "send_group_msg",
@@ -174,7 +176,7 @@ function createOneBotClient(ws, pendingActions, options = {}) {
           },
           pendingActions,
         );
-        await options.onGroupMessageSent?.(groupId, message, response);
+        await options.onGroupMessageSent?.(groupId, message, response, metadata);
         return response;
       });
     },

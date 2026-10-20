@@ -47,6 +47,13 @@ class GroupConversationContext {
   clear(groupId) {
     this.groups.delete(String(groupId));
   }
+
+  removeMembers(groupId, userIds) {
+    const ignored = new Set(userIds.map(String));
+    const key = String(groupId);
+    this.groups.set(key, (this.groups.get(key) || [])
+      .filter(message => message.role === "assistant" || !ignored.has(String(message.userId))));
+  }
 }
 
 function getLatestGroupMemberMessage(messages) {
