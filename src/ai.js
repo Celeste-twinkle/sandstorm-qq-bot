@@ -12,6 +12,8 @@ const {
 } = require("./persona");
 const { parseAmbientDecision, parseAmbientDraftReview } = require("./ambient-chat");
 const { buildGroupLearningMessages, buildLearnedGroupStylePrompt } = require("./group-chat-learning");
+const { buildSlangPrompt } = require("./group-slang");
+const { STICKER_ANALYSIS_PROMPT, STICKER_SELECTION_PROMPT } = require("./sticker-library");
 const {
   MAX_GROUP_CONTEXT_MESSAGES,
   selectRecentGroupMessages,
@@ -75,14 +77,41 @@ class AiChatService {
     this.localQwen.stopHealthChecks();
   }
 
-  async learnGroupChatStyle(contextMessages, previousRules = []) {
-    const messages = buildGroupLearningMessages(contextMessages, previousRules);
+  async learnGroupChatStyle(contextMessages, previousRules = [], slang = null) {
+    const messages = buildGroupLearningMessages(contextMessages, previousRules, slang);
     const result = await this.runWithFallback(async provider => provider.createCompletion(messages, {
       thinking: true, reasoningEffort: this.config.groupChatLearningReasoningEffort || "high",
       backgroundTask: true, webSearch: false, responseFormat: { type: "json_object" },
       maxOutputTokens: this.config.groupChatLearningMaxOutputTokens || 8192,
       timeoutMs: this.config.groupChatLearningTimeoutMs || 90000,
     }));
+    return result.text;
+  }
+
+  async analyzeSticker(image) {
+    const result = await this.runWithFallback(async provider => {
+      const body = provider.buildCompletionBody([
+        { role: "system", content: STICKER_ANALYSIS_PROMPT },
+        { role: "user", content: [{ type: "text", text: "为这张表情图生成配对存储的 OCR 与情境元数据。" },
+          { type: "image_url", image_url: { url: image.dataUrl, detail: "high" } }] },
+      ], false, { thinking: false, reasoningEffort: "none", backgroundTask: true, maxOutputTokens: 1200, temperature: 0 });
+      body.response_format = { type: "json_object" };
+      const payload = await provider.requestCompletion(body, { timeoutMs: this.config.stickerOcrTimeoutMs || 30000 });
+      const text = payload?.choices?.[0]?.message?.content;
+      if (typeof text !== "string") throw new Error("Invalid sticker analysis response");
+      return JSON.stringify({ ...JSON.parse(text), model: body.model });
+    });
+    return result.text;
+  }
+
+  async chooseSticker(candidates, context, draft) {
+    const result = await this.runWithFallback(async provider => provider.createCompletion([
+      { role: "system", content: STICKER_SELECTION_PROMPT },
+      { role: "user", content: JSON.stringify({ candidates, draft,
+        history: context.map(message => ({ role: message.role, speaker: message.senderName || "", text: String(message.text || "").slice(0, 600) })) }) },
+    ], { thinking: false, reasoningEffort: "none", decisionOnly: true, webSearch: false,
+      responseFormat: { type: "json_object" }, maxOutputTokens: 160,
+      timeoutMs: this.config.stickerSelectionTimeoutMs || 8000, temperature: 0 }));
     return result.text;
   }
 
@@ -165,7 +194,7 @@ class AiChatService {
             selectedContext,
             ambientMode,
           );
-      return provider.createCompletion(this.withGroupReplyGuidance(messages, provider, contextScale, meta.groupChatStyle), {
+      return provider.createCompletion(this.withGroupReplyGuidance(messages, provider, contextScale, meta.groupChatStyle, meta), {
         thinking: useThinking,
         maxOutputTokens: isLocalQwen
           ? this.config.localQwenModelMaxOutputTokens
@@ -173,6 +202,8 @@ class AiChatService {
             ? this.config.deepseekThinkingMaxOutputTokens
             : this.config.ambientChatMaxOutputTokens,
         temperature: Math.max(0.7, this.config.deepseekTemperature),
+        memoryTools: meta.memoryTools,
+        onUsage: meta.onUsage,
         timeoutMs: !isLocalQwen && useThinking
           ? this.config.deepseekThinkingTimeoutMs
           : this.config.ambientChatTimeoutMs,
@@ -227,6 +258,7 @@ class AiChatService {
         ? "draft 是你刚拟好但尚未发出的插话。群友在生成期间继续聊了；判断现在是否还想发这句、能否接上整段当前讨论。同话题的继续聊天不使它过时，不要求它回答最新一句。话题已经转走、明确让你停或成了当事人私事才放弃。不审查正确性或句子长短，不改写 draft，仍只输出 should_reply 的 JSON。"
         : "",
       DEFAULT_GROUP_CONTEXT_PROMPT,
+      meta.memoryMoodHint || "",
       meta.ambientMode === "idle"
         ? "当前是群聊安静一段时间后的再判断，不是新问题，也没有必须暖场的要求。"
         : "当前是收到一条新群成员消息后的判断，决定是否自然参与。",
@@ -394,6 +426,8 @@ class AiChatService {
     const options = {
       thinking: Boolean(meta.thinking ?? this.config.deepseekThinkingEnabled),
       webSearch: meta.webSearch,
+      ...(meta.memoryTools ? { memoryTools: meta.memoryTools } : {}),
+      ...(meta.onUsage ? { onUsage: meta.onUsage } : {}),
     };
 
     const operation = async (provider, contextScale = 1) => {
@@ -411,7 +445,7 @@ class AiChatService {
             meta.groupContextMessages,
           );
       return provider.createCompletion(
-        hasGroupContext ? this.withGroupReplyGuidance(messages, provider, contextScale, meta.groupChatStyle) : messages,
+        hasGroupContext ? this.withGroupReplyGuidance(messages, provider, contextScale, meta.groupChatStyle, meta) : messages,
         provider === this.localQwen
           ? {
               ...options,
@@ -706,8 +740,10 @@ class AiChatService {
     );
   }
 
-  withGroupReplyGuidance(messages, provider, contextScale = 1, groupChatStyle = []) {
-    const learned = buildLearnedGroupStylePrompt(groupChatStyle);
+  withGroupReplyGuidance(messages, provider, contextScale = 1, groupChatStyle = [], meta = {}) {
+    const query = (meta.groupContextMessages || []).slice(-6).map(message => message.text).join(" ") || meta.currentText || "";
+    const learned = [meta.memoryPrompt, buildLearnedGroupStylePrompt(groupChatStyle),
+      buildSlangPrompt(meta.groupSlang || [], query), meta.memoryMoodHint].filter(Boolean).join("\n\n");
     if (!learned) return messages;
     const reminder = { role: "system", content: learned };
     // Reserve the reminder's budget in the protected system prefix first, so

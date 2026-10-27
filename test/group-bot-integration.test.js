@@ -27,6 +27,7 @@ async function fixture(t, overrides = {}, hooks = {}) {
     botName: "大肥鱼", botAdminIds: new Set([ADMIN]), groupChatBotIds: new Set(), groupChatTrustedUserIds: new Set(),
     groupChatBotPolicyFile: path.join(directory, "policy.json"),
     groupChatLearningDir: path.join(directory, "learning"), groupChatLearningEnabled: true,
+    memoryStateDir: path.join(directory, "memory"),
     groupChatLearningMinMessages: 20, groupChatLearningEveryMessages: 30, groupChatLearningMinIntervalMs: 600000,
     allowedGroupIds: new Set(), requireAt: true, triggerKeywords: ["ins"], cooldownSeconds: 0,
     chatEnabled: true, chatRequireAt: true, chatCooldownSeconds: 0, chatMaxHistoryMessages: 50,
@@ -46,6 +47,8 @@ async function fixture(t, overrides = {}, hooks = {}) {
     isConfigured() { return true; }
     async prewarmImages() { calls.prewarm++; return 0; }
     async learnGroupChatStyle() { calls.learning++; return '{"rules":[]}'; }
+    async analyzeSticker() { return hooks.analyze?.() || { transcription: "好耶", uncertain_text: [], description: "开心庆祝", emotions: ["开心"], usage: ["胜利"], avoid: ["悲伤"], confidence: 0.99 }; }
+    async chooseSticker(candidates) { return hooks.choose?.(candidates) || { sticker_id: null, context_match: false, confidence: 1 }; }
     async chat(session, text, meta) {
       calls.direct.push({ session, text, meta });
       await hooks.direct?.();
@@ -82,6 +85,7 @@ async function fixture(t, overrides = {}, hooks = {}) {
   };
   vm.runInNewContext(fs.readFileSync(sourcePath, "utf8") + `\nmodule.exports = {
     tryAmbientReply, groupConversationContext, groupChatLearning, groupBotPolicy, groupBotLoopGuard,
+    agentMemory, stickerLibrary,
     ambientReplyScheduler, ambientChatBuffers, clearAmbientChatBuffer };`, sandbox, { filename: sourcePath });
   runtime = sandbox.module.exports;
   const client = createOneBotClient({ OPEN: 1, readyState: 1, send(raw) {
@@ -98,6 +102,7 @@ async function fixture(t, overrides = {}, hooks = {}) {
     runtime.ambientReplyScheduler.clear();
     for (const group of runtime.ambientChatBuffers.keys()) runtime.clearAmbientChatBuffer(group);
     runtime.groupChatLearning.stop(); await runtime.groupChatLearning.flush();
+    await runtime.agentMemory.close(); await runtime.stickerLibrary.close();
     await runtime.groupBotPolicy.writeChain.catch(() => undefined);
     assert.equal(fs.realpathSync(directory), resolved);
     assert.ok(path.basename(resolved).startsWith("sandstorm-bot-integration-"));
@@ -122,6 +127,50 @@ async function fixture(t, overrides = {}, hooks = {}) {
   }
   return { calls, config, runtime, client, message, advance, directory };
 }
+
+test("the real entrypoint shares durable group memory across members and rotates without losing records", async t => {
+  const h = await fixture(t, { memoryEnabled: true, groupSlangEnabled: true });
+  await h.message("记住周五一起玩");
+  await h.message("我也来", "90000003");
+  assert.equal(h.calls.direct[0].session, `group:${GROUP}`);
+  assert.equal(h.calls.direct[1].session, `group:${GROUP}`);
+  assert.match(h.calls.direct[1].meta.memoryPrompt, /记住周五一起玩/);
+  assert.equal(h.calls.direct[1].meta.memoryTools.has("search_history"), true);
+  const count = h.runtime.agentMemory.recent(`group:${GROUP}`).length;
+  await h.message("轮换会话");
+  await h.message("继续聊");
+  assert.ok(h.runtime.agentMemory.recent(`group:${GROUP}`).length > count);
+  assert.equal(h.calls.direct.length, 3);
+  assert.ok(fs.existsSync(path.join(h.directory, "memory", "messages.db")));
+  await h.message("学黑话 开摆=先休息不卷了；场景=轻松自嘲；禁用=认真求助");
+  assert.equal(h.runtime.groupChatLearning.getSlang(GROUP)[0].term, "开摆");
+  await h.message("黑话列表", "90000004");
+  assert.match(h.calls.actions.at(-1).params.message, /先休息不卷了/);
+});
+
+test("the real entrypoint collects paired OCR, sends a matching image and never re-collects its own image", async t => {
+  let analyzed = 0, chosen = 0;
+  const h = await fixture(t, { memoryEnabled: true, stickerEnabled: true }, { analyze: () => {
+    analyzed++; return { transcription: "好耶", uncertain_text: [], description: "猫猫庆祝", emotions: ["开心"], usage: ["胜利"], avoid: ["悲伤"], confidence: 0.99 };
+  }, choose: candidates => { chosen++; return { sticker_id: candidates[0].id, context_match: true, confidence: 0.99 }; } });
+  h.runtime.stickerLibrary.download = async () => Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);
+  await h.message("收集表情", MEMBER, { segments: [{ type: "image", data: { url: "https://qpic.cn/test" } }] });
+  await h.runtime.stickerLibrary.flush();
+  assert.equal(analyzed, 1);
+  const item = Object.values(h.runtime.stickerLibrary.state(GROUP).value.items)[0];
+  assert.equal(item.ocr.imageSha256, item.image.sha256);
+  await h.message("赢了！");
+  const imageAction = h.calls.actions.find(action => Array.isArray(action.params.message) && action.params.message[0].type === "image");
+  assert.ok(imageAction); assert.equal(chosen, 1);
+  assert.equal(item.sendCount, 1);
+  await h.message("", BOT, { segments: imageAction.params.message, post_type: "message_sent" });
+  await h.runtime.stickerLibrary.flush();
+  assert.equal(analyzed, 1);
+  await h.message("清空表情库");
+  assert.equal(h.runtime.stickerLibrary.status(GROUP).total, 1);
+  await h.message("清空表情库", ADMIN);
+  assert.equal(h.runtime.stickerLibrary.status(GROUP).total, 0);
+});
 
 test("only the configured administrator can manage ignores; group owners have no implicit authority", async t => {
   const h = await fixture(t);

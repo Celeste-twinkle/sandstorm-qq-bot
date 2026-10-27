@@ -64,11 +64,11 @@ function readConfig(overrides = {}) {
   }));
 }
 
-test("fresh configuration defaults to official DeepSeek Flash and 50-message windows", () => {
+test("fresh configuration defaults to official DeepSeek Flash and 100-message windows", () => {
   assert.deepEqual(readConfig(), {
     primary: "deepseek", baseUrl: "https://api.deepseek.com",
     model: "deepseek-flash", vision: "deepseek-flash", temperature: 0.9,
-    history: 50, qwenHistory: 50, instantHistory: 50, idleHistory: 50, maxChars: 64000,
+    history: 100, qwenHistory: 100, instantHistory: 100, idleHistory: 100, maxChars: 64000,
     thinking: false, reasoningEffort: "high", thinkingMaxTokens: 3200, thinkingTimeoutMs: 60000,
     judgeTimeoutMs: 10000, judgeMaxOutputTokens: 64, probabilityConfigured: false,
     judgeTemperature: 0.5, ambientDebounceMs: 600,
@@ -110,15 +110,15 @@ test("ambient sampling and debounce accept zero and clamp invalid ranges", () =>
   assert.equal(bounded.ambientDebounceMs, 5000);
 });
 
-test("old 100-message environment values are capped at 50", () => {
+test("oversized message windows are capped at the new 200-message hard limit", () => {
   const config = readConfig({
-    CHAT_MAX_HISTORY_MESSAGES: "100",
-    LOCAL_QWEN_MAX_HISTORY_MESSAGES: "100",
-    AMBIENT_CHAT_INSTANT_MAX_MESSAGES: "100",
-    AMBIENT_CHAT_IDLE_MAX_MESSAGES: "100",
+    CHAT_MAX_HISTORY_MESSAGES: "1000",
+    LOCAL_QWEN_MAX_HISTORY_MESSAGES: "1000",
+    AMBIENT_CHAT_INSTANT_MAX_MESSAGES: "1000",
+    AMBIENT_CHAT_IDLE_MAX_MESSAGES: "1000",
   });
   for (const key of ["history", "qwenHistory", "instantHistory", "idleHistory"]) {
-    assert.equal(config[key], 50);
+    assert.equal(config[key], 200);
   }
 });
 

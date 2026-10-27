@@ -227,7 +227,7 @@ class DeepSeekChatService {
     const preparedMessages = await this.prepareMessagesForVision(messages);
 
     // Participation decisions and other structured background jobs never browse.
-    if (webSearchMode && !normalizedOptions.decisionOnly && !normalizedOptions.responseFormat) {
+    if ((webSearchMode || normalizedOptions.memoryTools) && !normalizedOptions.decisionOnly && !normalizedOptions.responseFormat) {
       return this.createCompletionWithWebTools(preparedMessages, useThinking, {
         ...normalizedOptions,
         webSearch: webSearchMode,
@@ -248,6 +248,7 @@ class DeepSeekChatService {
       body,
       {
         timeoutMs: normalizedOptions.timeoutMs,
+        onUsage: normalizedOptions.onUsage,
       },
     );
     return extractAssistantContent(payload);
@@ -381,15 +382,27 @@ class DeepSeekChatService {
   }
 
   async createCompletionWithWebTools(messages, useThinking, options = {}) {
-    const automatic = options.webSearch === "auto";
-    const runner = this.webToolRunnerFactory(this.config);
+    const hasWeb = Boolean(options.webSearch);
+    const automatic = options.webSearch === "auto" || !hasWeb;
+    const webRunner = hasWeb ? this.webToolRunnerFactory(this.config) : null;
+    const memoryRunner = options.memoryTools;
+    const isMemory = call => memoryRunner?.has(call?.function?.name);
+    const runner = {
+      setUserQuery: query => webRunner?.setUserQuery(query),
+      getToolDefinitions: () => [...(webRunner?.getToolDefinitions() || []), ...(memoryRunner?.getToolDefinitions() || [])],
+      runToolCall: call => isMemory(call) ? memoryRunner.runToolCall(call) : webRunner?.runToolCall(call) || { error: "工具不可用。" },
+      hasUsableEvidence: (call, result) => !isMemory(call) && (webRunner?.hasUsableEvidence?.(call, result) ?? isUsableFetchedWebEvidence(call, result)),
+      getEvidenceRecoveryHint: (call, result) => isMemory(call) ? "" : webRunner?.getEvidenceRecoveryHint?.(call, result),
+      formatToolResult: (call, result) => isMemory(call) ? JSON.stringify(result) : webRunner?.formatToolResult?.(call, result) ?? JSON.stringify(result),
+    };
     runner.setUserQuery(extractLatestUserText(messages));
-    const workingMessages = this.buildWebSearchMessages(messages, { automatic });
-    const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds);
-    const maxCallsPerRound = Math.max(1, this.config.webSearchMaxToolCallsPerRound);
+    const workingMessages = hasWeb ? this.buildWebSearchMessages(messages, { automatic }) : messages.slice();
+    const maxRounds = Math.max(1, this.config.webSearchMaxToolRounds || 4);
+    const maxCallsPerRound = Math.max(1, this.config.webSearchMaxToolCallsPerRound || 4);
     let fetchedEvidenceCount = 0;
     let toolRounds = 0;
     let executedToolCalls = 0;
+    let executedWebCalls = 0;
     let evidenceRecoveryHint = "";
     let repairedPrematureAnswer = false;
     const noEvidenceReply = () => buildNoWebEvidenceReply({ casual: automatic });
@@ -413,7 +426,7 @@ class DeepSeekChatService {
         ...this.buildCompletionBody(workingMessages, useThinking, completionOptions()),
         tools: runner.getToolDefinitions(),
         tool_choice: toolRounds === 0 && !automatic ? "required" : "auto",
-      }, { timeoutMs: options.timeoutMs });
+      }, { timeoutMs: options.timeoutMs, onUsage: options.onUsage });
 
       const message = payload?.choices?.[0]?.message || {};
       const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
@@ -426,7 +439,7 @@ class DeepSeekChatService {
             `${evidenceRecoveryHint}\n还可使用 ${maxRounds - toolRounds} 轮工具，每轮最多 ${maxCallsPerRound} 次。请决定是否读取来源后再回答；不继续查证也可以，不输出查证计划。` });
           continue;
         }
-        return (automatic && toolRounds === 0) || fetchedEvidenceCount > 0
+        return (automatic && executedWebCalls === 0) || fetchedEvidenceCount > 0
           ? finish(extractAssistantContent(payload), fetchedEvidenceCount > 0 ? "evidence_answer" : "direct_answer")
           : finish(noEvidenceReply(), "no_evidence_model_stop");
       }
@@ -445,12 +458,13 @@ class DeepSeekChatService {
           };
         } else {
           executedToolCalls += 1;
+          if (!isMemory(toolCall)) executedWebCalls += 1;
           try {
             result = await runner.runToolCall(toolCall);
           } catch (error) {
             console.error(`[webtools] ${toolCall?.function?.name || "unknown"} failed:`, error.message);
             result = {
-              error: error.message,
+              error: isMemory(toolCall) ? "记忆操作暂时无法完成。" : error.message,
               reliability_guidance:
                 "This tool call failed. Use other available tool results only. If evidence is insufficient, say so.",
             };
@@ -478,19 +492,19 @@ class DeepSeekChatService {
       }
     }
 
-    if (fetchedEvidenceCount === 0) {
+    if (fetchedEvidenceCount === 0 && (!automatic || executedWebCalls > 0)) {
       return finish(noEvidenceReply(), "no_evidence_budget");
     }
 
     workingMessages.push({
       role: "user",
       content:
-        "工具轮次已用完。请仅基于已有工具结果回答；关键事实标注来源，证据不足就说明不确定。",
+        "工具轮次已用完。请仅基于已有工具结果和当前对话回答；需要外部证据的事实标注来源，证据不足就说明不确定。不要输出内部工具状态。",
     });
 
     const payload = await this.requestCompletion({
       ...this.buildCompletionBody(workingMessages, useThinking, completionOptions()),
-    }, { timeoutMs: options.timeoutMs });
+    }, { timeoutMs: options.timeoutMs, onUsage: options.onUsage });
     return finish(extractAssistantContent(payload), "evidence_answer_budget");
   }
 
@@ -577,6 +591,7 @@ class DeepSeekChatService {
 
       const payload = await response.json();
       logCompletionUsage(body, payload);
+      options.onUsage?.(payload.usage);
       return payload;
     } catch (error) {
       if (error.name === "AbortError") {

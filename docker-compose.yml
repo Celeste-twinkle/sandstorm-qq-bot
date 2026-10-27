@@ -7,3 +7,5 @@ services:
       - .env
     ports:
       - "${PORT:-6700}:${PORT:-6700}"
+    volumes:
+      - ./data:/app/data

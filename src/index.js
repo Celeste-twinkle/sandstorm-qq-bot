@@ -32,6 +32,9 @@ const { createOneBotServer } = require("./onebot");
 const { GroupChatLearning } = require("./group-chat-learning");
 const { GroupBotLoopGuard } = require("./group-bot-loop-guard");
 const { GroupBotPolicy, parseBotControlCommand } = require("./group-bot-policy");
+const { AgentMemory, createMemoryTools } = require("./agent-memory");
+const { StickerLibrary } = require("./sticker-library");
+const { formatMoodHint } = require("./memory-policy");
 const { querySandstormStatus } = require("./sandstorm");
 
 const groupCooldowns = new Map();
@@ -40,15 +43,27 @@ const ambientChatCooldowns = new Map();
 const ambientChatBuffers = new Map();
 const ambientReplyGuard = new AmbientReplyGuard();
 const ambientReplyScheduler = new AmbientReplyScheduler();
-const groupConversationContext = new GroupConversationContext();
+const groupTurnLocks = new Map();
 const bilibiliCooldowns = new Map();
 const chatService = new AiChatService(config);
 const groupChatLearning = new GroupChatLearning(config, {
-  learn: (context, previous) => chatService.learnGroupChatStyle(context, previous),
+  learn: (context, previous, slang) => chatService.learnGroupChatStyle(context, previous, slang),
   now: () => Date.now(),
+  excludedUsers: group => groupBotPolicy.ignoredIds(group, config.groupChatBotIds),
 });
 const groupMessageCache = new GroupMessageCache(config);
 const groupBotPolicy = new GroupBotPolicy(config);
+const agentMemory = new AgentMemory({ ...config, memoryEnabled: config.memoryEnabled === true }, {
+  excludedUsers: key => groupBotPolicy.ignoredIds(key.replace(/^group:/, ""), config.groupChatBotIds),
+  now: () => Date.now(),
+});
+const groupConversationContext = new GroupConversationContext({ memory: agentMemory });
+const stickerLibrary = new StickerLibrary(config, {
+  analyze: image => chatService.analyzeSticker(image),
+  choose: (candidates, context, draft) => chatService.chooseSticker(candidates, context, draft),
+  excludedUsers: group => groupBotPolicy.ignoredIds(group, config.groupChatBotIds),
+  now: () => Date.now(),
+});
 const groupBotLoopGuard = new GroupBotLoopGuard(config, {
   accountDecision: (groupId, userId) => groupBotPolicy.decision(groupId, userId),
 });
@@ -153,7 +168,41 @@ function markCooldown(key, cooldowns) {
 }
 
 function getSessionId(message) {
-  return `${message.group_id}:${message.user_id || "unknown"}`;
+  return `group:${message.group_id}`;
+}
+
+async function runGroupTurn(groupId, operation) {
+  const key = String(groupId), epoch = agentMemory.epoch(`group:${key}`);
+  const previous = groupTurnLocks.get(key) || Promise.resolve();
+  const pending = previous.catch(() => undefined).then(() => agentMemory.epoch(`group:${key}`) === epoch ? operation() : null);
+  groupTurnLocks.set(key, pending);
+  try { return await pending; }
+  finally { if (groupTurnLocks.get(key) === pending) groupTurnLocks.delete(key); }
+}
+
+async function withMemoryTurn(groupId, query, canRespond, operation, ambient = false) {
+  const key = `group:${groupId}`;
+  const lease = agentMemory.beginTurn(key);
+  const epoch = agentMemory.epoch(key);
+  const isCurrent = () => canRespond() && agentMemory.epoch(key) === epoch;
+  let completed = false;
+  try {
+    const memoryPrompt = lease ? await agentMemory.buildPrompt(lease, query) : "";
+    if (!isCurrent()) return null;
+    const result = await operation({
+      memoryPrompt,
+      memoryTools: lease ? createMemoryTools(agentMemory, lease, isCurrent) : undefined,
+      onUsage: lease ? usage => agentMemory.recordUsage(lease, usage) : undefined,
+      memoryMoodHint: config.memoryMoodEnabled === true ? formatMoodHint(Date.now(), config.memoryTimezone || "Asia/Shanghai", ambient) : "",
+      groupSlang: groupChatLearning.getSlang(groupId),
+      currentText: query,
+      memoryContext: lease ? agentMemory.contextForTurn(lease) : undefined,
+      getMemoryContext: lease ? () => agentMemory.contextForTurn(lease) : undefined,
+      isCurrent,
+    });
+    completed = result !== null;
+    return result;
+  } finally { if (lease) agentMemory.finishTurn(lease, completed); }
 }
 
 function getCleanMessageText(message) {
@@ -306,6 +355,7 @@ async function linkRepliedMessage(message, client) {
     current.qwenRelation =
       `QQ引用来源：${repliedMessage.senderName || "群成员"}发送的合并转发聊天记录` +
       "（仅用于定位，不代表语义相关）";
+    agentMemory.record(`group:${groupId}`, current);
     return repliedMessage;
   }
 
@@ -318,6 +368,7 @@ async function linkRepliedMessage(message, client) {
   current.relation = repliedText
     ? `QQ引用来源：${repliedSender}“${repliedText}”（仅用于定位，不代表语义相关）`
     : `QQ引用图片来源：${repliedSender}（仅用于定位，不代表语义相关）`;
+  agentMemory.record(`group:${groupId}`, current);
   return repliedMessage;
 }
 
@@ -362,6 +413,10 @@ function scheduleAmbientReply(groupId, mode, client) {
 }
 
 async function tryAmbientReply(groupId, mode, client) {
+  return runGroupTurn(groupId, () => tryAmbientReplyUnlocked(groupId, mode, client));
+}
+
+async function tryAmbientReplyUnlocked(groupId, mode, client) {
   const messages = getGroupConversationContext(
     groupId,
     MAX_GROUP_CONTEXT_MESSAGES,
@@ -382,13 +437,16 @@ async function tryAmbientReply(groupId, mode, client) {
     return;
   }
   try {
-    const reply = await chatService.ambientReplyIfAppropriate(messages, {
+    const canRespond = () => groupBotLoopGuard.canRespond(groupId, anchor.userId);
+    const reply = await withMemoryTurn(groupId, anchor.text, canRespond, memoryMeta => chatService.ambientReplyIfAppropriate(memoryMeta.memoryContext || messages, {
+      ...memoryMeta,
+      groupContextMessages: messages,
       ambientMode: mode,
       groupChatStyle: groupChatLearning.getRules(groupId),
       ...getGroupReplyMeta(messages),
     }, {
-      isCurrent: () => ambientReplyGuard.canContinue(ticket, getGroupConversationContext(groupId)),
-      getCurrentContext: () => getGroupConversationContext(groupId),
+      isCurrent: () => memoryMeta.isCurrent() && ambientReplyGuard.canContinue(ticket, getGroupConversationContext(groupId)),
+      getCurrentContext: () => memoryMeta.getMemoryContext?.() || getGroupConversationContext(groupId),
       onContextReviewed: context => ambientReplyGuard.refresh(ticket, context),
       onDecision: (shouldReply) => {
         console.log(`[bot] ambient decision group=${groupId} mode=${mode} reply=${shouldReply}`);
@@ -396,7 +454,7 @@ async function tryAmbientReply(groupId, mode, client) {
       onSkip: (reason) => {
         console.log(`[bot] ambient reply skipped group=${groupId} reason=${reason}`);
       },
-    });
+    }), true);
     if (reply === null) {
       return;
     }
@@ -404,7 +462,7 @@ async function tryAmbientReply(groupId, mode, client) {
     if (ambientReplyGuard.canContinue(ticket, currentContext)) {
       // Clear work covered by this inference; later arrivals stay queued.
       if (ambientReplyGuard.canSend(ticket, currentContext)) clearAmbientChatBuffer(groupId);
-      await sendBotReply(client, groupId, reply, getLatestGroupMemberMessage(currentContext)?.userId);
+      await sendAiReply(client, groupId, reply, getLatestGroupMemberMessage(currentContext)?.userId);
       markCooldown(groupId, ambientChatCooldowns);
     } else {
       console.log(`[bot] ambient reply skipped after conversation changed in group ${groupId}`);
@@ -433,6 +491,7 @@ function clearGroupConversationContext(groupId) {
 }
 
 function recordOutgoingGroupMessage(groupId, message, response, metadata = {}) {
+  if (metadata.stickerId) stickerLibrary.markSent(groupId, metadata.stickerId);
   groupBotLoopGuard.recordReply(groupId, metadata.replyToUserId);
   const text = extractSemanticMessageText({ message });
   if (!text) {
@@ -450,7 +509,7 @@ function recordOutgoingGroupMessage(groupId, message, response, metadata = {}) {
     messageId,
     senderName: config.botName,
     text,
-    images: [],
+    images: extractImageSources({ message }),
     relation: "",
     timestamp: Date.now(),
   });
@@ -461,6 +520,74 @@ async function sendBotReply(client, groupId, reply, replyToUserId) {
     replyToUserId,
     canSend: groupBotLoopGuard.responseCheck(groupId, replyToUserId),
   });
+}
+
+async function sendAiReply(client, groupId, reply, replyToUserId) {
+  const epoch = agentMemory.epoch(`group:${groupId}`);
+  const canSend = () => groupBotLoopGuard.canRespond(groupId, replyToUserId) && agentMemory.epoch(`group:${groupId}`) === epoch;
+  await client.sendGroupMessage(groupId, reply, { replyToUserId, canSend });
+  if (!canSend()) return;
+  const context = getGroupConversationContext(groupId);
+  const sticker = await stickerLibrary.select(groupId, context, reply, {
+    isCurrent: canSend, getContext: () => getGroupConversationContext(groupId),
+  });
+  if (!sticker) return;
+  try {
+    if (!sticker.isCurrent()) return;
+    await client.sendGroupMessage(groupId, [sticker.segment], { replyToUserId, stickerId: sticker.id,
+      canSend: () => canSend() && sticker.isCurrent() });
+  } catch { console.warn(`[stickers] delivery failed group=${groupId}; text reply already delivered`); }
+  finally { sticker.release(); }
+}
+
+async function handleMemoryCommand(message, text, client) {
+  if (!isMentioned(message)) return false;
+  const groupId = String(message.group_id);
+  let reply;
+  if (text === "记忆状态") {
+    const state = agentMemory.status(`group:${groupId}`);
+    reply = !state.enabled ? "持久记忆已关闭。" : `本群近期记忆 ${state.recentMessages} 条，历史归档${state.archiveAvailable ? "可用" : "暂不可用"}，语义检索${state.semanticEnabled ? "已接入" : "未配置，使用关键词检索"}。${state.readOnly ? "存储文件异常，已保护原文件并停止覆盖。" : ""}`;
+  } else if (text === "轮换会话") {
+    agentMemory.requestRotation(`group:${groupId}`);
+    reply = agentMemory.enabled ? "会在下一轮启用新窗口，已有记忆、学习结果和表情库都会保留。" : "持久记忆已关闭，无需轮换窗口。";
+  } else if (text === "黑话列表") {
+    const terms = groupChatLearning.getSlang(groupId);
+    reply = terms.length ? `本群黑话：\n${terms.slice(-20).map(item => `${item.term}：${item.meaning}${item.status === "candidate" ? "（待确认，暂不主动使用）" : ""}`).join("\n")}` : "还没有学到可靠的本群黑话。可以说：学黑话 词=含义；场景=适用情境；禁用=不合适的情境。";
+  } else if (/^学黑话\s+/u.test(text)) {
+    const match = text.match(/^学黑话\s+([^=＝；;]{1,24})[=＝]([^；;]+)(?:[；;]\s*场景[=＝]([^；;]+))?(?:[；;]\s*禁用[=＝]([^；;]+))?$/u);
+    if (!match) reply = "格式：学黑话 寄=这局没戏了；场景=游戏失利时自嘲；禁用=认真求助或真实伤亡。";
+    else {
+      try {
+        await groupChatLearning.teachSlang(groupId, { term: match[1].trim(), meaning: match[2].trim(), usage: match[3]?.trim() || "按本群原始语境使用", avoid: match[4]?.trim() || "语义不明或不合当前语境时不用" }, {
+          messageId: getMessageId(message), userId: String(message.user_id), text,
+        });
+        reply = `已记下“${match[1].trim()}”在本群的含义，会按适用语境使用。`;
+      } catch { reply = "这条黑话暂时无法保存，请检查格式或学习模块状态。"; }
+    }
+  } else if (text === "表情库状态") {
+    const state = stickerLibrary.status(groupId);
+    reply = !state.enabled ? "表情收集已关闭。" : `本群表情 ${state.total}/${state.limit} 个，已识别 ${state.recognized} 个，待识别 ${state.pending} 个，识别失败 ${state.failed} 个。全库 ${state.storage.pairs}/${state.globalLimit} 对，约 ${(state.storage.bytes / 1048576).toFixed(1)} MB。图片与 OCR 情境资料配对保存，自动淘汰低价值和长期闲置条目。`;
+  } else if (text === "清空表情库") {
+    if (!config.botAdminIds.has(String(message.user_id))) reply = "只有机器人管理员可以清空本群表情库。";
+    else {
+      try { stickerLibrary.reset(groupId); reply = "已清空本群表情及对应 OCR 情境资料。其他群仍在使用的图片会保留。"; }
+      catch { reply = "表情库暂时无法清空，请检查存储状态。"; }
+    }
+  } else if (text === "收集表情") {
+    let source = message;
+    if (getReplyMessageId(message)) {
+      try {
+        const original = await client.getMessage(getReplyMessageId(message));
+        if (String(original?.group_id) !== groupId || !groupBotLoopGuard.canRespond(groupId, original.user_id)) throw new Error("Unavailable source");
+        source = { ...original, self_id: message.self_id };
+      } catch { reply = "暂时读不到本群被引用的图片，可以把图片与“收集表情”一起发来。"; }
+    }
+    if (!reply) reply = stickerLibrary.observe(groupId, source, getGroupConversationContext(groupId), true)
+      ? "已加入收集队列，会将图片与 OCR 情境资料一起保存。" : "请附带图片；也可能是表情收集已关闭、正在处理或存储暂不可用。";
+  } else return false;
+  clearAmbientChatBuffer(groupId);
+  await sendBotReply(client, groupId, reply, message.user_id);
+  return true;
 }
 
 function isSelfGroupMessage(message) {
@@ -483,7 +610,7 @@ async function handleAdminCommand(message, command, client) {
     let reply;
     try {
       await groupChatLearning.reset(groupId);
-      reply = "已清空本群学习模块保存的表达习惯和回复指导，之后会重新积累学习。";
+      reply = "已清空本群学习模块保存的表达习惯、回复指导和黑话词典，之后会重新积累学习。";
     } catch {
       reply = "学习模块暂时无法清空，请检查学习文件目录权限。";
     }
@@ -509,6 +636,7 @@ async function handleAdminCommand(message, command, client) {
       if (command.action === "ignore") {
         groupConversationContext.removeMembers(groupId, command.targets);
         groupChatLearning.excludeMembers(groupId, command.targets);
+        stickerLibrary.excludeMembers(groupId);
       }
       reply = command.action === "ignore"
         ? `本群已忽略账号：${command.targets.join("、")}。设置已保存，重启后仍生效。`
@@ -550,6 +678,7 @@ async function onGroupMessage(message, client) {
       clearAmbientChatBuffer(groupId);
       groupConversationContext.removeMembers(groupId, [String(message.user_id)]);
       groupChatLearning.excludeMembers(groupId, [String(message.user_id)]);
+      stickerLibrary.excludeMembers(groupId);
       console.log(`[bot] reply loop blocked group=${groupId} user=${message.user_id}`);
     }
     return;
@@ -561,6 +690,8 @@ async function onGroupMessage(message, client) {
   const canRespond = groupBotLoopGuard.responseCheck(groupId, message.user_id);
   const sessionId = getSessionId(message);
   let incomingEntry = recordIncomingGroupMessage(message, text);
+  if (await handleMemoryCommand(message, text, client)) return;
+  stickerLibrary.observe(groupId, message, getGroupConversationContext(groupId));
   if (text === "学习状态" || isLearningResetCommand(text)) {
     clearAmbientChatBuffer(groupId);
     if (!botMentioned || text !== "学习状态") return;
@@ -674,9 +805,10 @@ async function onGroupMessage(message, client) {
     console.log(
       `[bot] chat hit in group ${groupId}, user ${message.user_id}, webSearch=${webSearch}, thinking=${thinking}: ${text}`,
     );
-    const contextMessages = getGroupConversationContext(groupId);
+    await runGroupTurn(groupId, () => withMemoryTurn(groupId, text, canRespond, async memoryMeta => {
+    const contextMessages = memoryMeta.memoryContext || getGroupConversationContext(groupId);
     const reply = await chatService.chat(sessionId, text, {
-      isCurrent: canRespond,
+      ...memoryMeta,
       thinking,
       webSearch,
       images: extractImageSources(message),
@@ -685,9 +817,9 @@ async function onGroupMessage(message, client) {
       groupChatStyle: groupChatLearning.getRules(groupId),
       ...getGroupReplyMeta(contextMessages),
     });
-    if (!canRespond() || reply === null || isRepeatedOwnReply(getGroupConversationContext(groupId), reply)) return;
+    if (!memoryMeta.isCurrent() || reply === null || isRepeatedOwnReply(getGroupConversationContext(groupId), reply)) return;
     try {
-      await sendBotReply(client, groupId, reply, message.user_id);
+      await sendAiReply(client, groupId, reply, message.user_id);
     } catch (error) {
       const chunk =
         Number.isInteger(error.chunkIndex) && Number.isInteger(error.chunkCount)
@@ -707,6 +839,7 @@ async function onGroupMessage(message, client) {
         );
       }
     }
+    }));
   } catch (error) {
     console.error("[ai] chat failed:", error.message);
     if (!canRespond()) return;
@@ -1091,11 +1224,12 @@ chatService
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-function shutdown() {
+async function shutdown() {
   console.log("[bot] shutting down");
   ambientReplyScheduler.clear();
   for (const groupId of ambientChatBuffers.keys()) clearAmbientChatBuffer(groupId);
   chatService.stop();
   groupChatLearning.stop();
+  await Promise.allSettled([agentMemory.close(), stickerLibrary.close(), groupChatLearning.flush()]);
   server.close(() => process.exit(0));
 }

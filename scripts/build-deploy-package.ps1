@@ -8,6 +8,17 @@ $napcatRuntime = Join-Path $root "onebot\napcat\runtime"
 
 Set-Location $root
 
+$workspacePrefix = [System.IO.Path]::GetFullPath($root).TrimEnd('\') + '\'
+foreach ($outputPath in @($packageRoot, $packageDir)) {
+  $resolvedOutput = [System.IO.Path]::GetFullPath($outputPath)
+  if (-not $resolvedOutput.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Deploy output escaped the workspace' }
+  if ((Test-Path -LiteralPath $outputPath) -and
+      ((Get-Item -LiteralPath $outputPath -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) { throw 'Deploy output must not be a link' }
+}
+foreach ($livePath in @('.env', 'data', 'logs', 'bot.pid')) {
+  if (Test-Path -LiteralPath (Join-Path $packageDir $livePath)) { throw "Deploy output contains live state ($livePath); preserve it before rebuilding" }
+}
+
 if (-not (Test-Path $napcatRuntime)) {
   Write-Host "NapCat runtime was not found. Installing NapCat first..."
   & (Join-Path $root "scripts\install-onebot-napcat.ps1")
@@ -25,7 +36,7 @@ if (Test-Path $packageZip) {
 }
 
 New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
-Copy-Item -Path (Join-Path $root "release\*") -Destination $packageDir -Recurse -Force
+Get-ChildItem -LiteralPath (Join-Path $root "release") -Force | Copy-Item -Destination $packageDir -Recurse -Force
 Copy-Item -Path (Join-Path $root "deploy-template\*") -Destination $packageDir -Force
 
 $packageNapcatDir = Join-Path $packageDir "onebot\napcat"

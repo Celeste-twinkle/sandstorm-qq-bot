@@ -40,6 +40,18 @@ test("quoted image is recovered from the group message cache", async () => {
   assert.deepEqual(await cache.collectRelatedImages(reply, {}), [imageUrl]);
 });
 
+test("quoted lookups reject another group's or a private message before caching or reading forwards", async () => {
+  const cache = new GroupMessageCache(createConfig());
+  const reply = { group_id: "100", message: [{ type: "reply", data: { id: "foreign" } }] };
+  for (const source of [{ group_id: "101" }, { message_type: "private" }]) {
+    assert.equal(await cache.resolveRepliedMessage(reply, {
+      getMessage: async () => ({ ...source, message_id: "foreign", message: [{ type: "forward", data: { id: "do-not-read" } }] }),
+      getForwardMessage() { throw new Error("Foreign forward must not be read"); },
+    }), null);
+  }
+  assert.equal(cache.get("100", "foreign"), null);
+});
+
 test("quoted image cache miss falls back to OneBot get_msg and caches the result", async () => {
   const cache = new GroupMessageCache(createConfig(), { now: () => 2000 });
   const calls = [];

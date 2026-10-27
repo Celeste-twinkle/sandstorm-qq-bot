@@ -4,7 +4,7 @@ const {
   DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
   DEFAULT_AMBIENT_CHAT_JUDGE_PROMPT,
 } = require("./persona");
-const { MAX_GROUP_CONTEXT_MESSAGES } = require("./group-context");
+const { MAX_GROUP_CONTEXT_MESSAGES, DEFAULT_GROUP_CONTEXT_MESSAGES } = require("./group-context");
 
 dotenv.config();
 
@@ -101,6 +101,35 @@ const config = {
   groupChatLearningReasoningEffort: parseStrongReasoningEffort(process.env.GROUP_CHAT_LEARNING_REASONING_EFFORT),
   groupChatLearningMaxOutputTokens: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_MAX_OUTPUT_TOKENS, 8192), 1024, 16384),
   groupChatLearningTimeoutMs: clampNumber(parseInteger(process.env.GROUP_CHAT_LEARNING_TIMEOUT_MS, 90000), 1000, 180000),
+  groupSlangEnabled: parseBoolean(process.env.GROUP_SLANG_ENABLED, true),
+  memoryEnabled: parseBoolean(process.env.MEMORY_ENABLED, true),
+  memoryStateDir: process.env.MEMORY_STATE_DIR || "",
+  memoryRecentMessages: clampNumber(parseInteger(process.env.MEMORY_RECENT_MESSAGES, 100), 10, 200),
+  memoryPromptMaxChars: clampNumber(parseInteger(process.env.MEMORY_PROMPT_MAX_CHARS, 6500), 2000, 16000),
+  memoryTimezone: process.env.MEMORY_TIMEZONE || "Asia/Shanghai",
+  memoryMoodEnabled: parseBoolean(process.env.MEMORY_MOOD_ENABLED, true),
+  memoryImportantUserIds: new Set(parseList(process.env.MEMORY_IMPORTANT_USER_IDS)),
+  memoryRotationEnabled: parseBoolean(process.env.MEMORY_ROTATION_ENABLED, true),
+  memoryRotationTokenLimit: clampNumber(parseInteger(process.env.MEMORY_ROTATION_TOKEN_LIMIT, 24000), 2000, 1000000),
+  memoryRotationCooldownHours: clampNumber(parseNumber(process.env.MEMORY_ROTATION_COOLDOWN_HOURS, 6), 0, 168),
+  memoryRotationIncludePrivate: parseBoolean(process.env.MEMORY_ROTATION_INCLUDE_PRIVATE, false),
+  memoryEmbeddingUrl: process.env.MEMORY_EMBEDDING_URL || "",
+  memoryEmbeddingApiKey: process.env.MEMORY_EMBEDDING_API_KEY || "",
+  memoryEmbeddingModel: process.env.MEMORY_EMBEDDING_MODEL || "bge-small-zh-v1.5",
+  memoryEmbeddingTimeoutMs: clampNumber(parseInteger(process.env.MEMORY_EMBEDDING_TIMEOUT_MS, 10000), 1000, 60000),
+  stickerEnabled: parseBoolean(process.env.STICKER_ENABLED, true),
+  stickerAutoSend: parseBoolean(process.env.STICKER_AUTO_SEND, true),
+  stickerMaxPerGroup: clampNumber(parseInteger(process.env.STICKER_MAX_PER_GROUP, 200), 10, 1000),
+  stickerMaxTotal: clampNumber(parseInteger(process.env.STICKER_MAX_TOTAL, 1000), 10, 10000),
+  stickerMaxStorageBytes: clampNumber(parseInteger(process.env.STICKER_MAX_STORAGE_MB, 256), 16, 4096) * 1024 * 1024,
+  stickerMaxBytes: clampNumber(parseInteger(process.env.STICKER_MAX_IMAGE_MB, 8), 1, 16) * 1024 * 1024,
+  stickerRetentionDays: clampNumber(parseInteger(process.env.STICKER_RETENTION_DAYS, 90), 1, 365),
+  stickerOcrRefreshDays: clampNumber(parseInteger(process.env.STICKER_OCR_REFRESH_DAYS, 30), 1, 180),
+  stickerDownloadTimeoutMs: clampNumber(parseInteger(process.env.STICKER_DOWNLOAD_TIMEOUT_MS, 10000), 1000, 60000),
+  stickerOcrTimeoutMs: clampNumber(parseInteger(process.env.STICKER_OCR_TIMEOUT_MS, 30000), 1000, 120000),
+  stickerSelectionTimeoutMs: clampNumber(parseInteger(process.env.STICKER_SELECTION_TIMEOUT_MS, 8000), 1000, 30000),
+  stickerCooldownSeconds: clampNumber(parseInteger(process.env.STICKER_COOLDOWN_SECONDS, 300), 30, 86400),
+  stickerRepeatCooldownSeconds: clampNumber(parseInteger(process.env.STICKER_REPEAT_COOLDOWN_SECONDS, 3600), 60, 604800),
   aiPrimaryProvider:
     String(process.env.AI_PRIMARY_PROVIDER || "").trim().toLowerCase() === "local-qwen"
       ? "local-qwen"
@@ -225,7 +254,7 @@ const config = {
     131072,
   ),
   localQwenMaxHistoryMessages: clampNumber(
-    parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
+    parseInteger(process.env.LOCAL_QWEN_MAX_HISTORY_MESSAGES, DEFAULT_GROUP_CONTEXT_MESSAGES),
     2,
     MAX_GROUP_CONTEXT_MESSAGES,
   ),
@@ -438,12 +467,12 @@ const config = {
   ambientChatIdleSeconds: parseInteger(process.env.AMBIENT_CHAT_IDLE_SECONDS, 60),
   ambientChatDebounceMs: clampNumber(parseInteger(process.env.AMBIENT_CHAT_DEBOUNCE_MS, 600), 0, 5000),
   ambientChatInstantMaxMessages: clampNumber(
-    parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
+    parseInteger(process.env.AMBIENT_CHAT_INSTANT_MAX_MESSAGES, DEFAULT_GROUP_CONTEXT_MESSAGES),
     1,
     MAX_GROUP_CONTEXT_MESSAGES,
   ),
   ambientChatIdleMaxMessages: clampNumber(
-    parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
+    parseInteger(process.env.AMBIENT_CHAT_IDLE_MAX_MESSAGES, DEFAULT_GROUP_CONTEXT_MESSAGES),
     1,
     MAX_GROUP_CONTEXT_MESSAGES,
   ),
@@ -468,7 +497,7 @@ const config = {
     process.env.AMBIENT_CHAT_SYSTEM_PROMPT ||
     DEFAULT_AMBIENT_CHAT_SYSTEM_PROMPT,
   chatMaxHistoryMessages: clampNumber(
-    parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, MAX_GROUP_CONTEXT_MESSAGES),
+    parseInteger(process.env.CHAT_MAX_HISTORY_MESSAGES, DEFAULT_GROUP_CONTEXT_MESSAGES),
     2,
     MAX_GROUP_CONTEXT_MESSAGES,
   ),

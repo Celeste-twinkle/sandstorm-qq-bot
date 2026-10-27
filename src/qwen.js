@@ -562,7 +562,7 @@ class LocalQwenChatService extends DeepSeekChatService {
   }
 
   async createCompletionWithWebTools(messages, useThinking, options = {}) {
-    if (options.webSearch === "auto" || this.config.localQwenWebResearchEnabled === false) {
+    if (!options.webSearch || options.webSearch === "auto" || this.config.localQwenWebResearchEnabled === false) {
       return super.createCompletionWithWebTools(messages, useThinking, options);
     }
 
@@ -596,7 +596,15 @@ class LocalQwenChatService extends DeepSeekChatService {
       32,
     );
     const runnerConfig = buildQwenWebRunnerConfig(this.config);
-    const runner = this.webToolRunnerFactory(runnerConfig);
+    const webRunner = this.webToolRunnerFactory(runnerConfig);
+    const isMemory = call => options.memoryTools?.has(call?.function?.name);
+    const runner = {
+      fetchMaxOutputChars: webRunner.fetchMaxOutputChars,
+      setUserQuery: query => webRunner.setUserQuery(query),
+      getToolDefinitions: () => [...webRunner.getToolDefinitions(), ...(options.memoryTools?.getToolDefinitions() || [])],
+      runToolCall: call => isMemory(call) ? options.memoryTools.runToolCall(call) : webRunner.runToolCall(call),
+      formatToolResult: (call, result) => isMemory(call) ? JSON.stringify(result) : webRunner.formatToolResult?.(call, result) ?? JSON.stringify(result),
+    };
     runner.setUserQuery(userQuery);
     const workingMessages = reserveQwenWebResearchContext(
       buildQwenWebSearchMessages(messages, this.config),
@@ -614,7 +622,7 @@ class LocalQwenChatService extends DeepSeekChatService {
           tool_choice: round === 1 ? "required" : "auto",
           parallel_tool_calls: true,
         },
-        { timeoutMs },
+        { timeoutMs, onUsage: options.onUsage },
       );
       const message = payload?.choices?.[0]?.message || {};
       const toolCalls = Array.isArray(message.tool_calls)
@@ -635,6 +643,7 @@ class LocalQwenChatService extends DeepSeekChatService {
           draft,
           sourceCatalog,
           timeoutMs,
+          options.onUsage,
         );
       }
 
@@ -709,7 +718,7 @@ class LocalQwenChatService extends DeepSeekChatService {
     });
     const payload = await this.requestCompletion(
       this.buildCompletionBody(workingMessages, true),
-      { timeoutMs },
+      { timeoutMs, onUsage: options.onUsage },
     );
     const finalText = extractQwenAssistantContent(payload);
     if (answerContainsFetchedSourceCitation(finalText, sourceCatalog)) {
@@ -722,6 +731,7 @@ class LocalQwenChatService extends DeepSeekChatService {
       finalText,
       sourceCatalog,
       timeoutMs,
+      options.onUsage,
     );
   }
 
@@ -731,6 +741,7 @@ class LocalQwenChatService extends DeepSeekChatService {
     draft,
     sourceCatalog,
     timeoutMs,
+    onUsage,
   ) {
     workingMessages.push(
       buildQwenAssistantResponseMessage(message, draft),
@@ -741,7 +752,7 @@ class LocalQwenChatService extends DeepSeekChatService {
     });
     const repaired = await this.requestCompletion(
       this.buildCompletionBody(workingMessages, true),
-      { timeoutMs },
+      { timeoutMs, onUsage },
     );
     const repairedText = extractQwenAssistantContent(repaired);
     return answerContainsFetchedSourceCitation(repairedText, sourceCatalog)
@@ -815,6 +826,7 @@ class LocalQwenChatService extends DeepSeekChatService {
 
       const payload = await response.json();
       logCompletionUsage(this.config, body, payload, this.logger);
+      options.onUsage?.(payload.usage);
       this.markHealthy("chat completion succeeded");
       return payload;
     } catch (error) {

@@ -6,10 +6,10 @@ const {
   getGroupReplyMeta,
 } = require("../src/group-context");
 
-test("group history keeps the newest 50 chronological messages including bot replies", () => {
+test("group history keeps the newest 100 chronological messages including bot replies", () => {
   const context = new GroupConversationContext();
   // Delayed events arrive in reverse order; retention follows event time.
-  for (let index = 69; index >= 0; index -= 1) {
+  for (let index = 119; index >= 0; index -= 1) {
     context.append("group-1", {
       messageId: String(index),
       role: index % 4 === 0 ? "assistant" : "user",
@@ -18,11 +18,11 @@ test("group history keeps the newest 50 chronological messages including bot rep
     });
   }
   const messages = context.get("group-1", 100);
-  assert.equal(messages.length, 50);
+  assert.equal(messages.length, 100);
   assert.deepEqual(messages.map((message) => message.messageId),
-    Array.from({ length: 50 }, (_, index) => String(index + 20)));
-  assert.equal(messages.filter((message) => message.role === "assistant").length, 13);
-  assert.equal(context.get("group-1", 3)[0].messageId, "67");
+    Array.from({ length: 100 }, (_, index) => String(index + 20)));
+  assert.equal(messages.filter((message) => message.role === "assistant").length, 25);
+  assert.equal(context.get("group-1", 3)[0].messageId, "117");
 });
 
 test("self-message echoes and enrichment update one record without moving it", () => {

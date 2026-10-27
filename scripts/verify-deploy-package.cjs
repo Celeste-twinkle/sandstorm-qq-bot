@@ -13,6 +13,9 @@ async function snapshotSmoke(expected) {
   const { createHash } = require("node:crypto");
   assert.ok(process.pkg);
   const src = path.dirname(process.pkg.defaultEntrypoint);
+  for (const [file, digest] of Object.entries(expected.sourceHashes)) {
+    assert.equal(createHash("sha256").update(fs.readFileSync(path.join(src, file))).digest("hex"), digest, `Packaged source differs: ${file}`);
+  }
   const { AiChatService, isRepeatedOwnReply } = require(path.join(src, "ai.js"));
   const { DeepSeekChatService } = require(path.join(src, "deepseek.js"));
   const { DeepSeekHarnessWebToolRunner } = require(path.join(src, "deepseek-harness-web.js"));
@@ -67,8 +70,8 @@ async function snapshotSmoke(expected) {
     ambientChatDraftReviewEnabled: true, // Explicitly exercise optional review in this package smoke.
     groupChatSelfRepeatCheckEnabled: false,
     deepseekMaxOutputTokens: 1600, deepseekTemperature: 0.9,
-    chatMaxContextChars: 64000, chatMaxHistoryMessages: 50,
-    ambientChatInstantMaxMessages: 50, ambientChatIdleMaxMessages: 50,
+    chatMaxContextChars: 64000, chatMaxHistoryMessages: 100,
+    ambientChatInstantMaxMessages: 100, ambientChatIdleMaxMessages: 100,
     ambientChatMaxOutputTokens: 180, ambientChatJudgeMaxOutputTokens: 64,
     webSearchAutoEnabled: true, webSearchProvider: "deepseek-official",
     webSearchMaxToolRounds: 2, webSearchMaxToolCallsPerRound: 2, webSearchDiagnosticsEnabled: false };
@@ -128,12 +131,12 @@ async function snapshotSmoke(expected) {
   assert.equal(ai.sessions.size, 0);
 
   const timeline = new GroupConversationContext();
-  for (let i = 69; i >= 0; i--) timeline.append("g", { messageId: String(i), timestamp: i, text: `row-${i}`, role: i % 4 ? "user" : "assistant" });
-  assert.deepEqual(timeline.get("g").map(x => x.messageId), Array.from({ length: 50 }, (_, i) => String(i + 20)));
+  for (let i = 119; i >= 0; i--) timeline.append("g", { messageId: String(i), timestamp: i, text: `row-${i}`, role: i % 4 ? "user" : "assistant" });
+  assert.deepEqual(timeline.get("g").map(x => x.messageId), Array.from({ length: 100 }, (_, i) => String(i + 20)));
   const groupWindow = timeline.get("g");
-  timeline.append("g", { messageId: "69", timestamp: 999, text: "echo", role: "user" });
-  assert.equal(timeline.get("g").length, 50);
-  assert.equal(timeline.get("g").at(-1).timestamp, 69);
+  timeline.append("g", { messageId: "119", timestamp: 999, text: "echo", role: "user" });
+  assert.equal(timeline.get("g").length, 100);
+  assert.equal(timeline.get("g").at(-1).timestamp, 119);
   config.ambientChatInstantMaxMessages = 4;
   config.ambientChatIdleMaxMessages = 6;
   config.localQwenMaxHistoryMessages = 8;
@@ -147,10 +150,10 @@ async function snapshotSmoke(expected) {
     const generation = decisionCalls[offset + 1].messages.filter(message => message.role !== "system");
     const review = JSON.parse(decisionCalls[offset + 2].messages[1].content).history;
     for (const records of [judgement, generation, review]) {
-      assert.equal(records.length, 50);
+      assert.equal(records.length, 100);
       assert.deepEqual(records.map(message => message.content.match(/row-\d+/)[0]),
-        Array.from({ length: 50 }, (_, i) => `row-${i + 20}`));
-      assert.equal(records.filter(message => message.role === "assistant").length, 13);
+        Array.from({ length: 100 }, (_, i) => `row-${i + 20}`));
+      assert.equal(records.filter(message => message.role === "assistant").length, 25);
     }
   }
   const hint = "Contextual words can express a complete reaction without added explanations.";
@@ -237,21 +240,95 @@ async function snapshotSmoke(expected) {
   assert.equal(advancingDraft.at(-1).messageId, "p4");
   proactive.stop();
   scheduler.clear(); ai.stop();
+
+  const { AgentMemory, createMemoryTools } = require(path.join(src, "agent-memory.js"));
+  const { StickerLibrary } = require(path.join(src, "sticker-library.js"));
+  const { parseSlangResult, buildSlangPrompt } = require(path.join(src, "group-slang.js"));
+  const { scoreImportance, selectTraits, timeOfDayMood } = require(path.join(src, "memory-policy.js"));
+  const logger = { info() {}, warn() {}, error() {} };
+  const memoryConfig = { memoryStateDir: expected.memoryDir, memoryRecentMessages: 100,
+    memoryRotationTokenLimit: 100, memoryRotationCooldownHours: 0 };
+  const memory = new AgentMemory(memoryConfig, { logger });
+  let stickers;
+  try {
+    for (let index = 0; index < 130; index++) memory.record("group:1001", {
+      role: "user", messageId: `memory-${index}`, userId: peerId, senderName: "Synthetic member", timestamp: index + 1,
+      text: index === 0 ? "Our promise is Friday rice." : `Ordinary message ${index}`,
+    });
+    memory.record("group:1002", { role: "user", messageId: "other", userId: peerId, timestamp: 200, text: "Other group only" });
+    const recovered = new AgentMemory(memoryConfig, { logger });
+    try {
+      assert.equal(recovered.recent("group:1001").length, 100);
+      assert.equal((await recovered.search("group:1001", "promise"))[0].text, "Our promise is Friday rice.");
+      assert.deepEqual(await recovered.search("group:1001", "Other group only"), []);
+    } finally { await recovered.close(); }
+    let lease = memory.beginTurn("group:1001");
+    const previousId = lease.id;
+    memory.recordUsage(lease, { prompt_tokens: 120 }); memory.finishTurn(lease);
+    lease = memory.beginTurn("group:1001");
+    const tools = createMemoryTools(memory, lease);
+    assert.ok((await tools.runToolCall(call("search_history", { query: "promise", key: "group:1002" }))).error);
+    assert.equal((await tools.runToolCall(call("write_diary", { title: "A promise", body: "I remember our Friday rice promise." }))).saved, true);
+    memory.finishTurn(lease);
+    lease = memory.beginTurn("group:1001");
+    assert.notEqual(lease.id, previousId);
+    assert.equal(memory.contextForTurn(lease).length, 20);
+    assert.equal(memory.recent("group:1001").length, 100);
+    assert.match(memory.readDiaryPreview("group:1001"), /Friday rice/);
+    memory.finishTurn(lease);
+    assert.ok(scoreImportance({ text: "记住，约定明天见" }) > scoreImportance({ text: "哈哈哈哈" }));
+    assert.equal(timeOfDayMood(new Date("2026-10-27T18:00:00Z"), "Asia/Shanghai").slot, "凌晨");
+    assert.ok(selectTraits(["他答应每周五陪我聊天", ...Array.from({ length: 12 }, (_, i) => `他刚才安装了工具${i}`)], 12).kept.includes("他答应每周五陪我聊天"));
+
+    const slang = parseSlangResult([{ term: "寄", meaning: "这局没戏了", usage: "游戏失利时自嘲", avoid: "认真求助", confidence: 0.99, evidence: ["m1", "m2"] }], [
+      { role: "user", messageId: "slang-a", userId: peerId, text: "这局寄了" },
+      { role: "user", messageId: "slang-b", userId: "99000003", text: "寄，打不过了" },
+    ]);
+    assert.equal(slang[0].status, "confirmed");
+    assert.match(buildSlangPrompt(slang, "寄了"), /认真求助/);
+
+    let now = 1000000;
+    stickers = new StickerLibrary({ memoryStateDir: expected.memoryDir, stickerEnabled: true, stickerMaxPerGroup: 1 }, {
+      logger, now: () => now,
+      download: async source => Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.from(source)]),
+      analyze: async () => ({ transcription: "好耶", uncertain_text: [], description: "猫猫庆祝", emotions: ["开心"], usage: ["胜利"], avoid: ["悲伤"], confidence: 0.99 }),
+      choose: async candidates => ({ sticker_id: candidates[0].id, context_match: true, confidence: 0.99 }),
+    });
+    const stickerContext = [{ messageId: "victory", userId: peerId, role: "user", text: "赢了", timestamp: 1 }];
+    const collect = async name => {
+      stickers.observe("1001", { message_id: name, user_id: peerId, self_id: botId, time: now / 1000,
+        message: [{ type: "image", data: { sub_type: 1, url: `https://qpic.cn/${name}` } }] }, stickerContext);
+      await stickers.flush();
+    };
+    await collect("first");
+    const first = Object.values(stickers.state("1001").value.items)[0];
+    assert.equal(first.ocr.imageSha256, first.image.sha256);
+    assert.equal(first.ocr.transcription, "好耶");
+    now += 2 * 86400000;
+    await collect("second");
+    assert.equal(stickers.status("1001").total, 1);
+    assert.equal(fs.existsSync(path.join(expected.memoryDir, "stickers", "assets", first.image.file)), false);
+    const selected = await stickers.select("1001", stickerContext, "好耶");
+    assert.ok(selected); assert.equal(selected.segment.type, "image"); selected.release();
+  } finally { await stickers?.close(); await memory.close(); }
   console.log(JSON.stringify({ passed: true, runtime: process.version,
     searchRecovery: true, structuredJudgement: true, rejectedDraftNotDelivered: true, extractiveReview: true,
-    fixedDefaultPersonaReminder: true, chronological50WithEchoDedup: true, ambientPhasesShare50DespiteLegacyLimits: true, serializedLatestScheduling: true,
+    fixedDefaultPersonaReminder: true, chronological100WithEchoDedup: true, ambientPhasesShare100DespiteLegacyLimits: true, serializedLatestScheduling: true,
     groupLearningPersists: true, learnedStyleAppliedToRepliesWithoutGatingInterest: true,
     learningWithThinkingWithoutTools: true, learningBudget8192: true, learningDirBesideExe: true, obsoleteHintsCanBeRetired: true,
     ongoingPublicChatDoesNotInvalidateInference: true, messagesDuringFinalInferenceRetained: true,
     humanEchoAllowedOwnExactRepeatBlocked: true,
     botIgnoreAllowPersistsByGroup: true, looseAdminCommandAliases: true,
     unknownBotLoopStopsLocally: true, learningResetPersists: true,
-    promptHashesMatchSource: true, noNetwork: true, noQQConnection: true }));
+    promptHashesMatchSource: true, sourceHashesMatch: true, durableMemoryRecovers: true,
+    archiveSearchIsScoped: true, diaryAndRotationPreserveMemory: true, confirmedSlangUsesHumanEvidence: true,
+    stickerOcrImagePairing: true, stickerCapacityEvictsPairsAndAssets: true, contextualStickerSelection: true,
+    noNetwork: true, noQQConnection: true }));
 }
 
 const root = path.resolve(__dirname, "..");
 const exe = path.join(root, "deploy", "SandstormQQBot-Deploy", "sandstorm-qq-bot.exe");
-const reportPath = path.resolve(process.argv[2] || "reports/group-chat-100-20261014/package-smoke.json");
+const reportPath = path.resolve(process.argv[2] || "reports/deploy/package-smoke.json");
 const hash = value => createHash("sha256").update(value).digest("hex");
 const persona = require("../src/persona");
 const expected = { prompts: Object.fromEntries([
@@ -261,15 +338,24 @@ const expected = { prompts: Object.fromEntries([
   "DEFAULT_GROUP_CONTEXT_PROMPT", "DEFAULT_AMBIENT_INSTANT_CONTEXT_PROMPT", "DEFAULT_AMBIENT_IDLE_CONTEXT_PROMPT", "DEFAULT_DIRECT_GROUP_CONTEXT_PROMPT", "DEFAULT_AMBIENT_DECISION_REQUEST",
 ].map(key => [key, hash(persona[key])])) };
 expected.learningPrompts = Object.fromEntries(Object.entries(require("../src/group-chat-learning-prompt")).map(([key, value]) => [key, hash(value)]));
+expected.sourceHashes = Object.fromEntries([
+  "agent-memory.js", "ai.js", "config.js", "deepseek.js", "group-chat-learning.js", "group-context.js",
+  "group-slang.js", "index.js", "memory-policy.js", "message-archive.js", "message-context.js", "persistent-state.js", "qwen.js", "sticker-library.js",
+].map(file => [file, hash(fs.readFileSync(path.join(root, "src", file)))]));
 const exeSha256 = hash(fs.readFileSync(exe));
 for (const folder of ["dist", "release"]) assert.equal(hash(fs.readFileSync(path.join(root, folder, "sandstorm-qq-bot.exe"))), exeSha256);
 for (const folder of ["release", path.join("deploy", "SandstormQQBot-Deploy")]) {
   assert.equal(fs.existsSync(path.join(root, folder, "config", "azur-lane-personas.json")), false);
   assert.equal(fs.existsSync(path.join(root, folder, ".env")), false);
+  assert.equal(hash(fs.readFileSync(path.join(root, folder, ".env.example"))), hash(fs.readFileSync(path.join(root, ".env.example"))));
+  assert.equal(hash(fs.readFileSync(path.join(root, folder, "scripts", "serve-memory-embeddings.py"))),
+    hash(fs.readFileSync(path.join(root, "scripts", "serve-memory-embeddings.py"))));
+  assert.equal(hash(fs.readFileSync(path.join(root, folder, "README.md"))), hash(fs.readFileSync(path.join(root, "README.md"))));
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "sandstorm-full-deploy-check-"));
 expected.learningDir = path.join(temp, "group-chat-learning");
 expected.botPolicyFile = path.join(temp, "group-bot-policy.json");
+expected.memoryDir = path.join(temp, "agent-memory");
 const script = path.join(temp, "check.cjs");
 fs.writeFileSync(script, `(${snapshotSmoke.toString()})(${JSON.stringify(expected)}).catch(error => { console.error(error); process.exitCode = 1; });`);
 const output = execFileSync(exe, [script], { cwd: temp, env: { ...process.env, PKG_EXECPATH: exe },

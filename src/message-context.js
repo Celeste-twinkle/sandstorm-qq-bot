@@ -100,6 +100,10 @@ class GroupMessageCache {
       if (!resolved) {
         return null;
       }
+      if ((resolved.group_id !== undefined && String(resolved.group_id) !== groupId) ||
+          resolved.message_type === "private") {
+        return null;
+      }
 
       const forwarded = await this.resolveForwardedMessage(resolved, client);
       const entry = this.add(

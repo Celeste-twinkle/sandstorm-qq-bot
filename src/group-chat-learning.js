@@ -3,8 +3,9 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { selectRecentGroupMessages } = require("./group-context");
 const { DEFAULT_GROUP_CHAT_LEARNING_PROMPT, LEARNED_GROUP_STYLE_GUIDANCE } = require("./group-chat-learning-prompt");
+const { validateSlang, parseSlangResult, SLANG_LEARNING_PROMPT } = require("./group-slang");
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const MAX_RULES = 12;
 const MAX_RULE_CHARS = 180;
 const MAX_PROFILE_CHARS = 1800;
@@ -25,7 +26,7 @@ function normalizeGroupId(value) {
 
 function prepareLearningRecords(context) {
   const speakers = new Map();
-  return selectRecentGroupMessages(context).map((message, index) => {
+  return selectRecentGroupMessages(context, 50).map((message, index) => {
     const key = String(message.userId || message.senderName || "unknown");
     if (message.role !== "assistant" && !speakers.has(key)) speakers.set(key, `member${speakers.size + 1}`);
     return { id: `m${index + 1}`, role: message.role === "assistant" ? "assistant" : "user",
@@ -53,7 +54,8 @@ function validateRules(rules, allowPreviousEvidence = false) {
 
 function parseLearningResult(text, context, previous = []) {
   const parsed = JSON.parse(text);
-  if (!parsed || Array.isArray(parsed) || Object.keys(parsed).join(",") !== "rules") throw new Error("Invalid learning result schema");
+  if (!parsed || Array.isArray(parsed) || !Object.hasOwn(parsed, "rules") ||
+      Object.keys(parsed).some(key => !["rules", "slang"].includes(key))) throw new Error("Invalid learning result schema");
   const records = new Map(prepareLearningRecords(context).map(record => [record.id, record]));
   const prior = new Map(validateRules(previous).map((rule, index) => [`p${index + 1}`, rule]));
   return validateRules(parsed.rules, true).map(rule => {
@@ -72,9 +74,12 @@ function parseLearningResult(text, context, previous = []) {
   });
 }
 
-function buildGroupLearningMessages(context, previous = []) {
-  return [{ role: "system", content: DEFAULT_GROUP_CHAT_LEARNING_PROMPT }, { role: "user", content: JSON.stringify({
-    learning_module: { rules: validateRules(previous).map((rule, index) => ({ id: `p${index + 1}`, text: rule.text })) },
+function buildGroupLearningMessages(context, previous = [], slang = null) {
+  const prompt = slang === null ? DEFAULT_GROUP_CHAT_LEARNING_PROMPT
+    : DEFAULT_GROUP_CHAT_LEARNING_PROMPT.replace("输出JSON，唯一字段rules", "输出JSON，rules字段");
+  return [{ role: "system", content: [prompt, slang === null ? "" : SLANG_LEARNING_PROMPT].filter(Boolean).join("\n\n") }, { role: "user", content: JSON.stringify({
+    learning_module: { rules: validateRules(previous).map((rule, index) => ({ id: `p${index + 1}`, text: rule.text })),
+      ...(slang === null ? {} : { slang: validateSlang(slang).map(({ term, meaning, usage, avoid, status }) => ({ term, meaning, usage, avoid, status })) }) },
     records: prepareLearningRecords(context),
   }) }];
 }
@@ -87,6 +92,7 @@ function buildLearnedGroupStylePrompt(rules = []) {
 class GroupChatLearning {
   constructor(config = {}, options = {}) {
     this.enabled = config.groupChatLearningEnabled !== false;
+    this.slangEnabled = config.groupSlangEnabled === true;
     this.directory = resolveGroupChatLearningDir(config.groupChatLearningDir);
     this.minimum = config.groupChatLearningMinMessages ?? 20;
     this.every = config.groupChatLearningEveryMessages ?? 30;
@@ -94,6 +100,7 @@ class GroupChatLearning {
     this.learn = options.learn;
     this.now = options.now || Date.now;
     this.logger = options.logger || console;
+    this.excludedUsers = options.excludedUsers || (() => []);
     this.states = new Map();
     this.queue = new Set();
     this.running = null;
@@ -105,14 +112,14 @@ class GroupChatLearning {
     const groupId = normalizeGroupId(group);
     if (this.states.has(groupId)) return this.states.get(groupId);
     const file = path.join(this.directory, `${groupId}.json`);
-    let record = { schemaVersion: SCHEMA_VERSION, groupId, revision: 0, learnedAt: null, rules: [] };
+    let record = { schemaVersion: SCHEMA_VERSION, groupId, revision: 0, learnedAt: null, rules: [], slang: [] };
     let blocked = false;
     try {
       const stored = JSON.parse(fs.readFileSync(file, "utf8").replace(/^\uFEFF/, ""));
-      if (stored.schemaVersion !== SCHEMA_VERSION || stored.groupId !== groupId ||
+      if (![1, SCHEMA_VERSION].includes(stored.schemaVersion) || stored.groupId !== groupId ||
           !Number.isInteger(stored.revision) || stored.revision < 0 ||
           (stored.learnedAt !== null && !Number.isFinite(Date.parse(stored.learnedAt)))) throw new Error("Invalid learning file");
-      record = { ...stored, rules: validateRules(stored.rules) };
+      record = { ...stored, schemaVersion: SCHEMA_VERSION, rules: validateRules(stored.rules), slang: validateSlang(stored.slang || []) };
     } catch (error) {
       if (error.code !== "ENOENT") {
         blocked = true;
@@ -134,14 +141,38 @@ class GroupChatLearning {
   getStatus(group) {
     const state = this.state(group);
     return { enabled: this.enabled, revision: state.record.revision, rules: this.getRules(group),
-      learnedAt: state.record.learnedAt, blocked: state.blocked, learning: state.learning };
+      slang: this.getSlang(group), learnedAt: state.record.learnedAt, blocked: state.blocked, learning: state.learning };
+  }
+
+  getSlang(group) {
+    if (!this.enabled || !this.slangEnabled) return [];
+    const ignored = new Set(this.excludedUsers(String(group)).map(String));
+    return structuredClone(this.state(group).record.slang || []).map(item => {
+      item.sources = item.sources.filter(source => !ignored.has(source.userId));
+      const explicit = item.sources.some(source => /意思是|是指|指的是|等于|这里叫|我们叫|学黑话|[=＝]/u.test(source.example));
+      if (!explicit && new Set(item.sources.map(source => source.userId)).size < 2) item.status = "candidate";
+      return item;
+    }).filter(item => item.sources.length);
+  }
+
+  async teachSlang(group, entry, message) {
+    if (!this.enabled || !this.slangEnabled) throw new Error("Slang learning disabled");
+    const state = this.state(group);
+    if (state.blocked) throw new Error("Learning file is read only");
+    const slang = parseSlangResult([{ ...entry, confidence: 1, evidence: ["m1"] }],
+      [{ ...message, role: "user", text: message.text || `学黑话 ${entry.term}=${entry.meaning}；${entry.usage}` }], state.record.slang, this.now());
+    state.epoch++;
+    this.queue.delete(state);
+    const record = { ...state.record, schemaVersion: SCHEMA_VERSION, slang, revision: state.record.revision + 1, learnedAt: new Date(this.now()).toISOString() };
+    await this.write(state, record);
+    state.record = record;
   }
 
   observe(group, context) {
     if (!this.enabled || this.closed) return;
     const state = this.state(group);
     if (state.blocked) return;
-    const selected = selectRecentGroupMessages(context);
+    const selected = selectRecentGroupMessages(context, 50);
     state.snapshot = selected.map(message => ({ ...message }));
     for (const message of selected.filter(message => message.role === "user")) {
       const key = String(message.messageId || digest([message.timestamp, message.userId, message.text]));
@@ -169,17 +200,19 @@ class GroupChatLearning {
     this.queue.delete(state);
     const context = state.snapshot.map(message => ({ ...message }));
     const previous = this.getRules(state.groupId);
+    const previousSlang = structuredClone(state.record.slang || []);
     const epoch = state.epoch;
     state.pendingHumans = 0;
     state.lastAttemptAt = this.now();
     state.learning = true;
     this.running = Promise.resolve().then(() => this.closed || epoch !== state.epoch
-      ? null : this.learn(context, previous)).then(async text => {
+      ? null : this.learn(context, previous, this.slangEnabled ? previousSlang : null)).then(async text => {
       if (this.closed || epoch !== state.epoch) return;
       const rules = parseLearningResult(text, context, previous);
+      const slang = this.slangEnabled ? parseSlangResult(JSON.parse(text).slang, context, previousSlang, this.now()) : previousSlang;
       if (this.closed || epoch !== state.epoch) return;
       const record = { schemaVersion: SCHEMA_VERSION, groupId: state.groupId, revision: state.record.revision + 1,
-        learnedAt: new Date(this.now()).toISOString(), rules,
+        learnedAt: new Date(this.now()).toISOString(), rules, slang,
         source: { hash: digest(prepareLearningRecords(context)), messages: context.length,
           humanMessages: context.filter(message => message.role === "user").length } };
       // Publish only after the atomic write succeeds; failed learning keeps the old profile.
@@ -215,7 +248,7 @@ class GroupChatLearning {
     state.pendingHumans = 0;
     state.lastAttemptAt = -Infinity;
     this.queue.delete(state);
-    const record = { schemaVersion: SCHEMA_VERSION, groupId: state.groupId, revision: 0, learnedAt: null, rules: [] };
+    const record = { schemaVersion: SCHEMA_VERSION, groupId: state.groupId, revision: 0, learnedAt: null, rules: [], slang: [] };
     await this.write(state, record);
     state.record = record;
     state.initialized = true;

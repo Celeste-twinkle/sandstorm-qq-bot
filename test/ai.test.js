@@ -58,7 +58,7 @@ test("own-reply detection allows matching humans, ignores expired records and ca
   assert.equal(isRepeatedOwnReply([{ role: "assistant", content: "对啊\n就这个" }], "对啊 就这个。"), true);
   assert.equal(isRepeatedOwnReply([{ role: "assistant", text: "我选蓝白" }], "那我更喜欢黑灰"), false);
   const expired = [{ role: "assistant", text: "哈哈", timestamp: 0 },
-    ...Array.from({ length: 50 }, (_, i) => ({ role: "user", text: `word-${i}`, timestamp: i + 1 }))];
+    ...Array.from({ length: 100 }, (_, i) => ({ role: "user", text: `word-${i}`, timestamp: i + 1 }))];
   assert.equal(isRepeatedOwnReply(expired, "哈哈"), false);
 });
 
@@ -1193,7 +1193,7 @@ test("invalid judgement or provider failure keeps the bot silent", async () => {
   }
 });
 
-test("decision requests use 50 chronological text records and a JSON budget", async () => {
+test("decision requests use 100 chronological text records and a JSON budget", async () => {
   const config = { ...createConfig(), aiPrimaryProvider: "deepseek" };
   let body;
   const service = new AiChatService(config, {
@@ -1203,7 +1203,7 @@ test("decision requests use 50 chronological text records and a JSON budget", as
       return completionResponse('{"should_reply":true}');
     } }),
   });
-  const context = Array.from({ length: 70 }, (_, index) => ({
+  const context = Array.from({ length: 120 }, (_, index) => ({
     role: index % 4 === 0 ? "assistant" : "user", text: `item-${index}`,
     timestamp: index, images: ["https://image.invalid/not-fetched.png"],
   })).reverse();
@@ -1211,9 +1211,9 @@ test("decision requests use 50 chronological text records and a JSON budget", as
   assert.equal(body.messages.length, 2);
   assert.equal(body.messages[1].role, "user");
   const records = JSON.parse(body.messages[1].content.split("\n")[1]).messages;
-  assert.equal(records.length, 50);
+  assert.equal(records.length, 100);
   assert.match(records[0].content, /item-20/);
-  assert.match(records.at(-1).content, /item-69/);
+  assert.match(records.at(-1).content, /item-119/);
   assert.equal(records[0].role, "assistant");
   assert.match(body.messages[1].content, /不要生成聊天正文/);
   assert.equal(body.thinking.type, "disabled");
@@ -1266,7 +1266,7 @@ test("DeepSeek failure falls back to Qwen for the entire turn and redacts secret
   assert.equal(logger.lines.join("\n").includes(config.deepseekApiKey), false);
 });
 
-test("DeepSeek direct and both ambient modes send the same latest 50 group records", async () => {
+test("DeepSeek direct and both ambient modes send the same latest 100 group records", async () => {
   const config = { ...createConfig(), aiPrimaryProvider: "deepseek", chatMaxContextChars: 64000 };
   const requests = [];
   const deepseek = new DeepSeekChatService(config, {
@@ -1285,7 +1285,7 @@ test("DeepSeek direct and both ambient modes send the same latest 50 group recor
     { role: "user", content: "obsolete personal history" },
     { role: "assistant", content: "obsolete personal answer" },
   ], updatedAt: Date.now() });
-  const context = Array.from({ length: 70 }, (_, index) => ({
+  const context = Array.from({ length: 120 }, (_, index) => ({
     role: index % 4 === 0 ? "assistant" : "user",
     messageId: String(index),
     senderName: index % 4 === 0 ? "Bot" : `Member-${index % 3}`,
@@ -1302,13 +1302,13 @@ test("DeepSeek direct and both ambient modes send the same latest 50 group recor
     assert.equal(request.model, "deepseek-flash");
     assert.equal(request.thinking.type, "disabled");
     const records = request.messages.filter(message => message.role !== "system");
-    assert.equal(records.length, 50);
+    assert.equal(records.length, 100);
     assert.deepEqual(records.map((message) => message.content.match(/timeline-\d+/)[0]),
-      Array.from({ length: 50 }, (_, index) => `timeline-${index + 20}`));
-    assert.equal(request.messages.filter((message) => message.role === "assistant").length, 13);
+      Array.from({ length: 100 }, (_, index) => `timeline-${index + 20}`));
+    assert.equal(request.messages.filter((message) => message.role === "assistant").length, 25);
     assert.doesNotMatch(JSON.stringify(request.messages), /obsolete personal/);
     assert.equal(request.messages[0].content.includes(config.naturalChatPrompt), true);
-    assert.match(records.at(-1).content, /当前锚点.*timeline-69/);
+    assert.match(records.at(-1).content, /当前锚点.*timeline-119/);
     assert.equal(request.messages.filter(message => message.role === "system").length, 1);
     assert.equal(request.messages.map(message => message.content).join("\n").split(config.deepseekSystemPrompt).length - 1, 1);
   }
@@ -1341,7 +1341,7 @@ for (const provider of ["deepseek", "local-qwen"]) {
     service.stop();
   });
 
-  test(`${provider} ambient judgement, generation and review share 50 records despite legacy small limits`, async () => {
+  test(`${provider} ambient judgement, generation and review share 100 records despite legacy small limits`, async () => {
     const config = { ...createConfig(), aiPrimaryProvider: provider,
       ambientChatInstantMaxMessages: 4, ambientChatIdleMaxMessages: 6, localQwenMaxHistoryMessages: 8 };
     const calls = [];
@@ -1355,7 +1355,7 @@ for (const provider of ["deepseek", "local-qwen"]) {
       deepseekService: createDeepSeekStub({ createCompletion: capture }),
       localQwenService: createQwenStub({ createCompletion: capture }),
     });
-    const context = Array.from({ length: 70 }, (_, index) => ({
+    const context = Array.from({ length: 120 }, (_, index) => ({
       role: index % 4 === 0 ? "assistant" : "user", text: `timeline-${index}`,
       senderName: index % 4 === 0 ? "Bot" : `Member-${index % 3}`, timestamp: index,
     })).reverse();
@@ -1366,16 +1366,16 @@ for (const provider of ["deepseek", "local-qwen"]) {
       const generation = calls[offset + 1].filter(message => message.role !== "system");
       const review = JSON.parse(calls[offset + 2][1].content).history;
       for (const records of [judgement, generation, review]) {
-        assert.equal(records.length, 50);
+        assert.equal(records.length, 100);
         assert.deepEqual(records.map(message => message.content.match(/timeline-\d+/)[0]),
-          Array.from({ length: 50 }, (_, index) => `timeline-${index + 20}`));
-        assert.equal(records.filter(message => message.role === "assistant").length, 13);
-        assert.match(records.at(-1).content, /当前锚点.*timeline-69/);
+          Array.from({ length: 100 }, (_, index) => `timeline-${index + 20}`));
+        assert.equal(records.filter(message => message.role === "assistant").length, 25);
+        assert.match(records.at(-1).content, /当前锚点.*timeline-119/);
       }
     }
     assert.equal(calls.length, 6);
-    assert.equal(context.length, 70);
-    assert.equal(context[0].text, "timeline-69");
+    assert.equal(context.length, 120);
+    assert.equal(context[0].text, "timeline-119");
     service.stop();
   });
 }
@@ -1455,18 +1455,18 @@ test("group guidance preserves the latest message under a tight budget", () => {
   assert.doesNotMatch(JSON.stringify(messages), /previous persona/);
 });
 
-test("standalone DeepSeek requests also include the current message in the 50-message cap", () => {
+test("standalone DeepSeek requests include the current message in the configured 100-message cap", () => {
   const service = new DeepSeekChatService({ ...createConfig(), chatMaxHistoryMessages: 100 });
-  const history = Array.from({ length: 70 }, (_, index) => ({
+  const history = Array.from({ length: 120 }, (_, index) => ({
     role: index % 2 === 0 ? "user" : "assistant", content: `history-${index}`,
   }));
   const messages = service.buildMessages({ messages: history }, { role: "user", content: "latest" });
-  assert.equal(messages.length, 51);
+  assert.equal(messages.length, 101);
   assert.equal(messages[1].content, "history-21");
   assert.equal(messages.at(-1).content, "latest");
 });
 
-test("AI router caps Qwen history at 50 including the current message", async () => {
+test("AI router caps Qwen history at the configured 100 including the current message", async () => {
   const config = createConfig();
   let capturedMessages = [];
   let callCount = 0;
@@ -1488,12 +1488,12 @@ test("AI router caps Qwen history at 50 including the current message", async ()
   }
 
   const history = capturedMessages.slice(1, -1);
-  assert.equal(history.length, 48);
-  assert.equal(capturedMessages.length <= 51, true);
+  assert.equal(history.length, 98);
+  assert.equal(capturedMessages.length <= 101, true);
   assert.match(capturedMessages[0].content, /最后一条 user 消息/);
   assert.match(capturedMessages[0].content, /不能为了简短省略/);
   assert.equal(history[0].role, "user");
-  assert.equal(history[0].content, "question-27");
+  assert.equal(history[0].content, "question-2");
   assert.equal(history.at(-1).role, "assistant");
   assert.equal(capturedMessages.at(-1).content, "用户消息：question-51");
 });
@@ -1619,7 +1619,7 @@ test("DeepSeek attaches the image recovered from the current QQ reply context", 
   );
 });
 
-test("Qwen direct and ambient paths trim 100 group records to 50 including bot replies", async () => {
+test("Qwen direct and ambient paths retain 100 group records including bot replies", async () => {
   const config = createConfig();
   const images = Array.from(
     { length: 11 },
@@ -1686,7 +1686,7 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
   assert.equal(calls.length, 2);
   for (const [callIndex, call] of calls.entries()) {
     const records = call.messages.filter(message => message.role !== "system");
-    assert.equal(records.length, 50);
+    assert.equal(records.length, 100);
     assert.equal(call.messages.slice(1).some((message) => message.role === "assistant"), true);
     assert.match(
       String(
@@ -1694,7 +1694,7 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
           ? call.messages[1].content[0].text
           : call.messages[1].content,
       ),
-      /群成员 Member-2：message-50/,
+      /群成员 Member-0：message-0/,
     );
     assert.match(
       String(
@@ -1734,7 +1734,7 @@ test("Qwen direct and ambient paths trim 100 group records to 50 including bot r
   assert.equal(calls[1].options.maxOutputTokens, 16384);
   for (const call of calls) {
     assert.match(call.messages[0].content, /assistant 是你已发过的话/);
-    assert.match(call.messages[0].content, /最近最多50条发言，从旧到新排列/);
+    assert.match(call.messages[0].content, /按配置与请求预算保留，从旧到新排列/);
     assert.match(call.messages[0].content, /图片、表情、引用和转发属于所在消息/);
     assert.equal(call.messages.find((message) => message.role === "assistant").content, "这是机器人先前的回复");
     assert.doesNotMatch(JSON.stringify(call.messages), /权重 \d+/);

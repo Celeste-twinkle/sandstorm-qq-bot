@@ -8,6 +8,17 @@ $releaseExePath = Join-Path $releaseDir "sandstorm-qq-bot.exe"
 
 Set-Location $root
 
+$workspacePrefix = [System.IO.Path]::GetFullPath($root).TrimEnd('\') + '\'
+$resolvedRelease = [System.IO.Path]::GetFullPath($releaseDir)
+if (-not $resolvedRelease.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+    [System.IO.Path]::GetFileName($resolvedRelease) -ne 'release') { throw 'Release target escaped the workspace' }
+if (Test-Path -LiteralPath $releaseDir) {
+  if ((Get-Item -LiteralPath $releaseDir -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) { throw 'Release target must not be a link' }
+  foreach ($livePath in @('.env', 'data', 'logs', 'bot.pid')) {
+    if (Test-Path -LiteralPath (Join-Path $releaseDir $livePath)) { throw "Release contains live state ($livePath); preserve it before rebuilding" }
+  }
+}
+
 if (-not (Test-Path "node_modules")) {
   npm install
   if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
@@ -29,6 +40,10 @@ Copy-Item -Path (Join-Path $root "scripts\start-exe.ps1") -Destination (Join-Pat
 Copy-Item -Path (Join-Path $root "scripts\stop-exe.ps1") -Destination (Join-Path $releaseDir "stop.ps1") -Force
 Copy-Item -Path (Join-Path $root "scripts\install-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "install-onebot-napcat.ps1") -Force
 Copy-Item -Path (Join-Path $root "scripts\start-onebot-napcat.ps1") -Destination (Join-Path $releaseDir "start-onebot-napcat.ps1") -Force
+Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination (Join-Path $releaseDir "README.md") -Force
+$releaseScriptsDir = Join-Path $releaseDir "scripts"
+New-Item -ItemType Directory -Path $releaseScriptsDir -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $root "scripts\serve-memory-embeddings.py") -Destination $releaseScriptsDir -Force
 
 $releaseOneBotDir = Join-Path $releaseDir "onebot"
 New-Item -ItemType Directory -Path $releaseOneBotDir -Force | Out-Null

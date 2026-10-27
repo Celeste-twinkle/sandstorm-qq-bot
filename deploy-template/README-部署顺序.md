@@ -4,6 +4,46 @@
 
 ## 已有部署增量更新
 
+### 本次持久记忆、黑话与表情库更新（2026-10-28）
+
+先运行 `03-停止Bot服务.ps1`，替换 `sandstorm-qq-bot.exe`，同步更新 `.env.example`、`README.md`、本说明以及 `scripts\serve-memory-embeddings.py`，再运行 `02-启动Bot服务.ps1`。目标机器仍无需安装 Node.js。保留服务器原有 `.env`、API Key、群号、Token、整个 `data` 目录和 QQ/NapCat 登录数据，不要把完整新包直接覆盖到正在运行的目录。
+
+本轮新增默认开启的持久记忆、黑话和表情收集；不写新配置也会使用默认值。需要显式配置时，将以下内容合并到服务器原有 `.env`，不要用 `.env.example` 替换真实配置：
+
+```dotenv
+MEMORY_ENABLED=true
+MEMORY_STATE_DIR=
+MEMORY_RECENT_MESSAGES=100
+MEMORY_TIMEZONE=Asia/Shanghai
+MEMORY_MOOD_ENABLED=true
+MEMORY_ROTATION_ENABLED=true
+MEMORY_ROTATION_TOKEN_LIMIT=24000
+MEMORY_ROTATION_COOLDOWN_HOURS=6
+GROUP_SLANG_ENABLED=true
+STICKER_ENABLED=true
+STICKER_AUTO_SEND=true
+STICKER_MAX_PER_GROUP=200
+STICKER_MAX_TOTAL=1000
+STICKER_MAX_STORAGE_MB=256
+STICKER_MAX_IMAGE_MB=8
+STICKER_RETENTION_DAYS=90
+STICKER_OCR_REFRESH_DAYS=30
+STICKER_COOLDOWN_SECONDS=300
+STICKER_REPEAT_COOLDOWN_SECONDS=3600
+```
+
+目录留空时，记忆、SQLite 归档、日记、表情图片及配对 OCR 元数据存入 EXE 旁的 `data\agent-memory`。原来的 `data\group-chat-learning` 会继续读取，风格学习文件保存时自动升级并加入独立黑话词典。升级和以后迁移都要保留这些目录；有自定义路径时保留其实际位置。损坏文件会进入只读保护，不应靠删除原文件来处理。
+
+默认近期记忆和模型窗口为 100 条，硬上限 200 条；旧 `.env` 显式配置的 50 条继续有效。要改用新默认窗口，可同步设置 `CHAT_MAX_HISTORY_MESSAGES=100`、`LOCAL_QWEN_MAX_HISTORY_MESSAGES=100`、`AMBIENT_CHAT_INSTANT_MAX_MESSAGES=100`、`AMBIENT_CHAT_IDLE_MAX_MESSAGES=100`。每轮仍受输入预算限制，轮换只收缩工作窗口，不删除近期记忆、长期归档、学习和表情。
+
+表情图片与 OCR/画面/情绪/使用情境按同一个 SHA256 配对保存。每群、全库和存储空间都有上限，重复图去重，低质量或长期闲置条目自动淘汰并清理不再引用的图片。OCR 定期更新，更新失败保留上一版有效资料。发送前根据当前聊天判断是否贴合；不确定、不适用或话题已变就不发图。
+
+重启后可发送 `@机器人 记忆状态`、`黑话列表`、`表情库状态`。用 `@机器人 学黑话 寄=这局没戏了；场景=游戏失利时自嘲；禁用=认真求助` 明确教学；`@机器人 收集表情` 并附图或引用本群图片，可指定收集。管理员的 `清空表情库` 删除本群配对，`重置学习模块` 同时清空本群风格与黑话。`清空上下文`、旧别名 `清除记忆` 只清空短期工作上下文，历史归档继续保留。
+
+关键词检索开箱可用。可选的语义检索需要另行安装 Python、torch 和 transformers，再运行 `python scripts\serve-memory-embeddings.py --allow-download`，并配置 `MEMORY_EMBEDDING_URL=http://127.0.0.1:8766/v1/embeddings`。模型缓存后可去掉 `--allow-download` 离线启动；不配置时不下载模型，也不影响普通聊天。更多参数、备份说明及实现行为见随包 `README.md`。
+
+下列较早版本的“50 条”说明作为升级历史保留，当前行为以上述配置和新 `.env.example` 为准。
+
 ### 本次防互聊、管理员与娇憨少女人格更新（2026-10-20）
 
 本轮必须替换部署目录中的 `sandstorm-qq-bot.exe`。建议同时替换 `.env.example` 和本说明文件 `README-部署顺序.md`；所有程序修改都已打入 EXE，服务器无需复制 `src` 或安装依赖。
